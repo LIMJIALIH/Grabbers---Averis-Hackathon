@@ -1,0 +1,15 @@
+# Local configuration and generated files
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+node_modules/
+.next/
+*.tsbuildinfo
+
+# Organizer-only answer key: do not publish.
+backend/resources/sdoc-hackathon-docker/data_v2/ground_truth.json

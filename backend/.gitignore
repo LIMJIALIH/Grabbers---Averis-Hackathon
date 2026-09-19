@@ -1,0 +1,65 @@
+# Local environment and secrets (keep the safe configuration template)
+.env
+.env.*
+!.env.example
+secrets/
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Python virtual environments and bytecode
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+
+# Test, lint, type-check, and coverage output
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+junit.xml
+
+# Packaging output (keep dependency manifests and lockfiles)
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Runtime data: uploaded documents may contain private shipping details
+/uploads/
+/storage/
+/logs/
+/tmp/
+*.log
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+*.sqlite3-journal
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-wal
+*.sqlite3-shm
+
+# Organizer-only answer keys, including generated copies
+ground_truth.json
+# Local datasets and supplied hackathon packages (not published to GitHub)
+/resources/
+
+# Local editor and OS artifacts
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+
+# Intentionally retain application source, tests, and dependency manifests.
