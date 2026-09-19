@@ -807,6 +807,24 @@ h1 {
   background: #46503d;
   color: #c6d5b3;
 }
+.queue-pagination {
+  display: grid;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  text-align: center;
+}
+.queue-pagination > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.queue-pagination button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
 .queue-foot {
   padding: 14px 12px;
   border-top: 1px solid var(--line);

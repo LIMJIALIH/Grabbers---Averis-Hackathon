@@ -8,7 +8,6 @@ import {
   ArrowUpRight,
   Bell,
   Check,
-  CheckCheck,
   ChevronRight,
   CircleHelp,
   Clock3,
@@ -31,11 +30,8 @@ import {
   Settings2,
   ShieldCheck,
   Ship,
-  Sparkles,
   Upload,
   X,
-  ZoomIn,
-  ZoomOut,
 } from "lucide-react";
 
 type Field = {
@@ -52,101 +48,12 @@ type Case = {
   time: string;
   kind: string;
   fields: Field[];
+  body: string;
+  attachments: { name: string; url: string | null; text: string | null }[];
   state: "review" | "approved" | "escalated";
 };
-const base: Field[] = [
-  {
-    key: "shipper",
-    label: "Shipper",
-    si: "Global Tech Exports",
-    bl: "Global Tech Exports",
-    confidence: 99,
-  },
-  {
-    key: "consignee",
-    label: "Consignee",
-    si: "Nordic Components AB",
-    bl: "Nordic Components AB",
-    confidence: 98,
-  },
-  {
-    key: "notify_party",
-    label: "Notify party",
-    si: "Same as consignee",
-    bl: "Same as consignee",
-    confidence: 97,
-  },
-  {
-    key: "port_of_loading",
-    label: "Port of loading",
-    si: "MYTPP",
-    bl: "Tanjung Pelepas",
-    confidence: 99,
-  },
-  {
-    key: "port_of_discharge",
-    label: "Port of discharge",
-    si: "NLRTM",
-    bl: "NLRTM",
-    confidence: 98,
-  },
-  {
-    key: "container_count",
-    label: "Container count",
-    si: "3",
-    bl: "4",
-    confidence: 96,
-  },
-  {
-    key: "gross_weight_kg",
-    label: "Gross weight (kg)",
-    si: "68400",
-    bl: "68400",
-    confidence: 81,
-  },
-];
-const companies = [
-  "Global Tech Exports",
-  "Atlas Trading Ltd",
-  "Lumen Industries",
-  "Oceanic Supply Co",
-  "Kerguelen Logistics",
-  "Hansa Exports",
-];
-const initial: Case[] = [
-  "Pacific Trader",
-  "Evergreen Atlas",
-  "Maersk Lumen",
-  "ONE Way",
-  "CMA CGM Kerguelen",
-  "Hansa Unity",
-].map((vessel, i) => ({
-  id: ["8042", "8039", "8037", "8031", "8028", "8024"][i],
-  vessel,
-  company: companies[i],
-  time: ["09:42", "09:36", "09:21", "08:57", "08:44", "08:31"][i],
-  kind:
-    i === 1 || i === 5
-      ? "Low confidence"
-      : i === 2 || i === 4
-        ? "Pending review"
-        : "Discrepancy",
-  state: "review",
-  fields: base.map((f, n) => ({
-    ...f,
-    ...(n === 0 ? { si: companies[i], bl: companies[i] } : {}),
-    ...(i > 0 && n === 5
-      ? { si: String(i + 2), bl: String(i + 2 + (i === 3 ? 1 : 0)) }
-      : {}),
-    ...(n === 6 && i > 0
-      ? {
-          si: String(24000 + i * 7200),
-          bl: String(24000 + i * 7200),
-          confidence: i === 1 || i === 5 ? 78 : 98,
-        }
-      : {}),
-  })),
-}));
+const fieldKeys = ["shipper", "consignee", "notify_party", "port_of_loading", "port_of_discharge", "container_count", "gross_weight_kg"];
+const QUEUE_PAGE_SIZE = 10;
 const stages = [
   { title: "Classify", sub: "Email intent", icon: Mail },
   { title: "Ingest", sub: "Text · DOCX · PDF", icon: Layers3 },
@@ -175,18 +82,19 @@ function Badge({
 }
 
 export default function Page() {
-  const [cases, setCases] = useState(initial);
-  const [activeId, setActiveId] = useState("8042");
+  const [cases, setCases] = useState<Case[]>([]);
+  const [activeId, setActiveId] = useState("");
   const [view, setView] = useState("Overview");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All cases");
-  const [selectedField, setSelectedField] = useState("container_count");
-  const [source, setSource] = useState<"si" | "bl">("bl");
-  const [zoom, setZoom] = useState(100);
+  const [queuePage, setQueuePage] = useState(1);
+  const queueList = useRef<HTMLDivElement>(null);
+  const [attachmentIndex, setAttachmentIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [reload, setReload] = useState(0);
   const [modal, setModal] = useState<string | null>(null);
   const [toast, setToast] = useState("");
-  const [editing, setEditing] = useState<string | null>(null);
-  const [draft, setDraft] = useState("");
   const [reason, setReason] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [mobileNav, setMobileNav] = useState(false);
@@ -231,6 +139,20 @@ export default function Page() {
     window.addEventListener("keydown", escape);
     return () => window.removeEventListener("keydown", escape);
   }, [mobileNav]);
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setLoadError("");
+    fetch("/api/v1/cases", { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Unable to load sample emails. Check the backend and resources folder.");
+        return response.json() as Promise<Case[]>;
+      })
+      .then((items) => { setCases(items); setActiveId(items[0]?.id ?? ""); })
+      .catch((error) => { if (!controller.signal.aborted) setLoadError(error.message); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [reload]);
   function toggleTheme() {
     const next = theme === "light" ? "dark" : "light";
     setTheme(next);
@@ -253,17 +175,13 @@ export default function Page() {
       localStorage.setItem("docuverify-sidebar", next ? "closed" : "open");
     } catch {}
   }
-  const [audit, setAudit] = useState([
-    {
-      time: "09:42",
-      text: "EML-8042 routed to human review: container mismatch and low-confidence weight.",
-    },
-  ]);
+  const [audit, setAudit] = useState<{ time: string; text: string }[]>([]);
   const dialog = useRef<HTMLDialogElement>(null);
-  const active = cases.find((c) => c.id === activeId)!;
-  const unresolved = active.fields.filter(
+  const active = cases.find((c) => c.id === activeId);
+  const attachment = active?.attachments[attachmentIndex];
+  const unresolved = active?.fields.filter(
     (f) => !matches(f) || f.confidence < 85,
-  ).length;
+  ).length ?? 0;
   const filtered = cases.filter(
     (c) =>
       `${c.id} ${c.vessel} ${c.company}`
@@ -274,6 +192,19 @@ export default function Page() {
           ? c.state === "review"
           : c.state === "approved")),
   );
+  const pageCount = Math.max(1, Math.ceil(filtered.length / QUEUE_PAGE_SIZE));
+  const currentPage = Math.min(queuePage, pageCount);
+  const pageStart = (currentPage - 1) * QUEUE_PAGE_SIZE;
+  const paginatedCases = filtered.slice(pageStart, pageStart + QUEUE_PAGE_SIZE);
+  useEffect(() => {
+    setQueuePage(1);
+  }, [search, filter]);
+  useEffect(() => {
+    setQueuePage((page) => Math.min(page, pageCount));
+  }, [pageCount]);
+  useEffect(() => {
+    queueList.current?.scrollTo({ top: 0 });
+  }, [currentPage, search, filter]);
   useEffect(() => {
     if (modal) dialog.current?.showModal();
     else dialog.current?.close();
@@ -295,36 +226,8 @@ export default function Page() {
       ...a,
     ]);
   }
-  function updateField(key: string, value: string) {
-    if (
-      !value.trim() ||
-      (["container_count", "gross_weight_kg"].includes(key) &&
-        (!Number.isFinite(Number(value)) ||
-          Number(value) <= 0 ||
-          (key === "container_count" && !Number.isInteger(Number(value)))))
-    ) {
-      setToast(
-        "Enter a positive value. Container count must be a whole number.",
-      );
-      return;
-    }
-    setCases((items) =>
-      items.map((c) =>
-        c.id === activeId
-          ? {
-              ...c,
-              fields: c.fields.map((f) =>
-                f.key === key ? { ...f, bl: value.trim(), confidence: 100 } : f,
-              ),
-            }
-          : c,
-      ),
-    );
-    setEditing(null);
-    log(`EML-${activeId}: ${key} verified by operator.`);
-    setToast("Extraction updated. Comparison recalculated.");
-  }
   function exportReport() {
+    if (!active) return;
     const data = {
       demo: true,
       email_id: `EML-${active.id}`,
@@ -360,8 +263,7 @@ export default function Page() {
   }
   function choose(id: string) {
     setActiveId(id);
-    setEditing(null);
-    setSelectedField("container_count");
+    setAttachmentIndex(0);
     setView("Overview");
   }
   return (
@@ -567,7 +469,7 @@ export default function Page() {
                 label: "Documents in queue",
                 value: cases.length,
                 icon: FileText,
-                note: "SI + BL document pairs",
+                note: "Sample emails",
               },
               {
                 label: "Needs your attention",
@@ -670,7 +572,7 @@ export default function Page() {
                     </span>
                     <strong>{c.vessel}</strong>
                     <span>
-                      SI_{c.id}.pdf · BL_DRAFT_{c.id}.pdf
+                      {c.attachments.map((file) => file.name).join(" · ") || "No attachments"}
                     </span>
                     <ArrowUpRight size={16} />
                   </button>
@@ -713,7 +615,7 @@ export default function Page() {
                     <Search size={15} />
                     <input
                       aria-label="Search cases"
-                      placeholder="Search vessel or case ID…"
+                      placeholder="Search subject, sender or ID…"
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                     />
@@ -728,10 +630,10 @@ export default function Page() {
                       <option>Needs review</option>
                       <option>Approved</option>
                     </select>
-                    <span>NEWEST FIRST</span>
+                    <span>SAMPLE INBOX</span>
                   </div>
-                  <div className="queue-list">
-                    {filtered.map((c) => (
+                  <div className="queue-list" ref={queueList}>
+                    {paginatedCases.map((c) => (
                       <button
                         className={`queue-item ${activeId === c.id ? "selected" : ""}`}
                         aria-pressed={activeId === c.id}
@@ -739,7 +641,7 @@ export default function Page() {
                         onClick={() => choose(c.id)}
                       >
                         <div className="queue-item-meta">
-                          <span>EML-{c.id}</span>
+                          <span>{c.id}</span>
                           <time>{c.time}</time>
                         </div>
                         <strong>{c.vessel}</strong>
@@ -765,7 +667,7 @@ export default function Page() {
                                 : "Escalated locally"}
                           </Badge>
                           <span>
-                            <FileText size={11} />2
+                            <FileText size={11} />{c.attachments.length}
                           </span>
                         </div>
                       </button>
@@ -774,7 +676,7 @@ export default function Page() {
                       <div className="empty-state">
                         <Search />
                         <strong>No cases found</strong>
-                        <p>Try another vessel or clear your filters.</p>
+                        <p>Try another email or clear your filters.</p>
                         <button
                           className="text-button"
                           onClick={() => {
@@ -787,16 +689,40 @@ export default function Page() {
                       </div>
                     )}
                   </div>
+                  <nav className="queue-pagination" aria-label="Review queue pagination">
+                    <span role="status">
+                      {filtered.length ? pageStart + 1 : 0}–{Math.min(pageStart + QUEUE_PAGE_SIZE, filtered.length)} of {filtered.length} emails
+                    </span>
+                    <div>
+                      <button
+                        className="icon-button"
+                        aria-label="Previous queue page"
+                        disabled={currentPage === 1}
+                        onClick={() => setQueuePage(currentPage - 1)}
+                      >
+                        <ChevronRight size={16} style={{ transform: "rotate(180deg)" }} />
+                      </button>
+                      <span>Page {currentPage} of {pageCount}</span>
+                      <button
+                        className="icon-button"
+                        aria-label="Next queue page"
+                        disabled={currentPage === pageCount}
+                        onClick={() => setQueuePage(currentPage + 1)}
+                      >
+                        <ChevronRight size={16} />
+                      </button>
+                    </div>
+                  </nav>
                   <div className="queue-foot">
                     <ShieldCheck size={13} />
                     Your judgment makes the difference.
                   </div>
                 </aside>
-                <div className="case-workspace" key={active.id}>
+                {active ? <div className="case-workspace" key={active.id}>
                   <div className="case-header">
                     <div>
                       <div className="case-kicker">
-                        DOCUMENT COMPARISON <span>/</span> EML-{active.id}
+                        DOCUMENT COMPARISON <span>/</span> {active.id}
                       </div>
                       <h2>
                         {active.vessel}
@@ -804,274 +730,40 @@ export default function Page() {
                       </h2>
                       <div className="case-subtitle">
                         <Ship size={13} />
-                        Tanjung Pelepas <ArrowRight size={12} /> Rotterdam
-                        <span>•</span>2 attachments
+                        {active.company}
+                        <span>•</span>{active.attachments.length} attachments
                       </div>
                     </div>
                     <Badge
                       tone={active.state === "approved" ? "green" : "orange"}
                     >
                       {active.state === "review"
-                        ? `${unresolved} fields to review`
+                        ? active.fields.length ? `${unresolved} fields to review` : "Awaiting extraction"
                         : `${active.state} locally`}
                     </Badge>
                   </div>
-                  <div className="review-notice">
-                    <Sparkles size={17} />
-                    <p>
-                      <strong>
-                        {unresolved
-                          ? "The heavy lifting is done. Your expertise comes next."
-                          : "Looking good. All seven fields are verified."}
-                      </strong>
-                      <span>
-                        {unresolved
-                          ? "Review highlighted values against the source before approving."
-                          : "You can now approve this case and export the result."}
-                      </span>
-                    </p>
-                    <span className="confidence-meter">
-                      <i />
-                      <strong>
-                        {Math.round(
-                          active.fields.reduce((s, f) => s + f.confidence, 0) /
-                            7,
-                        )}
-                        %
-                      </strong>
-                      <small>confidence</small>
-                    </span>
-                  </div>
                   <div className="review-body">
                     <section className="comparison">
-                      <div className="subsection-heading">
-                        <h3>Field comparison</h3>
-                        <span>7 mandatory fields</span>
-                      </div>
-                      <div className="comparison-table">
-                        <div className="table-head">
-                          <span>EXTRACTED FIELD</span>
-                          <span>
-                            SHIPPING INSTRUCTION
-                            <small>Reference document</small>
-                          </span>
-                          <span>
-                            BILL OF LADING<small>Draft document</small>
-                          </span>
-                        </div>
-                        {active.fields.map((f) => {
-                          const issue = !matches(f) || f.confidence < 85;
-                          return (
-                            <div
-                              className={`comparison-row ${issue ? "flagged" : ""} ${selectedField === f.key ? "focused-row" : ""}`}
-                              key={f.key}
-                            >
-                              <button
-                                className="field-label"
-                                onClick={() => {
-                                  setSelectedField(f.key);
-                                  setSource("bl");
-                                }}
-                              >
-                                <span>{f.label}</span>
-                                <small>
-                                  {!matches(f) ? (
-                                    <>
-                                      <i className="issue-dot" />
-                                      Mismatch
-                                    </>
-                                  ) : f.confidence < 85 ? (
-                                    <>
-                                      <i className="issue-dot" />
-                                      Low confidence
-                                    </>
-                                  ) : f.si !== f.bl ? (
-                                    <>
-                                      <CheckCheck size={11} />
-                                      Normalized match
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Check size={11} />
-                                      Match
-                                    </>
-                                  )}
-                                </small>
-                              </button>
-                              <div className="reference-value">{f.si}</div>
-                              <div className="draft-value">
-                                {editing === f.key ? (
-                                  <form
-                                    className="edit-form"
-                                    onSubmit={(e) => {
-                                      e.preventDefault();
-                                      updateField(f.key, draft);
-                                    }}
-                                  >
-                                    <input
-                                      aria-label={`Edit ${f.label}`}
-                                      autoFocus
-                                      value={draft}
-                                      onChange={(e) => setDraft(e.target.value)}
-                                    />
-                                    <button
-                                      aria-label="Save field"
-                                      type="submit"
-                                    >
-                                      <Check size={15} />
-                                    </button>
-                                    <button
-                                      aria-label="Cancel edit"
-                                      type="button"
-                                      onClick={() => setEditing(null)}
-                                    >
-                                      <X size={14} />
-                                    </button>
-                                  </form>
-                                ) : (
-                                  <>
-                                    <button
-                                      className="value-button"
-                                      onClick={() => setSelectedField(f.key)}
-                                    >
-                                      {f.bl}
-                                      <span>{f.confidence}%</span>
-                                    </button>
-                                    {active.state === "review" && (
-                                      <button
-                                        className="field-action"
-                                        aria-label={`${issue ? "Review" : "Edit"} ${f.label}`}
-                                        onClick={() => {
-                                          setEditing(f.key);
-                                          setDraft(f.bl);
-                                          setSelectedField(f.key);
-                                        }}
-                                      >
-                                        {issue ? "Review" : "Edit"}
-                                        <ArrowUpRight size={11} />
-                                      </button>
-                                    )}
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <div className="normalization-note">
-                        <CheckCheck size={14} />
-                        <p>
-                          <strong>Different format. Same meaning.</strong> Port
-                          aliases are recognized. Unit normalization is a
-                          planned pipeline feature.
-                        </p>
-                        <button
-                          className="icon-button"
-                          aria-label="View normalization rules"
-                          onClick={() => setModal("Compare")}
-                        >
-                          <CircleHelp size={14} />
-                        </button>
-                      </div>
+                      <div className="subsection-heading"><h3>Sample email</h3></div>
+                      <p><strong>From:</strong> {active.company}</p>
+                      <p><strong>Subject:</strong> {active.vessel}</p>
+                      <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontFamily: "inherit", lineHeight: 1.6 }}>{active.body || "This email has no body."}</pre>
+                      <div className="info-note">Field extraction and comparison have not been run for this email.</div>
                     </section>
                     <section className="source-panel">
-                      <div className="subsection-heading">
-                        <h3>
-                          <ScanLine size={15} />
-                          Source grounding
-                        </h3>
-                        <Badge tone="green">Linked</Badge>
-                      </div>
-                      <div className="source-toolbar">
-                        <div className="segmented">
-                          <button
-                            aria-pressed={source === "si"}
-                            className={source === "si" ? "chosen" : ""}
-                            onClick={() => setSource("si")}
-                          >
-                            SI
-                          </button>
-                          <button
-                            aria-pressed={source === "bl"}
-                            className={source === "bl" ? "chosen" : ""}
-                            onClick={() => setSource("bl")}
-                          >
-                            Draft BL
-                          </button>
-                        </div>
-                        <div>
-                          <button
-                            className="icon-button"
-                            aria-label="Zoom out"
-                            disabled={zoom <= 80}
-                            onClick={() => setZoom((z) => z - 10)}
-                          >
-                            <ZoomOut size={14} />
-                          </button>
-                          <span>{zoom}%</span>
-                          <button
-                            className="icon-button"
-                            aria-label="Zoom in"
-                            disabled={zoom >= 140}
-                            onClick={() => setZoom((z) => z + 10)}
-                          >
-                            <ZoomIn size={14} />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="paper-stage">
-                        <div
-                          className="paper"
-                          style={{ width: `${zoom}%`, minWidth: `${zoom}%` }}
-                        >
-                          <div className="paper-brand">
-                            <Ship size={18} />
-                            <strong>
-                              OCEAN LINE
-                              <small>GLOBAL SHIPPING & LOGISTICS</small>
-                            </strong>
-                            <span>
-                              {source === "bl" ? "DRAFT" : "REFERENCE"}
-                            </span>
-                          </div>
-                          <h4>
-                            {source === "bl"
-                              ? "BILL OF LADING"
-                              : "SHIPPING INSTRUCTION"}
-                          </h4>
-                          <div className="paper-number">
-                            BOOKING NO. OL-{active.id} · NON-NEGOTIABLE
-                          </div>
-                          {initial
-                            .find((c) => c.id === activeId)!
-                            .fields.map((f) => (
-                              <button
-                                key={f.key}
-                                className={`paper-field ${selectedField === f.key ? "highlight" : ""}`}
-                                onClick={() => setSelectedField(f.key)}
-                              >
-                                <small>{f.label.toUpperCase()}</small>
-                                <strong>{f[source]}</strong>
-                                {selectedField === f.key && (
-                                  <span className="extract-tag">
-                                    <ScanLine size={9} />
-                                    Source span
-                                  </span>
-                                )}
-                              </button>
-                            ))}
-                          <div className="paper-signature">
-                            <span>Authorized carrier signature</span>
-                            <i>Ocean Line</i>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="source-caption">
-                        <i />
-                        <span>
-                          Sample source preview · click a field to locate it
-                        </span>
-                      </div>
+                      <div className="subsection-heading"><h3>Attachments</h3><span>{active.attachments.length} files</span></div>
+                      {active.attachments.length ? <>
+                        <label className="form-label">Select attachment
+                          <select value={attachmentIndex} onChange={(event) => setAttachmentIndex(Number(event.target.value))}>
+                            {active.attachments.map((file, index) => <option key={index} value={index}>{file.name}</option>)}
+                          </select>
+                        </label>
+                        {attachment?.url ? <>
+                          <a className="text-button" href={attachment.url} target="_blank" rel="noreferrer">Open / download {attachment.name} <ArrowDownToLine size={14} /></a>
+                          {attachment.text !== null ? <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", maxHeight: 600, overflow: "auto", lineHeight: 1.6 }}>{attachment.text}</pre>
+                            : <p className="info-note">Download this attachment to view its original contents.</p>}
+                        </> : <p role="status">This attachment is missing from the sample bundle.</p>}
+                      </> : <p>No attachments on this email.</p>}
                     </section>
                   </div>
                   <div className="case-footer">
@@ -1081,7 +773,7 @@ export default function Page() {
                         ? "Decision recorded in this demo session"
                         : unresolved
                           ? `${unresolved} fields need your confirmation`
-                          : "All fields verified. Ready for approval."}
+                          : "Awaiting field extraction and comparison."}
                     </span>
                     <div>
                       <button
@@ -1097,7 +789,7 @@ export default function Page() {
                       </button>
                       <button
                         className="button approve"
-                        disabled={active.state !== "review" || unresolved > 0}
+                        disabled={active.state !== "review" || !active.fields.length || unresolved > 0}
                         onClick={() => setModal("Approve & submit")}
                       >
                         <ShieldCheck size={15} />
@@ -1106,7 +798,7 @@ export default function Page() {
                       </button>
                     </div>
                   </div>
-                </div>
+                </div> : <div className="empty-state" role="status">{loading ? "Loading sample emails…" : loadError || "No sample emails found."}{loadError && <button className="button" onClick={() => setReload((value) => value + 1)}>Retry</button>}</div>}
               </section>
             </>
           )}
@@ -1234,7 +926,7 @@ export default function Page() {
           <>
             <p>
               All seven fields have been verified for{" "}
-              <strong>{active.vessel}</strong>. Record your approval and prepare
+              <strong>{active?.vessel}</strong>. Record your approval and prepare
               the output.
             </p>
             <div className="info-note">
@@ -1282,7 +974,7 @@ export default function Page() {
                   <span>
                     <strong>{c.vessel}</strong>
                     <small>
-                      {c.kind} · EML-{c.id}
+                      {c.kind} · {c.id}
                     </small>
                   </span>
                   <ChevronRight size={16} />
@@ -1327,7 +1019,7 @@ export default function Page() {
                       "JSON evaluator · POST /submit",
                     ]
                   : modal === "Extract"
-                    ? base.map((f) => f.key)
+                    ? fieldKeys
                     : modal === "Compare"
                       ? [
                           "Party names · fuzzy string comparison",
@@ -1345,8 +1037,8 @@ export default function Page() {
               ))}
             </div>
             <div className="info-note">
-              Interactive frontend prototype. Sample data and decisions are
-              session-only; backend services are not connected.
+              Interactive frontend prototype. Emails and attachments load from the backend sample bundle. Decisions are
+              session-only; extraction and submission are not connected.
             </div>
           </>
         )}

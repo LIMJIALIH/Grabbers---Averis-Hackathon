@@ -2,7 +2,9 @@
 
 FastAPI application served by **Uvicorn**, for the DocuVerify shipping document verification project. The dependency set includes LangChain and its OpenAI/community integrations for the future document-processing pipeline.
 
-Currently this is a scaffold with a health endpoint, environment configuration, CORS, and tests. Document processing, classification, comparison, review persistence, and frontend integration are not implemented yet. The supplied SDOC inbox/scoring server is a separate optional service.
+The API provides health checks and a sample email review queue. `GET /api/v1/cases` reads emails from the configured participant bundle's `inbox/`, includes text attachment previews, and links to `GET /api/v1/cases/{email_id}/attachments/{index}` for original files. Only attachments under the bundle's `attachments/` directory can be downloaded. Document processing, classification, comparison, and review persistence are not implemented yet. The supplied SDOC inbox/scoring server is a separate optional service.
+
+Run the backend on port 8000 and the frontend together to use the Review Queue. Next.js proxies `/api/v1/*` to `http://127.0.0.1:8000`; set `BACKEND_URL` in the frontend environment to use another backend address, then restart Next.js. Emails with no attachments remain visible. TXT files display inline; PDF, DOCX, and XLSX files can be downloaded. Approval remains disabled until extraction is implemented.
 
 ## Requirements
 
