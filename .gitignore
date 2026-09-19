@@ -13,3 +13,4 @@ node_modules/
 
 # Organizer-only answer key: do not publish.
 backend/resources/sdoc-hackathon-docker/data_v2/ground_truth.json
+frontend
