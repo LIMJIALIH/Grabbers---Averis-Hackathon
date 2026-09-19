@@ -13,4 +13,12 @@ node_modules/
 
 # Organizer-only answer key: do not publish.
 backend/resources/sdoc-hackathon-docker/data_v2/ground_truth.json
-frontend
+
+# Local frontend artifacts and preserved nested-repository metadata.
+/frontend/dark-preview.png
+/frontend/desktop-preview.png
+/frontend/mobile-preview.png
+/frontend/next-env.d.ts
+/frontend/package-lock.json
+/frontend/tsconfig.tsbuildinfo
+/frontend/.git-history-backup/
