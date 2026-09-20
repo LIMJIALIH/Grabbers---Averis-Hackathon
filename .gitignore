@@ -25,3 +25,4 @@ backend/resources/sdoc-hackathon-docker/data_v2/ground_truth.json
 /frontend/package-lock.json
 /frontend/tsconfig.tsbuildinfo
 /frontend/.git-history-backup/
+note.md

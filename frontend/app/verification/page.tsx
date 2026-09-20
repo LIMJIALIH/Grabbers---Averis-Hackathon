@@ -1,11 +1,6 @@
-import type { Metadata } from "next";
-import VerificationWorkspace from "@/components/VerificationWorkspace";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Shipping Verification & Audit Trail | DocuVerify",
-  description: "Shipping document verification with an in-memory audit trail and user action recorder.",
-};
-
-export default function VerificationPage() {
-  return <VerificationWorkspace />;
+// The two apps were merged; any link already shared still lands somewhere.
+export default function Verification() {
+  redirect("/");
 }
