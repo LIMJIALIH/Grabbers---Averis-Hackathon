@@ -6,6 +6,8 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 
 from app.core.config import settings
+from app.services.attachment_text import extract_attachment_text
+from app.services.document_fields import extract_comparison_fields
 
 router = APIRouter(prefix="/cases", tags=["cases"])
 
@@ -20,7 +22,9 @@ def inbox():
 def attachment_path(name: str) -> Path:
     root = (settings.bundle_dir / "attachments").resolve()
     path = (settings.bundle_dir / name).resolve()
-    if not path.is_relative_to(root) or not path.is_file():
+    if not path.is_file():
+        raise HTTPException(404, "Attachment not found")
+    if not path.is_relative_to(root):
         raise HTTPException(404, "Attachment not found")
     return path
 
@@ -36,15 +40,17 @@ def list_cases():
             except HTTPException:
                 attachments.append({"name": Path(name).name, "url": None, "text": None})
                 continue
+            text = extract_attachment_text(path)
             attachments.append({
                 "name": path.name,
                 "url": f"/api/v1/cases/{quote(email['email_id'], safe='')}/attachments/{index}",
-                "text": path.read_text(encoding="utf-8", errors="replace") if path.suffix.lower() == ".txt" else None,
+                "text": text or None,
             })
+        comparison_fields = extract_comparison_fields(email.get("attachments", []), settings.bundle_dir)
         cases.append({
             "id": email["email_id"], "vessel": email.get("subject", "(No subject)"),
             "company": email.get("from", ""), "time": "", "kind": "Pending review",
-            "state": "review", "fields": [], "body": email.get("body", ""),
+            "state": "review", "fields": comparison_fields, "body": email.get("body", ""),
             "attachments": attachments,
         })
     return cases
