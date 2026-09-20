@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import {
   Activity,
   ArrowDownToLine,
@@ -324,6 +325,10 @@ export default function Page() {
               )}
             </button>
           ))}
+          <Link href="/verification" className="nav-item">
+            <ShieldCheck size={18} />
+            <span>Verification workspace</span>
+          </Link>
         </nav>
         <div className="nav-label tools-label">CONFIGURATION</div>
         <button

@@ -31,3 +31,7 @@ To learn more, take a look at the following resources:
 - [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
 - [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 - [v0 Documentation](https://v0.app/docs) - learn about v0 and how to use it.
+
+## Verification and audit workflow
+
+The verification workflow is integrated at `/verification`. Start this frontend with `npm run dev` and choose **Verification workspace** from the dashboard. There is no separate Vite app or install step. See the [file responsibility map](docs/verification.md).

@@ -5,7 +5,7 @@ description: Classify shipping-operations emails into the 5 SDOC categories (BL_
 
 # SDOC email classification
 
-Fallback for `data_prep/build_dataset.py`, which classifies the 520-email bundle
+Fallback for `backend/data_prep/build_dataset.py`, which classifies the 520-email bundle
 by regex. Use this when an LLM must do the same job: new emails the rules miss,
 auditing, or replacing BERT.
 
@@ -139,11 +139,11 @@ Note the trap: "BILL OF LADING **INSTRUCTION**" is an SI, not a BL — it is the
 instruction to *produce* a BL. Test for the instruction variants first.
 
 If you cannot identify one of each role, the case is `NEEDS_REVIEW`, not a guess.
-`data_prep/build_dataset.py:is_doc()` implements exactly this.
+`backend/data_prep/build_dataset.py:is_doc()` implements exactly this.
 
 ## If you are also running the comparison
 
-Don't reimplement it. `data_prep/fields.py` already handles 64 label spellings
+Don't reimplement it. `backend/data_prep/fields.py` already handles 64 label spellings
 across the 7 fields, bilingual CJK glosses, four file layouts, and the PDF trap
 where bills of lading repeat `GROSS WEIGHT (KG)` per container row before the
 total. Import `parse`, `canon` and `same` from it.

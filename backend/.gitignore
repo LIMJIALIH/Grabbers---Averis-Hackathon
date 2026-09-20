@@ -53,6 +53,10 @@ ground_truth.json
 # Local datasets and supplied hackathon packages (not published to GitHub)
 /resources/
 
+# Generated datasets, copied source attachments, and extraction exports
+/data_prep/out/
+/exports/
+
 # Local editor and OS artifacts
 .idea/
 .vscode/

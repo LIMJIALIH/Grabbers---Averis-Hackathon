@@ -11,7 +11,7 @@ def test_sample_email_and_attachment(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "bundle_dir", tmp_path)
     (tmp_path / "inbox").mkdir()
     (tmp_path / "attachments").mkdir()
-    resources_attachments = Path(__file__).resolve().parents[1] / "resources" / "attachments"
+    resources_attachments = Path(__file__).resolve().parents[1] / "resources" / "sdoc-hackathon-bundle" / "attachments"
     (tmp_path / "attachments" / "sample_SI.txt").write_text(
         (resources_attachments / "email_040_SI.txt").read_text(encoding="utf-8"),
         encoding="utf-8",
@@ -101,7 +101,7 @@ def test_mixed_format_real_samples_extract_fields(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "bundle_dir", tmp_path)
     (tmp_path / "inbox").mkdir()
     (tmp_path / "attachments").mkdir()
-    resources_attachments = Path(__file__).resolve().parents[1] / "resources" / "attachments"
+    resources_attachments = Path(__file__).resolve().parents[1] / "resources" / "sdoc-hackathon-bundle" / "attachments"
 
     samples = {
         "email_005": ["email_005_SI.xlsx", "email_005_BL.xlsx"],

@@ -167,10 +167,15 @@ def extract_comparison_fields(attachment_paths: list[str], bundle_dir: Path) -> 
         elif not texts["bl"]:
             texts["bl"] = text
 
+    return extract_fields_from_text(texts["si"], texts["bl"])
+
+
+def extract_fields_from_text(si_text: str, bl_text: str) -> list[dict[str, object]]:
+    """Stage 5: extract and normalize Stage 4 text without opening files."""
     fields = []
     for key, label in FIELD_SPECS:
-        si_value = _value_for_key(texts["si"], key) if texts["si"] else ""
-        bl_value = _value_for_key(texts["bl"], key) if texts["bl"] else ""
+        si_value = _value_for_key(si_text, key) if si_text else ""
+        bl_value = _value_for_key(bl_text, key) if bl_text else ""
         fields.append(
             {
                 "key": key,

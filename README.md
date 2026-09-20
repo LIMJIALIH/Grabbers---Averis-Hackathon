@@ -11,7 +11,11 @@ frontend/                     Next.js / React dashboard
   lib/                        Frontend utilities
   public/                     Static assets
   scripts/                    Browser smoke checks
+  data/                       Sample shipping emails for verification
+  types/                      Shared shipping and audit types
+  docs/                       Frontend workflow documentation
 backend/
+  data_prep/                  Offline labelling, extraction, datasets, and self-checks
   app/
     main.py                   FastAPI application factory and middleware
     api/routes/               HTTP endpoints, composed by api/router.py
@@ -24,10 +28,11 @@ backend/
     sdoc-hackathon-bundle/     Original participant data and loader
     sdoc-hackathon-docker/     Original organizer inbox/scoring server
   pyproject.toml              Python dependencies and test configuration
+  run.py                      Backend development server launcher
 DocuVerify Hackathon Proposal.md
 ```
 
-The frontend folder was previously named `Grabbers---Averis-Hackathon`. Its existing nested `.git` repository and uncommitted work are preserved. The workspace also has its own `.git`; this is not yet a unified Git monorepo. Commit frontend changes from `frontend/`; choose a repository migration strategy before trying to track everything in a single repository.
+The repository tracks both frontend and backend code. The audit workflow runs within the same Next.js app at `/verification`; see its [file responsibilities](frontend/docs/verification.md). The Python dataset pipeline and its generated data live under `backend/data_prep/`; see its [commands and file responsibilities](backend/data_prep/README.md).
 
 ## Current functionality
 
@@ -63,9 +68,10 @@ cd backend
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
 Copy-Item .env.example .env
-.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
+.\.venv\Scripts\python.exe run.py
 ```
 
+With the virtual environment activated, start the backend with `python run.py`.
 API docs: http://localhost:8000/docs. Health: http://localhost:8000/api/v1/health.
 On macOS/Linux use `.venv/bin/python` in place of `.\.venv\Scripts\python.exe`.
 Environment configuration uses the `DOCUVERIFY_` prefix. Set `DOCUVERIFY_CORS_ORIGINS` to a JSON array of actual frontend origins when using another port. Local bundle paths default to an absolute path derived from the backend directory, not the shell's working directory.

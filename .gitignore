@@ -11,6 +11,9 @@ node_modules/
 .next/
 *.tsbuildinfo
 
+# Legacy dataset output location (current output is under backend/data_prep)
+/data_prep/out/
+
 # Organizer-only answer key: do not publish.
 backend/resources/sdoc-hackathon-docker/data_v2/ground_truth.json
 

@@ -1,0 +1,8 @@
+{
+  "email_id": "mock_email_001",
+  "tag": "SI",
+  "requires_human_review": false,
+  "attachments": [
+    {"filename": "SI.txt", "path": "SI.txt", "document_type": "SI"}
+  ]
+}
