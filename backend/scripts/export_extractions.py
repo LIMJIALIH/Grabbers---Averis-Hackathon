@@ -21,8 +21,9 @@ def load_inbox(bundle_dir: Path) -> list[dict[str, object]]:
 def export_bundle(bundle_dir: Path) -> dict[str, object]:
     emails: list[dict[str, object]] = []
     for email in load_inbox(bundle_dir):
+        email_attachments = list(email.get("attachments", []))
         attachment_records: list[dict[str, object]] = []
-        for attachment_name in email.get("attachments", []):
+        for attachment_name in email_attachments:
             attachment_path = (bundle_dir / attachment_name).resolve()
             record: dict[str, object] = {
                 "name": Path(attachment_name).name,
@@ -45,7 +46,7 @@ def export_bundle(bundle_dir: Path) -> dict[str, object]:
                 "subject": email.get("subject", ""),
                 "from": email.get("from", ""),
                 "attachments": attachment_records,
-                "comparison_fields": extract_comparison_fields(list(email.get("attachments", [])), bundle_dir),
+                "comparison_fields": [] if not email_attachments else extract_comparison_fields(email_attachments, bundle_dir),
             }
         )
 
