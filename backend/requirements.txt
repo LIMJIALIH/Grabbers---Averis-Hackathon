@@ -24,3 +24,7 @@ openpyxl>=3.1.5,<4
 
 # Offline data preparation PDF extraction
 pypdf>=5,<7
+
+# Local BERT email classification
+torch>=2.6,<3
+transformers>=5,<6

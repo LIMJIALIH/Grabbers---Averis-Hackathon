@@ -2,7 +2,7 @@
 
 FastAPI application served by **Uvicorn**, for the DocuVerify shipping document verification project. The dependency set includes LangChain and its OpenAI/community integrations for the future document-processing pipeline.
 
-The API provides health checks, a sample email review queue, and independent Stage 4 attachment ingestion. `GET /api/v1/cases` reads emails from the configured participant bundle's `inbox/`, includes text attachment previews, and links to `GET /api/v1/cases/{email_id}/attachments/{index}` for original files. Only attachments under the bundle's `attachments/` directory can be downloaded. Classification, comparison, and review persistence are not implemented yet. The supplied SDOC inbox/scoring server is a separate optional service.
+The API provides health checks, local email classification, a sample email review queue, and independent Stage 4 attachment ingestion. `GET /api/v1/cases` reads emails from the configured participant bundle's `inbox/`, includes text attachment previews, and links to `GET /api/v1/cases/{email_id}/attachments/{index}` for original files. Only attachments under the bundle's `attachments/` directory can be downloaded. Email classification and SI/BL comparison are implemented; review persistence is not. The supplied SDOC inbox/scoring server is a separate optional service.
 
 Run the backend on port 8000 and the frontend together to use the Review Queue. Next.js proxies `/api/v1/*` to `http://127.0.0.1:8000`; set `BACKEND_URL` in the frontend environment to use another backend address, then restart Next.js. Emails with no attachments remain visible. TXT files display inline; PDF, DOCX, and XLSX files can be downloaded. Approval remains disabled until extraction is implemented.
 
@@ -83,6 +83,8 @@ Settings load from `backend/.env` and environment variables (environment variabl
 | `DOCUVERIFY_CORS_ORIGINS` | `["http://localhost:3000"]` | JSON array of allowed frontend origins |
 | `DOCUVERIFY_INBOX_BASE_URL` | `http://localhost:8080` | Reserved URL for the separate SDOC service |
 | `DOCUVERIFY_BUNDLE_DIR` | Absolute path to `backend/resources/sdoc-hackathon-bundle` | Local participant bundle location |
+| `DOCUVERIFY_MODEL_DIR` | Absolute path to `backend/model/email_multiclass_classifier` | Saved Hugging Face classifier directory |
+| `DOCUVERIFY_MODEL_DEVICE` | `auto` | Inference device: `auto`, `cpu`, or `cuda` |
 
 For the frontend on port 3101, for example:
 
@@ -92,6 +94,44 @@ DOCUVERIFY_INBOX_BASE_URL=http://localhost:8080
 ```
 
 `localhost` and `127.0.0.1` are different origins; include the exact browser origin. Restart Uvicorn after changing `.env`. Configuring these values does not connect the demo frontend or implement the processing pipeline.
+
+## Local email classification
+
+`POST /api/v1/classification` runs the fine-tuned BERT model entirely on the local
+machine. The model is loaded on the first classification request and reused for
+later requests. `auto` selects CUDA when the installed PyTorch build can access an
+NVIDIA GPU and otherwise falls back to CPU. Model and tokenizer loading use local
+files only and do not download from Hugging Face at request time.
+
+Example request from PowerShell:
+
+```powershell
+$payload = @{
+  subject = "Please compare shipping documents"
+  body = "Attached are the SI and draft BL. Please check the draft BL against the SI."
+} | ConvertTo-Json
+
+Invoke-RestMethod -Method Post `
+  -Uri http://127.0.0.1:8000/api/v1/classification `
+  -ContentType "application/json" -Body $payload
+```
+
+The response contains `category`, the winning `confidence`, all five class
+`scores`, and the actual `device`. An empty subject and body return HTTP 422; a
+missing model or unusable requested device returns HTTP 503.
+
+The ordinary PyPI installation may install a CPU-only PyTorch wheel. For RTX GPU
+inference, use the command generated for Windows, Pip, and your supported CUDA
+version by the official [PyTorch installation selector](https://pytorch.org/get-started/locally/),
+then confirm the environment before starting the API:
+
+```powershell
+uv run --project . --no-sync python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU')"
+```
+
+Keep a single Uvicorn worker for the local demo because every worker loads its own
+copy of the roughly 438 MB model. The endpoint uses inference mode and does not
+calculate gradients or update model weights.
 
 ## Local resources (not committed)
 
