@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:3000"]
     bundle_dir: Path = BACKEND_DIR / "resources" / "sdoc-hackathon-bundle"
     inbox_base_url: str = "http://localhost:8080"
+    model_dir: Path = BACKEND_DIR / "model" / "email_multiclass_classifier"
+    model_device: str = "auto"
 
 
 settings = Settings()
