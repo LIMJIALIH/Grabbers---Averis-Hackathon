@@ -62,6 +62,25 @@ def test_missing_and_empty_inbox(tmp_path, monkeypatch):
         assert client.get("/api/v1/cases").json() == []
 
 
+def test_no_attachment_skips_comparison(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "bundle_dir", tmp_path)
+    (tmp_path / "inbox").mkdir()
+    (tmp_path / "attachments").mkdir()
+    email = {
+        "email_id": "email_empty",
+        "from": "sender@example.com",
+        "subject": "No attachment email",
+        "body": "",
+        "attachments": [],
+    }
+    (tmp_path / "inbox" / "email_empty.json").write_text(json.dumps(email), encoding="utf-8")
+
+    with TestClient(create_app()) as client:
+        case = client.get("/api/v1/cases").json()[0]
+        assert case["attachments"] == []
+        assert case["fields"] == []
+
+
 def test_port_aliases_are_extracted(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "bundle_dir", tmp_path)
     (tmp_path / "inbox").mkdir()

@@ -33,8 +33,9 @@ def attachment_path(name: str) -> Path:
 def list_cases():
     cases = []
     for email in inbox():
+        email_attachments = list(email.get("attachments", []))
         attachments = []
-        for index, name in enumerate(email.get("attachments", [])):
+        for index, name in enumerate(email_attachments):
             try:
                 path = attachment_path(name)
             except HTTPException:
@@ -46,7 +47,7 @@ def list_cases():
                 "url": f"/api/v1/cases/{quote(email['email_id'], safe='')}/attachments/{index}",
                 "text": text or None,
             })
-        comparison_fields = extract_comparison_fields(email.get("attachments", []), settings.bundle_dir)
+        comparison_fields = [] if not email_attachments else extract_comparison_fields(email_attachments, settings.bundle_dir)
         cases.append({
             "id": email["email_id"], "vessel": email.get("subject", "(No subject)"),
             "company": email.get("from", ""), "time": "", "kind": "Pending review",
