@@ -16,8 +16,8 @@ FIELD_SPECS = [
 
 FIELD_ALIASES = {
     "shipper": ["Shipper", "Shipper/Exporter"],
-    "consignee": ["Consignee", "To the Order of", "To Order", "To Order Of"],
-    "notify_party": ["Notify Party", "Notify", "NOTIFY PARTY"],
+    "consignee": ["Consignee", "Consignee (Non-Negotiable)", "To the Order of", "To Order", "To Order Of"],
+    "notify_party": ["Notify Party/Intermediate Consignee", "Notify Party", "Intermediate Consignee", "Notify", "NOTIFY PARTY"],
     "port_of_loading": ["Port of Loading", "Port of Landing", "Load Port", "POL", "P/L"],
     "port_of_discharge": ["Port of Discharge", "Discharge Port", "POD", "P/D"],
     "container_count": ["Container Count", "No. of Containers", "No. of Containers or Packages", "Total Containers"],

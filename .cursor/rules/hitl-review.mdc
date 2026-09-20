@@ -1,0 +1,14 @@
+---
+description: Unreadable, missing, or uncertain cases go to human review with evidence, then the report is updated from the human decision.
+alwaysApply: true
+---
+
+# Human review before the report
+
+When a document is unreadable, a required value is missing, or the result is uncertain, send the case for review with the source evidence and reason. Let a person confirm or correct it, then update the report.
+
+- Do not auto-approve `unreadable`, missing required values, or unresolved A/B/C disagreement.
+- Every review item must include source evidence (quote/location) and a concrete reason.
+- Model-C may resolve genuine verifier conflicts from evidence. If C is still uncertain, incomplete, missing, or unreadable, the field stays in HITL.
+- Reports render from cleaned, confirmed values only. Unresolved fields stay placeholders until a person confirms or corrects them.
+- HITL UI can be owned separately; backend routing must still flag these cases and keep evidence + reason on the audit.
