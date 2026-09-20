@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-20T07:59:24.037491+00:00",
+  "generated_at": "2026-09-20T09:04:08.503842+00:00",
   "bundle_dir": "/Users/florencetong/Hereee/Grabbers---Averis-Hackathon/backend/resources",
   "emails": [
     {
@@ -11347,7 +11347,7 @@
           "exists": true,
           "type": "pdf",
           "text": "",
-          "error": null
+          "error": "ocr_needed"
         }
       ],
       "comparison_fields": [
@@ -11413,7 +11413,7 @@
           "exists": true,
           "type": "pdf",
           "text": "",
-          "error": null
+          "error": "ocr_needed"
         },
         {
           "name": "email_512_BL.pdf",
@@ -11421,7 +11421,7 @@
           "exists": true,
           "type": "pdf",
           "text": "",
-          "error": null
+          "error": "ocr_needed"
         }
       ],
       "comparison_fields": [
@@ -11487,7 +11487,7 @@
           "exists": true,
           "type": "pdf",
           "text": "",
-          "error": null
+          "error": "ocr_needed"
         },
         {
           "name": "email_513_BL.pdf",
@@ -11495,7 +11495,7 @@
           "exists": true,
           "type": "pdf",
           "text": "",
-          "error": null
+          "error": "ocr_needed"
         }
       ],
       "comparison_fields": [
@@ -11561,7 +11561,7 @@
           "exists": true,
           "type": "pdf",
           "text": "",
-          "error": null
+          "error": "ocr_needed"
         },
         {
           "name": "email_514_BL.pdf",
@@ -11569,7 +11569,7 @@
           "exists": true,
           "type": "pdf",
           "text": "",
-          "error": null
+          "error": "ocr_needed"
         }
       ],
       "comparison_fields": [
@@ -11643,7 +11643,7 @@
           "exists": true,
           "type": "pdf",
           "text": "",
-          "error": null
+          "error": "ocr_needed"
         }
       ],
       "comparison_fields": [
