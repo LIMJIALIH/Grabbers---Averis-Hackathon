@@ -147,7 +147,7 @@ def build(bundle, out_dir, holdout_n, seed):
 
     dump("dataset.csv", rows)                                        # full record
     dump("train.csv", [r for r in rows if r["split"] == "train"])    # -> the BERT teammate
-    dump("holdout_answers.csv", [r for r in rows if r["split"] == "holdout"])  # sealed
+    dump("test.csv", [r for r in rows if r["split"] == "holdout"])            # sealed
     (out_dir / "submission.json").write_text(json.dumps({
         r["email_id"]: {"category": r["category"], "status": r["status"],
                         "review_reason": r["review_reason"] or None,

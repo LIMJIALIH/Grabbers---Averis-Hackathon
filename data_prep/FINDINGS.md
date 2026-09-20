@@ -209,7 +209,7 @@ All 45 mismatches were inspected by hand: **no false positives**.
 What has **not** happened: nobody has hand-checked a random sample against the
 source documents. `data_prep/out/holdout/` holds 20 raw unlabelled emails plus
 their attachments for exactly that. The rules' answers are sealed in
-`holdout_answers.csv` — write your own labels first, then diff.
+`test.csv` — write your own labels first, then diff.
 
 ---
 
