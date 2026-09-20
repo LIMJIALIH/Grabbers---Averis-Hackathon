@@ -1,0 +1,781 @@
+email_id,split,category,label_id,rule,from,subject,body,bert_text,n_attachments,has_attachments,si_file,bl_file,si_text,bl_text,status,review_reason,has_defect,defect_fields,si_shipper,si_consignee,si_notify_party,si_port_of_loading,si_port_of_discharge,si_container_count,si_gross_weight_kg,bl_shipper,bl_consignee,bl_notify_party,bl_port_of_loading,bl_port_of_discharge,bl_container_count,bl_gross_weight_kg
+email_009,holdout,BL_COMPARISON,0,cmp_attached2,arlene_yamomo@aprilasia.com,TO CONFIRM DOCS _ 5ALT-19136 _ MERSIN_TURKEY _ PACIFIC OFFICE (M) SDN BHD _ YMJAI430980500,"WARNING: This email originated outside of our organisation. As a security measure, please exercise caution with E-Mail content and any links or attachments.
+
+Dear Ooi,
+
+Please find attached the shipping instruction and the draft bill of lading for I978820812 for your confirmation. Kindly verify the BL matches the SI before we release to the line.
+
+Best Regards,
+Lee Guan Cheng
+Shipping Documentation
+DID : +971 04 4938233
+APRIL Fine Paper Trading (Middle East) Fze
+#813, 4 EA, Dubai Airport Free Zone
+P.O. Box : 293775, Dubai, United Arab Emirates
+Website : www.aprilasia.com | www.paperone.com
+
+______________________________
+From: Teo Ei Leen <eileen_teo@aprilasia.com>
+Sent: Friday, January 23, 2026 3:50 PM
+Subject: RE: 5ALT-19136
+
+Please follow the previous instruction. Thank you.
+From: Teo Ei Leen <eileen_teo@aprilasia.com>
+Sent: Friday, January 16, 2026 8:38 PM
+Subject: RE: 5ALT-19136
+
+Please follow the previous instruction. Thank you.","TO CONFIRM DOCS _ 5ALT-19136 _ MERSIN_TURKEY _ PACIFIC OFFICE (M) SDN BHD _ YMJAI430980500
+WARNING: This email originated outside of our organisation. As a security measure, please exercise caution with E-Mail content and any links or attachments.
+
+Dear Ooi,
+
+Please find attached the shipping instruction and the draft bill of lading for I978820812 for your confirmation. Kindly verify the BL matches the SI before we release to the line.
+
+Best Regards,
+Lee Guan Cheng
+Shipping Documentation
+DID : +971 04 4938233
+APRIL Fine Paper Trading (Middle East) Fze
+#813, 4 EA, Dubai Airport Free Zone
+P.O. Box : 293775, Dubai, United Arab Emirates
+Website : www.aprilasia.com | www.paperone.com
+
+______________________________
+From: Teo Ei Leen <eileen_teo@aprilasia.com>
+Sent: Friday, January 23, 2026 3:50 PM
+Subject: RE: 5ALT-19136
+
+Please follow the previous instruction. Thank you.
+From: Teo Ei Leen <eileen_teo@aprilasia.com>
+Sent: Friday, January 16, 2026 8:38 PM
+Subject: RE: 5ALT-19136
+
+Please follow the previous instruction. Thank you.",2,True,email_009_SI.txt,email_009_BL.txt,"SHIPPING INSTRUCTION
+========================================
+
+Shipper (Principal or Seller): ASIA PACIFIC PAPERBOARD TRADING PTE LTD
+  80 RAFFLES PLACE, #50-01 UOB PLAZA 1; SINGAPORE 048624
+CONSIGNEE: PACIFIC OFFICE (M) SDN BHD
+  LOT 6, JALAN P/7; SECTION 13, 43650 BANDAR BARU BANGI; SELANGOR, MALAYSIA
+NOTIFY PARTY: PACIFIC OFFICE (M) SDN BHD
+Load Port: PORT KLANG (WESTPORT), MALAYSIA (MYPKG)
+Discharge Port: MERSIN, TURKEY (TRMER)
+No. of Containers or Packages: 1 x 40'HC
+Gross Wt (kgs): 20,381 KG
+Vessel: NAP 914 V.BS007
+Voy.: QI540A
+Description: COATED IVORY BOARD
+HS Code: 48105900
+Booking Reference: I978820812
+OC No.: 5ALT-19136
+Freight: PREPAID","BILL OF LADING (DRAFT)
+========================================
+
+Shipper/Exporter: ASIA PACIFIC PAPERBOARD TRADING PTE LTD
+  80 RAFFLES PLACE, #50-01 UOB PLAZA 1; SINGAPORE 048624
+Consignee (Non-Negotiable): PACIFIC OFFICE (M) SDN BHD
+  LOT 6, JALAN P/7; SECTION 13, 43650 BANDAR BARU BANGI; SELANGOR, MALAYSIA
+Notify: PACIFIC OFFICE (M) SDN BHD
+POL: PORT KLANG (WESTPORT), MALAYSIA (MYPKG)
+Discharge Port: MERSIN, TURKEY (TRMER)
+No. of Containers or Packages: 1 x 40'HC
+Gross Weight (KG): 20,381 KG
+Ocean Vessel: NAP 914 V.BS007
+Voy. No: QI540A
+Description of Goods: COATED IVORY BOARD
+Bill of Lading No.: YMJAI430980500
+Booking No.: I978820812
+Freight: PREPAID",OK,,False,,ASIA PACIFIC PAPERBOARD TRADING,PACIFIC OFFICE,PACIFIC OFFICE,PORT KLANG MALAYSIA,MERSIN TURKEY,1,20381.0,ASIA PACIFIC PAPERBOARD TRADING,PACIFIC OFFICE,PACIFIC OFFICE,PORT KLANG MALAYSIA,MERSIN TURKEY,1,20381.0
+email_026,holdout,SPAM,4,spam_promo,admin@secure-mailbox.org,Increase your shipping revenue with this ONE weird trick,"LIMITED TIME OFFER! Get 90% off the #1 logistics automation suite. Trusted by 10,000+ companies. Buy now before this deal expires!","Increase your shipping revenue with this ONE weird trick
+LIMITED TIME OFFER! Get 90% off the #1 logistics automation suite. Trusted by 10,000+ companies. Buy now before this deal expires!",0,False,,,,,OK,,False,,,,,,,,,,,,,,,
+email_052,holdout,BL_COMPARISON,0,cmp_attached2,chella.perumal@psabdp.com,REQUEST BL DRAFT _ PO 26162_ ASIA SYMBOL FOOD SERVICE BOARD__150MT,"Dear Sathiyavani,
+
+Please find attached the shipping instruction and the draft bill of lading for 36971179 for your confirmation. Kindly verify the BL matches the SI before we release to the line.
+
+Best Regards,
+Hari Mardianto
+Shipping Documentation
+DID : +971 04 4938208
+APRIL Fine Paper Trading (Middle East) Fze
+#813, 4 EA, Dubai Airport Free Zone
+P.O. Box : 293775, Dubai, United Arab Emirates
+Website : www.aprilasia.com | www.paperone.com
+
+______________________________
+From: Sales Desk <sales@roxcel.at>
+Sent: Monday, January 12, 2026 10:24 AM
+Subject: RE: 5RFR-80893
+
+Please follow the previous instruction. Thank you.
+From: Documentation <docs@vitalsolutions.sg>
+Sent: Tuesday, January 24, 2026 10:33 PM
+Subject: RE: 5RFR-80893
+
+Please follow the previous instruction. Thank you.","REQUEST BL DRAFT _ PO 26162_ ASIA SYMBOL FOOD SERVICE BOARD__150MT
+Dear Sathiyavani,
+
+Please find attached the shipping instruction and the draft bill of lading for 36971179 for your confirmation. Kindly verify the BL matches the SI before we release to the line.
+
+Best Regards,
+Hari Mardianto
+Shipping Documentation
+DID : +971 04 4938208
+APRIL Fine Paper Trading (Middle East) Fze
+#813, 4 EA, Dubai Airport Free Zone
+P.O. Box : 293775, Dubai, United Arab Emirates
+Website : www.aprilasia.com | www.paperone.com
+
+______________________________
+From: Sales Desk <sales@roxcel.at>
+Sent: Monday, January 12, 2026 10:24 AM
+Subject: RE: 5RFR-80893
+
+Please follow the previous instruction. Thank you.
+From: Documentation <docs@vitalsolutions.sg>
+Sent: Tuesday, January 24, 2026 10:33 PM
+Subject: RE: 5RFR-80893
+
+Please follow the previous instruction. Thank you.",2,True,email_052_SI.txt,email_052_BL.txt,"SHIPPING INSTRUCTION
+========================================
+
+SHIPPER: APRIL FAR EAST (M) SDN BHD
+  TOWER 2, AVENUE 5, LEVEL 6; BANGSAR SOUTH CITY, NO. 8 JALAN KERINCHI; 59200 KUALA LUMPUR, MALAYSIA
+CONSIGNEE: BALL & DOGGETT AUSTRALIA PTY LTD
+  43-45 METROPOLITAN ROAD; ENFIELD NSW 2136, AUSTRALIA
+Notify Party: BALL & DOGGETT AUSTRALIA PTY LTD
+POL: SINGAPORE (SGSIN)
+Port of Discharge: PYEONGTAEK, SOUTH KOREA (KRPTK)
+Total Containers: 6 x 40'HC
+Gross Wt (kgs): 135,930 KG
+Export Carrier (vessel, voyage): INDO SUKSES 65 V.51NW1
+Voy. No: 11S
+Description of Goods: ASIA SYMBOL FOOD SERVICE BOARD (CUPSTOCK/HI-BULK) - ALLINONE
+HS Code: 48109200
+Booking Reference: 36971179
+OC No.: 5RFR-80893
+Freight: PREPAID","BILL OF LADING (DRAFT)
+========================================
+
+Shipper (Principal or Seller): APRIL FAR EAST (M) SDN BHD
+  TOWER 2, AVENUE 5, LEVEL 6; BANGSAR SOUTH CITY, NO. 8 JALAN KERINCHI; 59200 KUALA LUMPUR, MALAYSIA
+To the Order of: BALL & DOGGETT AUSTRALIA PTY LTD
+  43-45 METROPOLITAN ROAD; ENFIELD NSW 2136, AUSTRALIA
+Notify: BALL & DOGGETT AUSTRALIA PTY LTD
+POL: SINGAPORE (SGSIN)
+Discharge Port: PYEONGTAEK, SOUTH KOREA (KRPTK)
+No. of Containers or Packages: 6 x 40'HC
+Gross Weight毛重(KGS): 135,930 KG
+Vessel: INDO SUKSES 65 V.51NW1
+Voy. No: 11S
+Description: ASIA SYMBOL FOOD SERVICE BOARD (CUPSTOCK/HI-BULK) - ALLINONE
+BL No.: HLCUSIN986143410
+Booking Reference: 36971179
+Freight: PREPAID",OK,,False,,APRIL FAR EAST,BALL DOGGETT AUSTRALIA,BALL DOGGETT AUSTRALIA,SINGAPORE,PYEONGTAEK SOUTH KOREA,6,135930.0,APRIL FAR EAST,BALL DOGGETT AUSTRALIA,BALL DOGGETT AUSTRALIA,SINGAPORE,PYEONGTAEK SOUTH KOREA,6,135930.0
+email_061,holdout,SI_REQUEST,1,si_draft_bl_req,logistics@algurg.ae,REQUEST BL DRAFT _ PO 26320_ PAPERONE DIGITAL COPIER PAPER__132MT,"WARNING: This email originated outside of our organisation. As a security measure, please exercise caution with E-Mail content and any links or attachments.
+
+Dear Arlene,
+
+Please assist to send the draft BL for 070500262636 for checking asap.
+
+Thank you.
+
+Best Regards,
+Deswita Elvyani
+Shipping Documentation
+DID : +971 04 4938245
+APRIL Fine Paper Trading (Middle East) Fze
+#813, 4 EA, Dubai Airport Free Zone
+P.O. Box : 293775, Dubai, United Arab Emirates
+Website : www.aprilasia.com | www.paperone.com","REQUEST BL DRAFT _ PO 26320_ PAPERONE DIGITAL COPIER PAPER__132MT
+WARNING: This email originated outside of our organisation. As a security measure, please exercise caution with E-Mail content and any links or attachments.
+
+Dear Arlene,
+
+Please assist to send the draft BL for 070500262636 for checking asap.
+
+Thank you.
+
+Best Regards,
+Deswita Elvyani
+Shipping Documentation
+DID : +971 04 4938245
+APRIL Fine Paper Trading (Middle East) Fze
+#813, 4 EA, Dubai Airport Free Zone
+P.O. Box : 293775, Dubai, United Arab Emirates
+Website : www.aprilasia.com | www.paperone.com",0,False,,,,,OK,,False,,,,,,,,,,,,,,,
+email_070,holdout,GENERAL,3,gen_berthing,operations@aprilasia.com,Delivery planning Jan 2026,"Dear Team,
+
+Kindly find the daily berthing report attached. Vessel MARCOPOLO 810 V.BS005 berthed on schedule.
+
+Best,
+Operations","Delivery planning Jan 2026
+Dear Team,
+
+Kindly find the daily berthing report attached. Vessel MARCOPOLO 810 V.BS005 berthed on schedule.
+
+Best,
+Operations",0,False,,,,,OK,,False,,,,,,,,,,,,,,,
+email_072,holdout,SPAM,4,spam_prize,support@webmail-verify.co,Increase your shipping revenue with this ONE weird trick,"CONGRATULATIONS!!! Your email address has been selected in our monthly draw. Click here to claim your $1,000 gift card now: http://bit.ly/claim-prize-now","Increase your shipping revenue with this ONE weird trick
+CONGRATULATIONS!!! Your email address has been selected in our monthly draw. Click here to claim your $1,000 gift card now: http://bit.ly/claim-prize-now",0,False,,,,,OK,,False,,,,,,,,,,,,,,,
+email_108,holdout,INVOICE_QUERY,2,inv_cancel,sokyong_ooi@aprilasia.com,Total Freight - INDIA - 5APH-41862,"Dear Team,
+
+Requesting to cancel invoice 5250075652 for TOAN LUC PAPER JOINT STOCK COMPANY (5APH-41862) and reverse the PGI. Reason: booking amended.
+
+Best Regards,
+Hari Mardianto
+Shipping Documentation
+DID : +971 04 4938207
+APRIL Fine Paper Trading (Middle East) Fze
+#813, 4 EA, Dubai Airport Free Zone
+P.O. Box : 293775, Dubai, United Arab Emirates
+Website : www.aprilasia.com | www.paperone.com","Total Freight - INDIA - 5APH-41862
+Dear Team,
+
+Requesting to cancel invoice 5250075652 for TOAN LUC PAPER JOINT STOCK COMPANY (5APH-41862) and reverse the PGI. Reason: booking amended.
+
+Best Regards,
+Hari Mardianto
+Shipping Documentation
+DID : +971 04 4938207
+APRIL Fine Paper Trading (Middle East) Fze
+#813, 4 EA, Dubai Airport Free Zone
+P.O. Box : 293775, Dubai, United Arab Emirates
+Website : www.aprilasia.com | www.paperone.com",0,False,,,,,OK,,False,,,,,,,,,,,,,,,
+email_134,holdout,SPAM,4,spam_phish,admin@secure-mailbox.org,Exclusive offer: 90% OFF premium logistics software this week only,Your package could not be delivered due to unpaid customs fee of $2.99. Confirm payment within 24 hours or your parcel will be returned: http://track-parcel.info,"Exclusive offer: 90% OFF premium logistics software this week only
+Your package could not be delivered due to unpaid customs fee of $2.99. Confirm payment within 24 hours or your parcel will be returned: http://track-parcel.info",0,False,,,,,OK,,False,,,,,,,,,,,,,,,
+email_211,holdout,INVOICE_QUERY,2,inv_gr,chella.perumal@psabdp.com,Total Freight - INDIA - 5APH-40693,"Dear Team,
+
+We note the GR is still missing for invoice 5250077515. Kindly arrange to post the GR so we can proceed with billing.
+
+Best Regards,
+Mitchelle Ting
+Shipping Documentation
+DID : +971 04 4938210
+APRIL Fine Paper Trading (Middle East) Fze
+#813, 4 EA, Dubai Airport Free Zone
+P.O. Box : 293775, Dubai, United Arab Emirates
+Website : www.aprilasia.com | www.paperone.com
+
+______________________________
+From: Logistics <logistics@algurg.ae>
+Sent: Monday, December 4, 2026 1:52 AM
+Subject: RE: 5APH-40693
+
+Please follow the previous instruction. Thank you.","Total Freight - INDIA - 5APH-40693
+Dear Team,
+
+We note the GR is still missing for invoice 5250077515. Kindly arrange to post the GR so we can proceed with billing.
+
+Best Regards,
+Mitchelle Ting
+Shipping Documentation
+DID : +971 04 4938210
+APRIL Fine Paper Trading (Middle East) Fze
+#813, 4 EA, Dubai Airport Free Zone
+P.O. Box : 293775, Dubai, United Arab Emirates
+Website : www.aprilasia.com | www.paperone.com
+
+______________________________
+From: Logistics <logistics@algurg.ae>
+Sent: Monday, December 4, 2026 1:52 AM
+Subject: RE: 5APH-40693
+
+Please follow the previous instruction. Thank you.",0,False,,,,,OK,,False,,,,,,,,,,,,,,,
+email_224,holdout,INVOICE_QUERY,2,inv_dd,guancheng_lee@april.com.my,RE_ LOCAL CHARGES FOB - JETSEA - 5RUS-96954 - TELEX RELEASE CHARGES,"Dear All,
+
+Please find the D&D / detention charges for MCLSINJEA2580647. Kindly confirm the amount before we release payment.
+
+Best Regards,
+Syed Faraz Ali
+Shipping Documentation
+DID : +971 04 4938254
+APRIL Fine Paper Trading (Middle East) Fze
+#813, 4 EA, Dubai Airport Free Zone
+P.O. Box : 293775, Dubai, United Arab Emirates
+Website : www.aprilasia.com | www.paperone.com
+
+______________________________
+From: Documentation <docs@vitalsolutions.sg>
+Sent: Wednesday, January 19, 2026 11:13 AM
+Subject: RE: 5RUS-96954
+
+Please follow the previous instruction. Thank you.","RE_ LOCAL CHARGES FOB - JETSEA - 5RUS-96954 - TELEX RELEASE CHARGES
+Dear All,
+
+Please find the D&D / detention charges for MCLSINJEA2580647. Kindly confirm the amount before we release payment.
+
+Best Regards,
+Syed Faraz Ali
+Shipping Documentation
+DID : +971 04 4938254
+APRIL Fine Paper Trading (Middle East) Fze
+#813, 4 EA, Dubai Airport Free Zone
+P.O. Box : 293775, Dubai, United Arab Emirates
+Website : www.aprilasia.com | www.paperone.com
+
+______________________________
+From: Documentation <docs@vitalsolutions.sg>
+Sent: Wednesday, January 19, 2026 11:13 AM
+Subject: RE: 5RUS-96954
+
+Please follow the previous instruction. Thank you.",0,False,,,,,OK,,False,,,,,,,,,,,,,,,
+email_269,holdout,INVOICE_QUERY,2,inv_cancel,nirmala@fujitogrp.com,2107 RAK BILLING 5070146572 MISSING GR,"Dear Team,
+
+Requesting to cancel invoice 5250078655 for UAB NOVAKOPA (5RAE-12233) and reverse the PGI. Reason: booking amended.
+
+Best Regards,
+Teo Ei Leen
+Shipping Documentation
+DID : +971 04 4938219
+APRIL Fine Paper Trading (Middle East) Fze
+#813, 4 EA, Dubai Airport Free Zone
+P.O. Box : 293775, Dubai, United Arab Emirates
+Website : www.aprilasia.com | www.paperone.com","2107 RAK BILLING 5070146572 MISSING GR
+Dear Team,
+
+Requesting to cancel invoice 5250078655 for UAB NOVAKOPA (5RAE-12233) and reverse the PGI. Reason: booking amended.
+
+Best Regards,
+Teo Ei Leen
+Shipping Documentation
+DID : +971 04 4938219
+APRIL Fine Paper Trading (Middle East) Fze
+#813, 4 EA, Dubai Airport Free Zone
+P.O. Box : 293775, Dubai, United Arab Emirates
+Website : www.aprilasia.com | www.paperone.com",0,False,,,,,OK,,False,,,,,,,,,,,,,,,
+email_294,holdout,GENERAL,3,gen_outstanding,rpa.bot@aprilasia.com,daily Berthing Report - 14 JAN 2026,"Dear Team,
+
+Please find attached the list of outstanding BL (BDP SG). Kindly action the pending items.
+
+Regards,
+Documentation","daily Berthing Report - 14 JAN 2026
+Dear Team,
+
+Please find attached the list of outstanding BL (BDP SG). Kindly action the pending items.
+
+Regards,
+Documentation",0,False,,,,,OK,,False,,,,,,,,,,,,,,,
+email_325,holdout,GENERAL,3,gen_summary,hr@aprilasia.com,Pending BL Release 27_01_2026,"Dear All,
+
+Please find attached the update summary for PACIFIC SUN 1 V.251073E. Loading completed, documents to follow.
+
+Regards,
+Documentation Team","Pending BL Release 27_01_2026
+Dear All,
+
+Please find attached the update summary for PACIFIC SUN 1 V.251073E. Loading completed, documents to follow.
+
+Regards,
+Documentation Team",0,False,,,,,OK,,False,,,,,,,,,,,,,,,
+email_378,holdout,BL_COMPARISON,0,cmp_attached2,deswita_elvyani@aprilasia.com,RE_ REQUEST BL DRAFT _ PO 26893_ PAPERONE DIGITAL COPIER PAPER__252MT,"Dear Hari,
+
+Please find attached the shipping instruction and the draft bill of lading for SIJ5295806 for your confirmation. Kindly verify the BL matches the SI before we release to the line.
+
+Best Regards,
+Elisa Tukiman
+Shipping Documentation
+DID : +971 04 4938239
+APRIL Fine Paper Trading (Middle East) Fze
+#813, 4 EA, Dubai Airport Free Zone
+P.O. Box : 293775, Dubai, United Arab Emirates
+Website : www.aprilasia.com | www.paperone.com
+
+______________________________
+From: Willy Situmorang <willy_ss@aprilasia.com>
+Sent: Monday, January 20, 2026 9:30 AM
+Subject: RE: 5RFR-60138
+
+Please follow the previous instruction. Thank you.","RE_ REQUEST BL DRAFT _ PO 26893_ PAPERONE DIGITAL COPIER PAPER__252MT
+Dear Hari,
+
+Please find attached the shipping instruction and the draft bill of lading for SIJ5295806 for your confirmation. Kindly verify the BL matches the SI before we release to the line.
+
+Best Regards,
+Elisa Tukiman
+Shipping Documentation
+DID : +971 04 4938239
+APRIL Fine Paper Trading (Middle East) Fze
+#813, 4 EA, Dubai Airport Free Zone
+P.O. Box : 293775, Dubai, United Arab Emirates
+Website : www.aprilasia.com | www.paperone.com
+
+______________________________
+From: Willy Situmorang <willy_ss@aprilasia.com>
+Sent: Monday, January 20, 2026 9:30 AM
+Subject: RE: 5RFR-60138
+
+Please follow the previous instruction. Thank you.",2,True,email_378_SI.txt,email_378_BL.txt,"SHIPPING INSTRUCTION
+========================================
+
+Shipper: APRIL FAR EAST (M) SDN BHD
+  TOWER 2, AVENUE 5, LEVEL 6; BANGSAR SOUTH CITY, NO. 8 JALAN KERINCHI; 59200 KUALA LUMPUR, MALAYSIA
+Consignee (Non-Negotiable): TOAN LUC PAPER JOINT STOCK COMPANY
+  LOT B, TAN DONG HIEP B IZ; DI AN, BINH DUONG, VIETNAM
+Notify Party/Intermediate Consignee: EAST BRIGHT FZ-LLC
+Load Port: PORT KLANG (WESTPORT), MALAYSIA (MYPKG)
+PORT OF DISCHARGE: GDANSK, POLAND (PLGDN)
+Container Count: 12 x 40'HC
+Gross Weight (KG): 277,788 KG
+Vessel Name: INDO SUKSES 65 V.51NW1
+Voy. No: QI540A
+Description: PAPERONE DIGITAL COPIER PAPER
+HS Code: 48025600
+Booking Ref: SIJ5295806
+OC No.: 5RFR-60138
+Freight: PREPAID","BILL OF LADING (DRAFT)
+========================================
+
+Shipper: APRIL FAR EAST (M) SDN BHD
+  TOWER 2, AVENUE 5, LEVEL 6; BANGSAR SOUTH CITY, NO. 8 JALAN KERINCHI; 59200 KUALA LUMPUR, MALAYSIA
+Consignee: TOAN LUC PAPER JOINT STOCK COMPANY
+  LOT B, TAN DONG HIEP B IZ; DI AN, BINH DUONG, VIETNAM
+Notify Party/Intermediate Consignee: EAST BRIGHT FZ-LLC
+PORT OF LOADING: PORT KLANG (WESTPORT), MALAYSIA (MYPKG)
+Discharge Port: GDANSK, POLAND (PLGDN)
+No. of Containers or Packages: 12 x 40'HC
+Gross Wt (kgs): 277,788 KG
+Export Carrier (vessel, voyage): INDO SUKSES 65 V.51NW1
+Voyage: QI540A
+Commodity: PAPERONE DIGITAL COPIER PAPER
+B/L NUMBER: SIJ1843905
+Booking Reference: SIJ5295806
+Freight: PREPAID",OK,,False,,APRIL FAR EAST,TOAN LUC PAPER JOINT STOCK COMPANY,EAST BRIGHT,PORT KLANG MALAYSIA,GDANSK POLAND,12,277788.0,APRIL FAR EAST,TOAN LUC PAPER JOINT STOCK COMPANY,EAST BRIGHT,PORT KLANG MALAYSIA,GDANSK POLAND,12,277788.0
+email_382,holdout,SPAM,4,spam_advance_fee,offers@logistics-deals.biz,URGENT: Your email storage is full - verify account immediately,"Hello Dear, I am a bank officer with an urgent business proposal involving USD 4.5 million. Please reply with your bank details to proceed.","URGENT: Your email storage is full - verify account immediately
+Hello Dear, I am a bank officer with an urgent business proposal involving USD 4.5 million. Please reply with your bank details to proceed.",0,False,,,,,OK,,False,,,,,,,,,,,,,,,
+email_397,holdout,SI_REQUEST,1,si_inline,eileen_teo@aprilasia.com,CUST SI _ MEA _ 5RSG-22840 __ PO_25_6535,"Hi Elisa
+
+Please find Shipping instruction for 5RSG-22840.
+
+POL: PORT KLANG (WESTPORT), MALAYSIA
+POD: APAPA, NIGERIA
+
+Shipper:
+ASIA PACIFIC PAPERBOARD TRADING PTE LTD
+80 RAFFLES PLACE, #50-01 UOB PLAZA 1
+SINGAPORE 048624
+
+Consignee:
+KTP CO., LTD
+KTP BLDG., 36 SANGWON-GIL
+SEOUNGDONG-GU, SEOUL, SOUTH KOREA
+TEL:02-2285-6025
+
+Notify Party:
+KTP CO., LTD
+KTP BLDG., 36 SANGWON-GIL
+SEOUNGDONG-GU, SEOUL, SOUTH KOREA
+TEL:02-2285-6025
+
+Description of Goods:
+12X40'HC
+UNCOATED WOODFREE PAPER IN REAMS
+H.S.CODE: 48025700
+GROSS WT: 277,380 KG
+
+Shipping line: CFR TERM
+Documents Required:
+1) 3 Original invoice
+2) 3 Packing list
+3) 3 Original BL + 3 N/N
+Please revert with draft BL once available.
+
+Best Regards,
+Teo Ei Leen
+Shipping Documentation
+DID : +971 04 4938295
+APRIL Fine Paper Trading (Middle East) Fze
+#813, 4 EA, Dubai Airport Free Zone
+P.O. Box : 293775, Dubai, United Arab Emirates
+Website : www.aprilasia.com | www.paperone.com","CUST SI _ MEA _ 5RSG-22840 __ PO_25_6535
+Hi Elisa
+
+Please find Shipping instruction for 5RSG-22840.
+
+POL: PORT KLANG (WESTPORT), MALAYSIA
+POD: APAPA, NIGERIA
+
+Shipper:
+ASIA PACIFIC PAPERBOARD TRADING PTE LTD
+80 RAFFLES PLACE, #50-01 UOB PLAZA 1
+SINGAPORE 048624
+
+Consignee:
+KTP CO., LTD
+KTP BLDG., 36 SANGWON-GIL
+SEOUNGDONG-GU, SEOUL, SOUTH KOREA
+TEL:02-2285-6025
+
+Notify Party:
+KTP CO., LTD
+KTP BLDG., 36 SANGWON-GIL
+SEOUNGDONG-GU, SEOUL, SOUTH KOREA
+TEL:02-2285-6025
+
+Description of Goods:
+12X40'HC
+UNCOATED WOODFREE PAPER IN REAMS
+H.S.CODE: 48025700
+GROSS WT: 277,380 KG
+
+Shipping line: CFR TERM
+Documents Required:
+1) 3 Original invoice
+2) 3 Packing list
+3) 3 Original BL + 3 N/N
+Please revert with draft BL once available.
+
+Best Regards,
+Teo Ei Leen
+Shipping Documentation
+DID : +971 04 4938295
+APRIL Fine Paper Trading (Middle East) Fze
+#813, 4 EA, Dubai Airport Free Zone
+P.O. Box : 293775, Dubai, United Arab Emirates
+Website : www.aprilasia.com | www.paperone.com",0,False,,,,,OK,,False,,,,,,,,,,,,,,,
+email_428,holdout,BL_COMPARISON,0,cmp_check,deswita_elvyani@aprilasia.com,TO CONFIRM DOCS _ 5RAE-81079 _ FREMANTLE_AUSTRALIA _ HABRAS INTERNATIONAL LIMITED _ SIN255021306,"Dear Elisa,
+
+Pls assist to check the draft BL against the SI for PO and revert with any discrepancy asap. Draft BL No. SIN255021306.
+
+Best Regards,
+Hari Mardianto
+Shipping Documentation
+DID : +971 04 4938258
+APRIL Fine Paper Trading (Middle East) Fze
+#813, 4 EA, Dubai Airport Free Zone
+P.O. Box : 293775, Dubai, United Arab Emirates
+Website : www.aprilasia.com | www.paperone.com
+
+______________________________
+From: Chella Perumal <chella.perumal@psabdp.com>
+Sent: Friday, December 11, 2026 3:22 PM
+Subject: RE: 5RAE-81079
+
+Please follow the previous instruction. Thank you.
+From: Aziz Tejani <aziztz@safqa.co.ke>
+Sent: Friday, December 11, 2026 9:40 PM
+Subject: RE: 5RAE-81079
+
+Please follow the previous instruction. Thank you.","TO CONFIRM DOCS _ 5RAE-81079 _ FREMANTLE_AUSTRALIA _ HABRAS INTERNATIONAL LIMITED _ SIN255021306
+Dear Elisa,
+
+Pls assist to check the draft BL against the SI for PO and revert with any discrepancy asap. Draft BL No. SIN255021306.
+
+Best Regards,
+Hari Mardianto
+Shipping Documentation
+DID : +971 04 4938258
+APRIL Fine Paper Trading (Middle East) Fze
+#813, 4 EA, Dubai Airport Free Zone
+P.O. Box : 293775, Dubai, United Arab Emirates
+Website : www.aprilasia.com | www.paperone.com
+
+______________________________
+From: Chella Perumal <chella.perumal@psabdp.com>
+Sent: Friday, December 11, 2026 3:22 PM
+Subject: RE: 5RAE-81079
+
+Please follow the previous instruction. Thank you.
+From: Aziz Tejani <aziztz@safqa.co.ke>
+Sent: Friday, December 11, 2026 9:40 PM
+Subject: RE: 5RAE-81079
+
+Please follow the previous instruction. Thank you.",2,True,email_428_SI.txt,email_428_BL.txt,"SHIPPING INSTRUCTION
+========================================
+
+SHIPPER: APRIL FINE PAPER TRADING
+  ON BEHALF OF VITAL SOLUTIONS PTE LTD; 77 ROBINSON ROAD, #21-01; SINGAPORE 068896
+Consignee: HABRAS INTERNATIONAL LIMITED
+  OFFICE 1204, THE BURLINGTON TOWER; BUSINESS BAY, DUBAI, UAE
+Notify: HABRAS INTERNATIONAL LIMITED
+POL: PORT KLANG (WESTPORT), MALAYSIA (MYPKG)
+Port of Discharge: FREMANTLE, AUSTRALIA (AUFRE)
+No. of Containers or Packages: 4 x 20'GP
+GROSS WEIGHT: 88,308 KG
+Export Carrier (vessel, voyage): MMSS 2507 V.257087E
+Voy.: BS012
+Description of Goods: ASIA SYMBOL FOOD SERVICE BOARD (CUPSTOCK/HI-BULK) - ALLINONE
+HS Code: 48109200
+Booking Reference: SIN090691309
+OC No.: 5RAE-81079
+Freight: PREPAID","BILL OF LADING (DRAFT)
+========================================
+
+SHIPPER: APRIL FINE PAPER TRADING
+  ON BEHALF OF VITAL SOLUTIONS PTE LTD; 77 ROBINSON ROAD, #21-01; SINGAPORE 068896
+CONSIGNEE: HABRAS INTERNATIONAL LIMITED
+  OFFICE 1204, THE BURLINGTON TOWER; BUSINESS BAY, DUBAI, UAE
+Notify Party: HABRAS INTERNATIONAL LIMITED
+POL: PORT KLANG (WESTPORT), MALAYSIA (MYPKG)
+Discharge Port: FREMANTLE, AUSTRALIA (AUFRE)
+Total Containers: 4 x 20'GP
+Gross Wt (kgs): 88,308 KG
+Vessel: MMSS 2507 V.257087E
+Voy.: BS012
+Description of Goods: ASIA SYMBOL FOOD SERVICE BOARD (CUPSTOCK/HI-BULK) - ALLINONE
+Bill of Lading No.: SIN255021306
+Booking Ref: SIN090691309
+Freight: PREPAID",OK,,False,,APRIL FINE PAPER TRADING,HABRAS INTERNATIONAL,HABRAS INTERNATIONAL,PORT KLANG MALAYSIA,FREMANTLE AUSTRALIA,4,88308.0,APRIL FINE PAPER TRADING,HABRAS INTERNATIONAL,HABRAS INTERNATIONAL,PORT KLANG MALAYSIA,FREMANTLE AUSTRALIA,4,88308.0
+email_438,holdout,SI_REQUEST,1,si_inline,deswita_elvyani@aprilasia.com,RE_ CUST SI _ MEA _ 5SUS-59045 __ PO_25_6014,"Hi Ooi
+
+Please find Shipping instruction for 5SUS-59045.
+
+POL: NANTONG, CHINA
+POD: APAPA, NIGERIA
+
+Shipper:
+APRIL FAR EAST (M) SDN BHD
+TOWER 2, AVENUE 5, LEVEL 6
+BANGSAR SOUTH CITY, NO. 8 JALAN KERINCHI
+59200 KUALA LUMPUR, MALAYSIA
+
+Consignee:
+INTERNATIONAL FOREST PRODUCTS LLC
+6 HOLLIS STREET
+SUITE 100
+FRAMINGHAM, MA 01702, USA
+
+Notify Party:
+INTERNATIONAL FOREST PRODUCTS LLC
+6 HOLLIS STREET
+SUITE 100
+FRAMINGHAM, MA 01702, USA
+
+Description of Goods:
+15X40'HC
+ASIA SYMBOL FOOD SERVICE BOARD (CUPSTOCK/HI-BULK) - ALLINONE
+H.S.CODE: 48109200
+GROSS WT: 311,145 KG
+
+Shipping line: CFR TERM
+Documents Required:
+1) 3 Original invoice
+2) 3 Packing list
+3) 3 Original BL + 3 N/N
+Please revert with draft BL once available.
+
+Best Regards,
+Elisa Tukiman
+Shipping Documentation
+DID : +971 04 4938220
+APRIL Fine Paper Trading (Middle East) Fze
+#813, 4 EA, Dubai Airport Free Zone
+P.O. Box : 293775, Dubai, United Arab Emirates
+Website : www.aprilasia.com | www.paperone.com
+
+______________________________
+From: Export Team <exports@ifpla.com>
+Sent: Monday, January 2, 2026 3:36 AM
+Subject: RE: 5SUS-59045
+
+Please follow the previous instruction. Thank you.","RE_ CUST SI _ MEA _ 5SUS-59045 __ PO_25_6014
+Hi Ooi
+
+Please find Shipping instruction for 5SUS-59045.
+
+POL: NANTONG, CHINA
+POD: APAPA, NIGERIA
+
+Shipper:
+APRIL FAR EAST (M) SDN BHD
+TOWER 2, AVENUE 5, LEVEL 6
+BANGSAR SOUTH CITY, NO. 8 JALAN KERINCHI
+59200 KUALA LUMPUR, MALAYSIA
+
+Consignee:
+INTERNATIONAL FOREST PRODUCTS LLC
+6 HOLLIS STREET
+SUITE 100
+FRAMINGHAM, MA 01702, USA
+
+Notify Party:
+INTERNATIONAL FOREST PRODUCTS LLC
+6 HOLLIS STREET
+SUITE 100
+FRAMINGHAM, MA 01702, USA
+
+Description of Goods:
+15X40'HC
+ASIA SYMBOL FOOD SERVICE BOARD (CUPSTOCK/HI-BULK) - ALLINONE
+H.S.CODE: 48109200
+GROSS WT: 311,145 KG
+
+Shipping line: CFR TERM
+Documents Required:
+1) 3 Original invoice
+2) 3 Packing list
+3) 3 Original BL + 3 N/N
+Please revert with draft BL once available.
+
+Best Regards,
+Elisa Tukiman
+Shipping Documentation
+DID : +971 04 4938220
+APRIL Fine Paper Trading (Middle East) Fze
+#813, 4 EA, Dubai Airport Free Zone
+P.O. Box : 293775, Dubai, United Arab Emirates
+Website : www.aprilasia.com | www.paperone.com
+
+______________________________
+From: Export Team <exports@ifpla.com>
+Sent: Monday, January 2, 2026 3:36 AM
+Subject: RE: 5SUS-59045
+
+Please follow the previous instruction. Thank you.",0,False,,,,,OK,,False,,,,,,,,,,,,,,,
+email_440,holdout,SI_REQUEST,1,si_draft_bl_req,elisa_tukiman@april.com.my,RE_ REQUEST BL DRAFT _ PO 26468_ ASIA SYMBOL FOOD SERVICE BOARD__69MT,"Dear Najiha,
+
+Please assist to send the draft BL for ONEYSINF47068 for checking asap.
+
+Thank you.
+
+Best Regards,
+Najiha Nur Hanna
+Shipping Documentation
+DID : +971 04 4938219
+APRIL Fine Paper Trading (Middle East) Fze
+#813, 4 EA, Dubai Airport Free Zone
+P.O. Box : 293775, Dubai, United Arab Emirates
+Website : www.aprilasia.com | www.paperone.com
+
+______________________________
+From: Hari Mardianto <hari_mardianto@aprilasia.com>
+Sent: Friday, January 25, 2026 3:30 PM
+Subject: RE: 5RCY-10390
+
+Please follow the previous instruction. Thank you.
+From: Syed Faraz Ali <faraz_ali@aprilasia.com>
+Sent: Friday, December 24, 2026 7:50 AM
+Subject: RE: 5RCY-10390
+
+Please follow the previous instruction. Thank you.","RE_ REQUEST BL DRAFT _ PO 26468_ ASIA SYMBOL FOOD SERVICE BOARD__69MT
+Dear Najiha,
+
+Please assist to send the draft BL for ONEYSINF47068 for checking asap.
+
+Thank you.
+
+Best Regards,
+Najiha Nur Hanna
+Shipping Documentation
+DID : +971 04 4938219
+APRIL Fine Paper Trading (Middle East) Fze
+#813, 4 EA, Dubai Airport Free Zone
+P.O. Box : 293775, Dubai, United Arab Emirates
+Website : www.aprilasia.com | www.paperone.com
+
+______________________________
+From: Hari Mardianto <hari_mardianto@aprilasia.com>
+Sent: Friday, January 25, 2026 3:30 PM
+Subject: RE: 5RCY-10390
+
+Please follow the previous instruction. Thank you.
+From: Syed Faraz Ali <faraz_ali@aprilasia.com>
+Sent: Friday, December 24, 2026 7:50 AM
+Subject: RE: 5RCY-10390
+
+Please follow the previous instruction. Thank you.",0,False,,,,,OK,,False,,,,,,,,,,,,,,,
+email_463,holdout,GENERAL,3,gen_rpa,operations@aprilasia.com,10_01_2026 - UPDATE SUMMARY MARCOPOLO 810 V.BS005,"This is an automated notification. The India HSS SD Billing Process for MARCOPOLO 810 V.BS005 has completed successfully. No action required.
+
+-- RPA Bot","10_01_2026 - UPDATE SUMMARY MARCOPOLO 810 V.BS005
+This is an automated notification. The India HSS SD Billing Process for MARCOPOLO 810 V.BS005 has completed successfully. No action required.
+
+-- RPA Bot",0,False,,,,,OK,,False,,,,,,,,,,,,,,,
