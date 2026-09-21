@@ -123,9 +123,11 @@ export function derive(raw: RawCase): Case {
   if (category !== "BL_COMPARISON") return { ...base, status: "OK", reason: null };
   const review = (reason: Reason): Case => ({ ...base, status: "NEEDS_REVIEW", reason });
   if (raw.attachments.length < 2 || raw.attachments.some((a) => !a.url)) return review("missing_attachment");
-  if (raw.attachments.every((a) => !a.text)) return review("unreadable");
+  // Fields with real values (e.g. from Gemini reading the PDFs) outrank the text checks: PDFs never carry attachment text.
+  const extracted = raw.fields.some((f) => f.si.trim() || f.bl.trim());
+  if (!extracted && raw.attachments.every((a) => !a.text)) return review("unreadable");
   // Both files opened but neither carries a single SI/BL field label: someone attached the wrong thing.
-  if (!raw.attachments.some((a) => LOOKS_LIKE_SI_BL.test(a.text ?? ""))) return review("wrong_doc_type");
+  if (!extracted && !raw.attachments.some((a) => LOOKS_LIKE_SI_BL.test(a.text ?? ""))) return review("wrong_doc_type");
   if (!raw.fields.length) return review("unreadable");
   if (raw.fields.some((f) => !f.si.trim() || !f.bl.trim())) return review("missing_value");
   const defects = raw.fields.filter((f) => !matches(f)).map((f) => f.key);

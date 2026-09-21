@@ -45,6 +45,7 @@ function verdict(c: Case) {
 export function CasePane({ c }: { c: Case }) {
   const { resolutions, corrections, approve, extract, demo } = useCases();
   const [extracting, setExtracting] = useState(false);
+  const [extractErr, setExtractErr] = useState(false);
   const { account } = useAccount();
   const res = resolutions[c.id];
   const fixes = corrections[c.id] ?? {};
@@ -168,9 +169,12 @@ export function CasePane({ c }: { c: Case }) {
         )}
         {isBl && !demo && (
           <button className="btn btn-sm justify-self-start" disabled={extracting}
-            onClick={() => { setExtracting(true); extract(c.id).catch((e) => console.error(e)).finally(() => setExtracting(false)); }}>
+            onClick={() => { setExtracting(true); setExtractErr(false); extract(c.id).catch((e) => { console.error(e); setExtractErr(true); }).finally(() => setExtracting(false)); }}>
             {extracting ? "Extracting…" : "Extract with Gemini"}
           </button>
+        )}
+        {isBl && !demo && extractErr && (
+          <p className="text-[13px] text-defect">Extraction failed. Gemini may be busy; try again in a moment.</p>
         )}
         {isBl && rows.length === 0 && c.status !== "NEEDS_REVIEW" && (
           <p className="card p-5 text-ink-2">No fields could be extracted, so there is nothing to compare.</p>
