@@ -34,3 +34,17 @@ backend/resources/sdoc-hackathon-docker/data_v2/ground_truth.json
 /frontend/package-lock.json
 /frontend/tsconfig.tsbuildinfo
 /frontend/.git-history-backup/
+note.md
+
+# Local test suites and standalone mock fixtures (kept on disk).
+/backend/tests/
+/backend/data_prep/test_pipeline.py
+/backend/examples/
+/backend/scripts/create_mock_emails.py
+
+# Local agent instructions and planning notes.
+/frontend/AGENTS.md
+/frontend/CLAUDE.md
+/core-feature_checklist.md
+/Refrence
+/Slides

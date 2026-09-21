@@ -11,6 +11,27 @@ from app.services.attachment_text import extract_attachment_text
 from app.services.document_fields import extract_comparison_fields
 
 
+def _attachment_error(
+    bundle_dir: Path,
+    attachment_name: str,
+    attachment_path: Path,
+    text: str | None,
+    exception: Exception | None = None,
+) -> str | None:
+    attachments_root = (bundle_dir / "attachments").resolve()
+    if not attachment_path.is_file():
+        return "missing_attachment"
+    if not attachment_path.is_relative_to(attachments_root):
+        return "invalid_attachment_path"
+    if exception is not None:
+        return f"extraction_failed: {type(exception).__name__}"
+    if not text:
+        if attachment_path.suffix.lower() == ".pdf":
+            return "ocr_needed"
+        return "unreadable"
+    return None
+
+
 def load_inbox(bundle_dir: Path) -> list[dict[str, object]]:
     inbox_dir = bundle_dir / "inbox"
     if not inbox_dir.is_dir():
@@ -21,22 +42,29 @@ def load_inbox(bundle_dir: Path) -> list[dict[str, object]]:
 def export_bundle(bundle_dir: Path) -> dict[str, object]:
     emails: list[dict[str, object]] = []
     for email in load_inbox(bundle_dir):
+        email_attachments = list(email.get("attachments", []))
         attachment_records: list[dict[str, object]] = []
-        for attachment_name in email.get("attachments", []):
+        for attachment_name in email_attachments:
             attachment_path = (bundle_dir / attachment_name).resolve()
+            text = None
+            error = None
+            if attachment_path.is_file() and attachment_path.is_relative_to((bundle_dir / "attachments").resolve()):
+                try:
+                    text = extract_attachment_text(attachment_path)
+                except Exception as exc:  # pragma: no cover - surfaced in export output
+                    error = _attachment_error(bundle_dir, attachment_name, attachment_path, None, exc)
+            else:
+                error = _attachment_error(bundle_dir, attachment_name, attachment_path, None)
             record: dict[str, object] = {
                 "name": Path(attachment_name).name,
                 "path": attachment_name,
                 "exists": attachment_path.is_file(),
                 "type": attachment_path.suffix.lower().lstrip(".") or None,
-                "text": None,
-                "error": None,
+                "text": text,
+                "error": error,
             }
-            if attachment_path.is_file():
-                try:
-                    record["text"] = extract_attachment_text(attachment_path)
-                except Exception as exc:  # pragma: no cover - surfaced in export output
-                    record["error"] = f"{type(exc).__name__}: {exc}"
+            if error is None and text is not None:
+                record["error"] = _attachment_error(bundle_dir, attachment_name, attachment_path, text)
             attachment_records.append(record)
 
         emails.append(
@@ -45,7 +73,7 @@ def export_bundle(bundle_dir: Path) -> dict[str, object]:
                 "subject": email.get("subject", ""),
                 "from": email.get("from", ""),
                 "attachments": attachment_records,
-                "comparison_fields": extract_comparison_fields(list(email.get("attachments", [])), bundle_dir),
+                "comparison_fields": [] if not email_attachments else extract_comparison_fields(email_attachments, bundle_dir),
             }
         )
 

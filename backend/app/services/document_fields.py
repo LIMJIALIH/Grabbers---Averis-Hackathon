@@ -120,6 +120,10 @@ def _extract_label_value(text: str, key: str) -> str:
             for next_line in lines[index + 1 :]:
                 next_match = label_regex.match(next_line)
                 if not next_match:
+                    if re.match(r"^\(?KGS?\)?\s*[:\-]\s*\d", next_line, re.IGNORECASE):
+                        return next_line
+                    if re.match(r"^\(?KG\)?\s*[:\-]\s*\d", next_line, re.IGNORECASE):
+                        return next_line
                     continue
                 next_remainder = next_match.group(1).strip(" :-")
                 if next_remainder and re.search(r"\d", next_remainder):

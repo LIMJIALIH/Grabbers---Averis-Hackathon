@@ -40,5 +40,6 @@ class VerificationUploadResponse(BaseModel):
     case: DashboardCase
     classification: ClassificationResponse
     verification: VerificationResult | None = None
+    normalization_source: Literal["json", "eml", "text", "gemma"] = "json"
     gemma_used: bool = False
     warnings: list[str] = Field(default_factory=list)

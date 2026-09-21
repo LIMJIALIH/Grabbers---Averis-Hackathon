@@ -250,7 +250,7 @@ Email tags and attachment types are separate: `DL` is preserved as supplied, wit
 
 The response retains the original suggested document fields and adds per-document `status`, `error`, `warnings`, and `segments`. Segments carry page numbers for PDF, sheet/row locations for XLSX, and block locations for DOCX. `pages` is null for non-PDF documents because pagination is not established by these parsers. Top-level `status` is `ok`, `partial`, `error`, or `review_required`; `requires_human_review` also flags warnings and ambiguous types. Stage 5 must check these fields before consuming text.
 
-OCR requires Tesseract with English language data on the server PATH. Sparse PDF pages (fewer than 40 non-whitespace characters) trigger OCR, including pages in mixed digital/scanned PDFs. OCR errors are preserved per page. Embedded Word/Excel images and dense PDFs containing additional scanned regions need manual review; this implementation does not promise full layout reconstruction. Excel formula expressions are retained and flagged for review, not evaluated. See `backend/README.md` for local mock execution and limitations.
+PDFs are passed directly to Gemini Native PDF vision during Stage 5, including scanned PDFs; Tesseract is not required. PDFium text extraction remains available for document-type detection. Embedded Word/Excel images and dense PDFs containing additional scanned regions need manual review; this implementation does not promise full layout reconstruction. Excel formula expressions are retained and flagged for review, not evaluated. See `backend/README.md` for local mock execution and limitations.
 
 ---
 
@@ -261,17 +261,29 @@ OCR requires Tesseract with English language data on the server PATH. Sparse PDF
 
 `POST /api/v1/ingestion` now calls `app.services.verification.process_email`:
 Stage 4 `ingest_email` reads attachments once, then Stage 5
-`extract_ingested_fields` consumes its parsed text and calls
-`extract_fields_from_text`. Source segments, OCR results, and ingestion errors
+`extract_ingested_fields` consumes its parsed text, calls two distinct Gemini models
+independently for each eligible SI/BL document, then normalizes each model's raw
+values in Python. Only agreed non-null values enter SI/BL comparison.
+Source segments, OCR results, and ingestion errors
 remain in the response alongside `fields`, `extraction_status`, and
 `review_reasons`. The response's `requires_human_review` covers both stages;
 `status` continues to describe ingestion. Missing/mismatched fields, ambiguous
 roles, duplicate SI/BL documents, and partial parsing require review.
 
-This implementation uses deterministic field extraction. The LLM and report
-contract described below remain design targets. Legacy cases/export callers
-retain their file-based extraction entry points. See `backend/README.md` for
-the automated endpoint and Python usage.
+The ingestion endpoint uses two Gemini extractors for all seven fields. Defaults
+are `gemini-3.8-flash` and `gemini-3.7-flash`, configurable through separate model
+settings. `document_extractions` exposes two `attempts` (model, raw fields,
+normalized fields, issues, error), seven `field_checks`, and consensus
+`normalized_fields`. Checks are `agreed`, `disagreed`, `missing_or_invalid`, or
+`model_error`. Disputed fields remain null; missing values never count as agreement.
+Each model receives only the original document text, never the other's answer.
+Missing credentials or either model's failure requires review and leaves all
+consensus fields for that document unresolved; successful attempts remain visible.
+No OpenAI or regex fallback is used. The existing `confidence` is still a comparison
+score, not model confidence. Legacy cases/export callers retain their deterministic
+file-based extraction entry points. Port alias mapping, company-suffix mapping,
+fuzzy matching, and the suggested final report contract remain design targets.
+See `backend/README.md` for configuration and Python usage.
 
 ### Objective
 Extract the required shipping fields from SI and BL documents, normalize them, compare them, and generate the final discrepancy report.
@@ -289,7 +301,10 @@ Use an LLM with structured output to extract the required fields:
 - `container_count`
 - `gross_weight_kg`
 
-For the MVP, start with **one extraction model**. A second independent model can be added later as a verification layer if time allows.
+The implemented MVP uses **two distinct Gemini models** with agreement required
+after normalization. Sequential processing uses two requests per document (four
+per SI/BL pair, before bounded retries). Free-tier quotas apply; agreement can
+catch conflicting outputs but cannot rule out shared extraction or OCR errors.
 
 #### B. Field Normalization
 Normalize extracted values before comparison.

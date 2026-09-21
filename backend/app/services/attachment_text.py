@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-import base64
-import re
 import xml.etree.ElementTree as ET
 import zipfile
-import zlib
 from pathlib import Path
+
+from contextlib import closing
+from threading import Lock
+
+PDF_LOCK = Lock()
 
 NAMESPACE = {
     "main": "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
@@ -75,82 +77,20 @@ def _read_xlsx(path: Path) -> str:
     return _clean_chunks(chunks)
 
 
-def _pdf_unescape(value: bytes) -> str:
-    result = bytearray()
-    index = 0
-    while index < len(value):
-        if value[index:index + 1] != b"\\":
-            result.extend(value[index:index + 1])
-            index += 1
-            continue
-        index += 1
-        if index >= len(value):
-            break
-        escaped = value[index:index + 1]
-        index += 1
-        if escaped == b"n":
-            result.extend(b"\n")
-        elif escaped == b"r":
-            result.extend(b"\r")
-        elif escaped == b"t":
-            result.extend(b"\t")
-        elif escaped == b"b":
-            result.extend(b"\b")
-        elif escaped == b"f":
-            result.extend(b"\f")
-        elif escaped in {b"(", b")", b"\\"}:
-            result.extend(escaped)
-        elif escaped[:1].isdigit():
-            octal = escaped
-            while index < len(value) and len(octal) < 3 and value[index:index + 1].isdigit():
-                octal += value[index:index + 1]
-                index += 1
-            result.append(int(octal, 8))
-        else:
-            result.extend(escaped)
-    return result.decode("latin-1", errors="replace")
-
-
-def _decode_pdf_stream(raw: bytes) -> bytes:
-    candidates = [raw.strip()]
-    for candidate in list(candidates):
-        for adobe in (True, False):
-            try:
-                ascii85 = base64.a85decode(candidate, adobe=adobe)
-            except Exception:
-                continue
-            candidates.append(ascii85)
-    for candidate in candidates:
-        try:
-            return zlib.decompress(candidate)
-        except Exception:
-            continue
-    return raw
-
-
 def _read_pdf(path: Path) -> str:
-    data = path.read_bytes()
-    chunks: list[str] = []
-    marker = 0
-    while True:
-        start = data.find(b"stream", marker)
-        if start == -1:
-            break
-        start += len(b"stream")
-        while start < len(data) and data[start:start + 1] in {b"\r", b"\n", b" "}:
-            start += 1
-        end = data.find(b"endstream", start)
-        if end == -1:
-            break
-        payload = _decode_pdf_stream(data[start:end].strip())
-        for match in re.finditer(rb"\((?:\\.|[^\\])*?\)\s*Tj", payload):
-            literal = match.group(0)
-            chunks.append(_pdf_unescape(literal[1:literal.rfind(b")")]))
-        for match in re.finditer(rb"\[(.*?)\]\s*TJ", payload, re.S):
-            for literal in re.findall(rb"\((?:\\.|[^\\])*?\)", match.group(1)):
-                chunks.append(_pdf_unescape(literal[1:-1]))
-        marker = end + len(b"endstream")
-    return _clean_chunks(chunks)
+    try:
+        import pypdfium2 as pdfium
+
+        with PDF_LOCK, pdfium.PdfDocument(path) as pdf:
+            chunks = []
+            for index in range(min(len(pdf), 100)):
+                with closing(pdf[index]) as page:
+                    with closing(page.get_textpage()) as textpage:
+                        chunks.append(textpage.get_text_range())
+            return _clean_chunks(chunks)
+    except Exception:
+        # An unreadable preview must not prevent the inbox from loading.
+        return ""
 
 
 def extract_attachment_text(path: Path) -> str:
