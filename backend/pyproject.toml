@@ -12,7 +12,6 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "pydantic-settings>=2.5",
     "langchain>=1.0",
-    "google-genai>=1.75,<2",
     "langchain-community>=0.3",
     "pypdfium2>=4.30,<6",
     "Pillow>=11,<13",
@@ -21,6 +20,8 @@ dependencies = [
     "pypdf>=5,<7",
     "torch>=2.6,<3",
     "transformers>=5,<6",
+    "google-genai>=2.3,<3",
+    "python-multipart>=0.0.20,<1",
 ]
 
 [project.optional-dependencies]

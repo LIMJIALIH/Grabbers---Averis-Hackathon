@@ -4,8 +4,9 @@
 export const CATEGORIES = ["BL_COMPARISON", "SI_REQUEST", "INVOICE_QUERY", "GENERAL", "SPAM"] as const;
 export type Category = (typeof CATEGORIES)[number];
 export type Status = "OK" | "MISMATCH" | "NEEDS_REVIEW";
-export type Reason = "wrong_doc_type" | "missing_attachment" | "unreadable" | "missing_value";
+export type Reason = "classification_uncertain" | "wrong_doc_type" | "missing_attachment" | "unreadable" | "missing_value";
 export const REASON_WORDS: Record<Reason, string> = {
+  classification_uncertain: "classification uncertain",
   wrong_doc_type: "wrong document",
   missing_attachment: "missing attachment",
   unreadable: "unreadable",
@@ -52,6 +53,11 @@ export type RawCase = {
   body: string;
   fields: Field[];
   attachments: Attachment[];
+  category?: Category;
+  classification_confidence?: number;
+  classification_source?: "bert" | "gemma_fallback" | "bert_low_confidence";
+  classification_requires_review?: boolean;
+  classification_reason?: string | null;
   received_at?: number; // ms since epoch; optional until the API returns it
 };
 export type Case = {
@@ -65,7 +71,7 @@ export type Case = {
   status: Status;
   reason: Reason | null;
   defects: string[];
-  confidence: number | null; // lowest field confidence, 0-100
+  confidence: number | null; // lowest deterministic SI/BL comparison score, 0-100
   receivedAt: number | null;
 };
 
@@ -107,7 +113,9 @@ function categorise(raw: RawCase): Category {
 const LOOKS_LIKE_SI_BL = /shipper|consignee|notify party|port of (loading|discharge)|load port|container|gross weight/i;
 
 export function derive(raw: RawCase): Case {
-  const category = categorise(raw);
+  // New responses carry the backend hybrid decision. The rule fallback keeps old
+  // saved fixtures readable but is no longer the live queue's primary classifier.
+  const category = raw.category ?? categorise(raw);
   const base = {
     id: raw.id,
     subject: raw.vessel,
@@ -120,8 +128,9 @@ export function derive(raw: RawCase): Case {
     defects: [] as string[],
     confidence: raw.fields.length ? Math.min(...raw.fields.map((f) => f.confidence)) : null,
   };
-  if (category !== "BL_COMPARISON") return { ...base, status: "OK", reason: null };
   const review = (reason: Reason): Case => ({ ...base, status: "NEEDS_REVIEW", reason });
+  if (raw.classification_requires_review) return review("classification_uncertain");
+  if (category !== "BL_COMPARISON") return { ...base, status: "OK", reason: null };
   if (raw.attachments.length < 2 || raw.attachments.some((a) => !a.url)) return review("missing_attachment");
   // Fields with real values (e.g. from Gemini reading the PDFs) outrank the text checks: PDFs never carry attachment text.
   const extracted = raw.fields.some((f) => f.si.trim() || f.bl.trim());
@@ -151,7 +160,7 @@ export function summarise(cases: Case[], res: Record<string, Resolution>) {
   };
   const total = cases.length;
   const byCategory = count(CATEGORIES, (c) => c.category);
-  const reasons = count(["wrong_doc_type", "missing_attachment", "unreadable", "missing_value"] as const, (c) =>
+  const reasons = count(["classification_uncertain", "wrong_doc_type", "missing_attachment", "unreadable", "missing_value"] as const, (c) =>
     isOpen(c, res) ? c.reason : null,
   );
   const fieldDefects = count(FIELDS.map(([k]) => k), () => null) as Record<string, number>;
