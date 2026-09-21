@@ -43,7 +43,9 @@ function verdict(c: Case) {
 }
 
 export function CasePane({ c }: { c: Case }) {
-  const { resolutions, corrections, approve } = useCases();
+  const { resolutions, corrections, approve, extract } = useCases();
+  const [extracting, setExtracting] = useState(false);
+  const [extractErr, setExtractErr] = useState(false);
   const { account } = useAccount();
   const res = resolutions[c.id];
   const fixes = corrections[c.id] ?? {};
@@ -165,6 +167,15 @@ export function CasePane({ c }: { c: Case }) {
             </p>
           </section>
         )}
+        {isBl && (
+          <button className="btn btn-sm justify-self-start" disabled={extracting}
+            onClick={() => { setExtracting(true); setExtractErr(false); extract(c.id).catch((e) => { console.error(e); setExtractErr(true); }).finally(() => setExtracting(false)); }}>
+            {extracting ? "Extracting…" : "Extract with Gemini"}
+          </button>
+        )}
+        {isBl && extractErr && (
+          <p className="text-[13px] text-defect">Extraction failed. Gemini may be busy; try again in a moment.</p>
+        )}
         {isBl && rows.length === 0 && c.status !== "NEEDS_REVIEW" && (
           <p className="card p-5 text-ink-2">No fields could be extracted, so there is nothing to compare.</p>
         )}
@@ -235,7 +246,7 @@ function FixModal({ state, c, onClose }: { state: Field | null; c: Case; onClose
         <form className="grid gap-4" onSubmit={(e) => { e.preventDefault(); correct(c.id, state.key, value.trim(), reason.trim()); onClose(); }}>
           <div className="flex flex-wrap gap-2">
             {[["SI", state.si], ["BL", state.bl]].map(([l, v]) => v && (
-              <button type="button" key={l} className="btn btn-sm num" onClick={() => setValue(v)}>Use {l}: {v.length > 28 ? `${v.slice(0, 27)}…` : v}</button>
+              <button type="button" key={l} aria-pressed={value === v} className={cn("btn btn-sm num", value === v && "btn-primary")} onClick={() => setValue(v)}>Use {l}: {v.length > 28 ? `${v.slice(0, 27)}…` : v}</button>
             ))}
           </div>
           <label className="grid gap-1.5"><span className="label">Corrected value</span>

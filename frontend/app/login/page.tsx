@@ -23,8 +23,8 @@ export default function Login() {
           Reads your shipping inbox and checks every draft Bill of Lading (<Abbr t="BL" />) against the Shipping Instruction (<Abbr t="SI" />) it came from.
         </p>
 
-        <button className="btn btn-primary mt-6 w-full" onClick={enter}>Continue with the sample inbox</button>
-        <p className="mt-2 text-center text-[12px] text-ink-3">520 sample emails. Works offline.</p>
+        <button className="btn btn-primary mt-6 w-full" onClick={enter}>Continue</button>
+        <p className="mt-2 text-center text-[12px] text-ink-3">Reads the live mailbox from the backend.</p>
 
         <div className="my-6 h-px bg-line" />
         <button className="btn w-full" disabled>Continue with Google</button>

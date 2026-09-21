@@ -1,7 +1,7 @@
 "use client";
 
 import { useCases } from "@/lib/app-state";
-import { CategoryDonut, DefectBars, StraightThrough, TrendChart } from "@/components/overview/widgets";
+import { CategoryDonut, DefectBars, StraightThrough } from "@/components/overview/widgets";
 import { Loading, OfflineNote, Skeleton } from "@/components/ui";
 
 /* Ordered by what a decision gets made from, not by what looks good. */
@@ -17,7 +17,6 @@ export default function Insights() {
         <DefectBars s={summary} />
         <CategoryDonut s={summary} />
       </div>
-      <TrendChart />
     </div>
   );
 }
