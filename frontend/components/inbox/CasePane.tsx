@@ -43,7 +43,8 @@ function verdict(c: Case) {
 }
 
 export function CasePane({ c }: { c: Case }) {
-  const { resolutions, corrections, approve } = useCases();
+  const { resolutions, corrections, approve, extract, demo } = useCases();
+  const [extracting, setExtracting] = useState(false);
   const { account } = useAccount();
   const res = resolutions[c.id];
   const fixes = corrections[c.id] ?? {};
@@ -164,6 +165,12 @@ export function CasePane({ c }: { c: Case }) {
               Confidence is extraction confidence, 0–100. The tick on each bar is the {HITL_THRESHOLD} gate; under it goes to a human. Values are normalised (case, spacing, port codes).
             </p>
           </section>
+        )}
+        {isBl && !demo && (
+          <button className="btn btn-sm justify-self-start" disabled={extracting}
+            onClick={() => { setExtracting(true); extract(c.id).catch((e) => console.error(e)).finally(() => setExtracting(false)); }}>
+            {extracting ? "Extracting…" : "Extract with Gemini"}
+          </button>
         )}
         {isBl && rows.length === 0 && c.status !== "NEEDS_REVIEW" && (
           <p className="card p-5 text-ink-2">No fields could be extracted, so there is nothing to compare.</p>

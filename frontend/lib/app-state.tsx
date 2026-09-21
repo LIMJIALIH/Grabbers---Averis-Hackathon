@@ -94,6 +94,7 @@ type CasesState = {
   demo: boolean;
   syncedAt: number | null;
   reload: () => void;
+  extract: (id: string) => Promise<void>;
   resolutions: Record<string, Resolution>;
   corrections: Corrections;
   approve: (id: string) => void;
@@ -194,6 +195,15 @@ function CasesProvider({ enabled, demo, children }: { enabled: boolean; demo: bo
     return () => { live = false; };
   }, [enabled, demo, tick]);
 
+  /** Gemini native-PDF extraction for one email (POST /cases/{id}/extract); replaces that case's fields. */
+  const extract = useCallback(async (id: string) => {
+    const r = await fetch(`/api/v1/cases/${encodeURIComponent(id)}/extract`, { method: "POST" });
+    if (!r.ok) throw new Error(`Backend answered ${r.status}`);
+    const { fields } = (await r.json()) as { fields: RawCase["fields"] };
+    setRaw((all) => all.map((c) => (c.id === id ? { ...c, fields } : c)));
+    recordUserAction({ actionType: "SYSTEM_NOTE", emailId: id, description: `Re-extracted fields for ${id} with Gemini` });
+  }, []);
+
   const cases = useMemo(() => raw.map(derive), [raw]);
   const summary = useMemo(() => summarise(cases, resolutions), [cases, resolutions]);
 
@@ -222,10 +232,10 @@ function CasesProvider({ enabled, demo, children }: { enabled: boolean; demo: bo
 
   const value = useMemo<CasesState>(
     () => ({
-      cases, summary, load, offline, demo, syncedAt, resolutions, corrections, approve, escalate, correct,
+      cases, summary, load, offline, demo, syncedAt, resolutions, corrections, approve, escalate, correct, extract,
       reload: () => setTick((t) => t + 1),
     }),
-    [cases, summary, load, offline, demo, syncedAt, resolutions, corrections, approve, escalate, correct],
+    [cases, summary, load, offline, demo, syncedAt, resolutions, corrections, approve, escalate, correct, extract],
   );
   return <CasesCtx.Provider value={value}>{children}</CasesCtx.Provider>;
 }
