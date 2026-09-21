@@ -16,13 +16,7 @@ MAX_CELLS = 200_000
 PDF_LOCK = Lock()  # PDFium must not be called concurrently from API worker threads.
 
 
-def ocr_image(image) -> str:
-    import pytesseract
-
-    return pytesseract.image_to_string(image, lang="eng", timeout=60).strip()
-
-
-def parse_pdf(path: Path, result: IngestedDocument, ocr) -> None:
+def parse_pdf(path: Path, result: IngestedDocument) -> None:
     import pypdfium2 as pdfium
 
     with PDF_LOCK, pdfium.PdfDocument(path) as pdf:
@@ -35,19 +29,10 @@ def parse_pdf(path: Path, result: IngestedDocument, ocr) -> None:
                 with closing(pdf[index]) as page:
                     with closing(page.get_textpage()) as textpage:
                         segment.text = textpage.get_text_range().strip()
-                    # Sparse pages can contain a header above a scanned shipping form.
-                    if len(re.sub(r"\s", "", segment.text)) < 40:
-                        segment.ocr_used = True
-                        scale = min(3, 4000 / max(page.get_size()))
-                        with closing(page.render(scale=scale)) as bitmap:
-                            with bitmap.to_pil() as image:
-                                recognized = ocr(image)
-                        if recognized.strip():
-                            segment.text = recognized.strip()
-                        elif not segment.text:
-                            segment.error = "No readable text found on page"
+                    # Gemini receives the original PDF for native visual understanding.
+                    # This extracted text remains useful for document type detection only.
             except Exception as exc:
-                segment.error = f"Page parsing/OCR failed ({type(exc).__name__})"
+                segment.error = f"PDF page parsing failed ({type(exc).__name__})"
             result.segments.append(segment)
 
 
@@ -110,7 +95,7 @@ def infer_type(filename: str, text: str) -> str:
     return matches[0] if len(matches) == 1 else "UNKNOWN"
 
 
-def ingest_email(email: ClassifiedEmail, attachment_root: Path, *, ocr=ocr_image) -> IngestionResult:
+def ingest_email(email: ClassifiedEmail, attachment_root: Path) -> IngestionResult:
     """Paths are relative to attachment_root; never fetch arbitrary files or URLs."""
     if email.requires_human_review:
         return IngestionResult(email_id=email.email_id, tag=email.tag, status="review_required", requires_human_review=True)
@@ -130,7 +115,8 @@ def ingest_email(email: ClassifiedEmail, attachment_root: Path, *, ocr=ocr_image
             if extension != Path(attachment.filename).suffix.lower():
                 raise ValueError("Filename and stored attachment extensions differ")
             if extension == ".pdf":
-                parse_pdf(path, result, ocr)
+                result.source_path = path
+                parse_pdf(path, result)
             elif extension == ".docx":
                 parse_docx(path, result)
             elif extension == ".xlsx":
@@ -147,7 +133,7 @@ def ingest_email(email: ClassifiedEmail, attachment_root: Path, *, ocr=ocr_image
                 result.document_type = infer_type(attachment.filename, result.text)
             if result.document_type == "UNKNOWN":
                 result.warnings.append("Document type is ambiguous; supply an attachment document_type or review")
-            if not result.text.strip():
+            if not result.text.strip() and result.source_path is None:
                 result.error = "No readable text extracted"
             else:
                 result.status = "partial" if any(segment.error for segment in result.segments) else "ok"

@@ -8,19 +8,22 @@ pydantic-settings>=2.5
 
 # LLM orchestration and provider integrations
 langchain>=1.0
-langchain-openai>=1.0
+google-genai>=1.75,<2
 langchain-community>=0.3
 
 # Development and API testing
 pytest>=8
 httpx>=0.27
 
-# Stage 4 document parsing (OCR also requires the Tesseract executable)
+# Stage 4 document parsing. PDFs use Gemini native vision during extraction.
 pypdfium2>=4.30,<6
-pytesseract>=0.3.13,<0.4
 Pillow>=11,<13
 python-docx>=1.2,<2
 openpyxl>=3.1.5,<4
 
 # Offline data preparation PDF extraction
 pypdf>=5,<7
+
+# Local BERT email classification
+torch>=2.6,<3
+transformers>=5,<6

@@ -1,7 +1,0 @@
-SHIPPING INSTRUCTION
-Shipper: Example Manufacturing Sdn Bhd
-Consignee: Example Trading Pte Ltd
-Port of loading: Port Klang
-Port of discharge: Singapore
-Container count: 5
-Gross weight: 12450 kg
