@@ -7,7 +7,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, MoreHorizon
 import { useCases } from "@/lib/app-state";
 import { cn } from "@/lib/utils";
 import { CATEGORIES, REASON_WORDS, categoryLabel, fieldLabel, type Case } from "@/lib/cases";
-import { CategoryPill, Confidence, Dropdown, Empty, StatusPill } from "@/components/ui";
+import { CategoryPill, Dropdown, Empty, FieldScore, StatusPill } from "@/components/ui";
 
 const PAGE = 10;
 const STATUS_RANK = { NEEDS_REVIEW: 0, MISMATCH: 1, OK: 2 } as const;
@@ -153,7 +153,7 @@ export function QueueTable() {
                 <th scope="col" className="label hidden lg:table-cell">Sender</th>
                 {th("category", "Category")}
                 {th("status", "Status")}
-                {th("confidence", "Lowest field conf.")}
+                {th("confidence", "Lowest field score")}
                 <th scope="col" className="w-12"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
@@ -178,7 +178,7 @@ export function QueueTable() {
                       {qs.resolutions[c.id] && <span className="text-[12px] text-ink-3">{qs.resolutions[c.id]}</span>}
                     </span>
                   </td>
-                  <td className="pr-3"><Confidence value={c.confidence} /></td>
+                  <td className="pr-3"><FieldScore value={c.confidence} /></td>
                   <td onClick={(e) => e.stopPropagation()}><RowMenu id={c.id} onOpen={() => open(c.id)} /></td>
                 </tr>
               ))}

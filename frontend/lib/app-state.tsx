@@ -34,7 +34,7 @@ export const useAccount = () => useContext(SessionCtx)!;
 /** One shared request. The backend re-extracts every attachment per call (~seconds, and minutes when
     calls overlap), so remounts and dev double-effects must reuse the in-flight promise. */
 let inflight: Promise<RawCase[]> | null = null;
-const TIMEOUT_MS = 20_000; // past this we report the backend as offline rather than show a shimmer forever
+const TIMEOUT_MS = 180_000; // first load may include one or more confidence-gated Gemma classifications
 function fetchCases(force: boolean) {
   if (force || !inflight)
     inflight = fetch("/api/v1/cases", { signal: AbortSignal.timeout(TIMEOUT_MS) })
