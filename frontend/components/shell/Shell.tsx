@@ -6,12 +6,11 @@ import { usePathname, useRouter } from "next/navigation";
 import { Menu } from "@base-ui/react/menu";
 import {
   Bell, Check, ChevronDown, ChevronsLeft, ChevronsRight, History, Inbox, LayoutDashboard,
-  LogOut, Mail, Menu as MenuIcon, Moon, RefreshCw, Search, SlidersHorizontal, Sun,
+  LogOut, Mail, Menu as MenuIcon, Moon, RefreshCw, Search, Sun,
 } from "lucide-react";
 import { greetingName, useAccount, useCases } from "@/lib/app-state";
 import { isOpen } from "@/lib/cases";
 import { Avatar, Logo, StatusPill, relTime, useNow } from "@/components/ui";
-import { setSignal, startScheduler } from "@/lib/modelAdmin"; // TEST-ONLY
 import { SearchPalette } from "./SearchPalette";
 import { cn } from "@/lib/utils";
 
@@ -19,7 +18,6 @@ const NAV = [
   { href: "/insights", label: "Insights", crumb: ["Work", "Insights"], Icon: LayoutDashboard },
   { href: "/", label: "Queue", crumb: ["Work", "Queue"], Icon: Inbox },
   { href: "/audit", label: "Audit", crumb: ["Work", "Audit"], Icon: History },
-  { href: "/admin", label: "Admin", crumb: ["System", "Model admin"], Icon: SlidersHorizontal }, // TEST-ONLY
 ];
 const active = (path: string, href: string) => (href === "/" ? path === "/" || path.startsWith("/case") : path.startsWith(href));
 
@@ -39,7 +37,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const router = useRouter();
   const { account, ready } = useAccount();
-  const { resolutions, corrections } = useCases();
   const narrow = useMedia("(max-width: 900px)");
   const [collapsed, setCollapsed] = useState(false);
   const [drawer, setDrawer] = useState(false);
@@ -51,13 +48,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
     try { setCollapsed(localStorage.getItem("docuverify-sidebar") === "closed"); } catch {}
   }, []);
   useEffect(() => { setDrawer(false); }, [path]);
-  // TEST-ONLY:start (retraining loop hooks)
-  // The retraining loop learns from every human decision: approvals, escalations and corrections.
-  useEffect(() => {
-    setSignal(Object.keys(resolutions).length + Object.values(corrections).reduce((n, c) => n + Object.keys(c).length, 0));
-  }, [resolutions, corrections]);
-  useEffect(() => startScheduler(), []);
-  // TEST-ONLY:end
   useEffect(() => {
     const d = drawerRef.current;
     if (d && drawer && !d.open) d.showModal();
