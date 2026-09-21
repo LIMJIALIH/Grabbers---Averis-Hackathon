@@ -24,7 +24,7 @@ def audit_payload(record):
 
 
 def disputed_consignee():
-    record = route_field(key="consignee", label="Consignee", si="Buyer Ltd", bl="Buyer Ltd")
+    record = route_field(key="consignee", label="Consignee", si="Buyer Ltd", bl="Buyer Ltd", low_confidence_ocr=True)
     return apply_verdicts(record, [verdict("a", "si", "verified"), verdict("a", "bl", "verified")],
                           [verdict("b", "si", "not_found"), verdict("b", "bl", "verified")])
 
@@ -36,7 +36,7 @@ def test_queue_includes_evidence_and_reason_for_uncertain_fields():
     assert queue[0].email_id == "email_001"
     assert queue[0].key == "consignee"
     assert queue[0].evidence[0].text == "Consignee: Buyer Ltd"
-    assert "Model-C" in queue[0].reason or "conflicting" in queue[0].reason
+    assert "conflict" in queue[0].reason
 
 
 def test_report_keeps_placeholder_until_a_person_resolves():

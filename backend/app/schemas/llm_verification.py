@@ -73,7 +73,6 @@ class FieldAudit(BaseModel):
     route: VerificationRoute
     verifier_a: list[VerifierVerdict] = Field(default_factory=list)
     verifier_b: list[VerifierVerdict] = Field(default_factory=list)
-    adjudicator: list[VerifierVerdict] = Field(default_factory=list)
     decision: Decision = "pending_verification"
     final_value: str | None = None
     suggested_resolution: str | None = None

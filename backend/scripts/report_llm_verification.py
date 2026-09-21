@@ -22,7 +22,6 @@ def main() -> None:
     decisions = Counter(field["decision"] for field in fields)
     routes = Counter(field["route"]["route"] for field in fields)
     review = [field for field in fields if field.get("requires_human_review")]
-    adjudicated = [field for field in fields if field.get("adjudicator")]
     queue = build_review_queue(audit)
     report = {
         "emails_processed": len(audit.get("emails", [])),
@@ -30,7 +29,6 @@ def main() -> None:
         "decision_counts": dict(sorted(decisions.items())),
         "route_counts": dict(sorted(routes.items())),
         "human_review_fields": len(review),
-        "adjudicated_fields": len(adjudicated),
         "approved_rate": round(decisions["approved"] / len(fields), 4) if fields else 0.0,
         "review_queue": [{"email_id": item.email_id, "key": item.key, "decision": item.decision,
                           "reason": item.reason, "evidence": [ev.model_dump() for ev in item.evidence]}

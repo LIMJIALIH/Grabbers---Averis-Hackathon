@@ -21,7 +21,6 @@ class ReviewItem(BaseModel):
     evidence: list[Evidence] = Field(default_factory=list)
     verifier_a: list[VerifierVerdict] = Field(default_factory=list)
     verifier_b: list[VerifierVerdict] = Field(default_factory=list)
-    adjudicator: list[VerifierVerdict] = Field(default_factory=list)
 
 
 class HumanDecision(BaseModel):

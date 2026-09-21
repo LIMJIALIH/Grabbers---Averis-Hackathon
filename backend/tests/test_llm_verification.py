@@ -1,7 +1,8 @@
 from app.core.config import settings
-from app.integrations.llm_verifiers import ADJUDICATOR_INSTRUCTIONS, INSTRUCTIONS, adjudication_payload
+
+from app.integrations.llm_verifiers import INSTRUCTIONS
 from app.schemas.llm_verification import Evidence, VerifierVerdict
-from app.services.llm_verification import apply_adjudication, apply_verdicts, disputed_sides, route_field
+from app.services.llm_verification import apply_verdicts, normalize_candidate, route_field
 
 
 def verdict(model, side, status, corrected=None):
@@ -25,63 +26,85 @@ def test_missing_attachment_routes_directly_to_hitl_not_ocr_or_image_verificatio
     assert "attachment is unavailable" in audit.suggested_resolution
 
 
-def test_single_clean_side_becomes_document_mismatch_when_verified():
+def test_single_clean_side_document_mismatch_requires_human_review():
     audit = route_field(key="consignee", label="Consignee", si="3S PAPER PRODUCTS SDN BHD", bl="")
     assert audit.route.route == "single_side"
     result = apply_verdicts(audit, [verdict("a", "si", "verified")], [verdict("b", "si", "verified")])
     assert result.decision == "document_mismatch"
-    assert not result.requires_human_review
+    assert result.requires_human_review
+
+
+def test_verified_document_mismatch_requires_human_review():
+    audit = route_field(key="consignee", label="Consignee", si="Buyer SI", bl="Buyer BL")
+    def value_verdict(model, side, value):
+        return VerifierVerdict(
+            model=model, key="consignee", side=side, status="verified",
+            evidence=Evidence(text=f"Consignee: {value}", source="text", label_seen="Consignee", value_seen=value),
+        )
+    result = apply_verdicts(audit, [value_verdict("a", "si", "Buyer SI"), value_verdict("a", "bl", "Buyer BL")],
+                            [value_verdict("b", "si", "Buyer SI"), value_verdict("b", "bl", "Buyer BL")])
+    assert result.decision == "document_mismatch"
+    assert result.requires_human_review
+
+
+def test_agreed_source_evidence_repairs_a_label_fragment_before_comparison():
+    audit = route_field(
+        key="notify_party", label="Notify Party",
+        si="/Intermediate Consignee: PACIFIC OFFICE (M) SDN BHD",
+        bl="PACIFIC OFFICE (M) SDN BHD",
+    )
+    def source_verdict(model, side, label):
+        return VerifierVerdict(
+            model=model, key="notify_party", side=side, status="verified",
+            evidence=Evidence(
+                text=f"{label}: PACIFIC OFFICE (M) SDN BHD", source="text",
+                label_seen=label, value_seen="PACIFIC OFFICE (M) SDN BHD",
+            ),
+        )
+    result = apply_verdicts(
+        audit,
+        [source_verdict("a", "si", "Notify Party/Intermediate Consignee"), source_verdict("a", "bl", "Notify Party")],
+        [source_verdict("b", "si", "Notify Party/Intermediate Consignee"), source_verdict("b", "bl", "Notify Party")],
+    )
+    assert result.decision == "approved"
+    assert result.final_value == "pacific office (m) sdn bhd"
 
 
 def test_all_mixed_verdicts_route_to_review():
-    audit = route_field(key="consignee", label="Consignee", si="Buyer", bl="Buyer")
+    audit = route_field(key="consignee", label="Consignee", si="Buyer SI", bl="Buyer BL")
     result = apply_verdicts(audit, [verdict("a", "si", "verified"), verdict("a", "bl", "verified")],
                             [verdict("b", "si", "not_found"), verdict("b", "bl", "verified")])
     assert result.decision == "needs_review"
     assert result.requires_human_review
-    assert disputed_sides(result) == ["si"]
+    assert "human review" in result.suggested_resolution
 
 
-def test_model_c_can_approve_a_genuine_disagreement():
-    audit = route_field(key="consignee", label="Consignee", si="Buyer Ltd", bl="Buyer Ltd")
-    apply_verdicts(audit, [verdict("a", "si", "verified"), verdict("a", "bl", "verified")],
-                   [verdict("b", "si", "not_found"), verdict("b", "bl", "verified")])
-    result = apply_adjudication(audit, [verdict("gpt-5.4", "si", "verified")])
-    assert result.decision == "approved"
-    assert result.final_value == "buyer ltd"
-    assert not result.requires_human_review
-    assert result.adjudicator[0].model == "gpt-5.4"
+def test_matching_normalized_values_skip_llm_verification():
+    audit = route_field(key="shipper", label="Shipper", si="APRIL FAR EAST (M) SDN BHD", bl="april/far-east (m) sdn_bhd")
+    assert audit.route.route == "skip"
+    assert audit.route.applicable_sides == []
+    assert audit.decision == "approved"
+    assert audit.final_value == "april far east (m) sdn bhd"
+    assert not audit.requires_human_review
 
 
-def test_incomplete_model_c_stays_in_human_review():
-    audit = route_field(key="consignee", label="Consignee", si="Buyer Ltd", bl="Buyer Ltd")
-    apply_verdicts(audit, [verdict("a", "si", "verified"), verdict("a", "bl", "verified")],
-                   [verdict("b", "si", "not_found"), verdict("b", "bl", "verified")])
-    result = apply_adjudication(audit, [])
-    assert result.decision == "needs_review"
-    assert result.requires_human_review
-
-
-def test_agreed_not_found_does_not_call_model_c():
-    audit = route_field(key="consignee", label="Consignee", si="Buyer Ltd", bl="Buyer Ltd")
+def test_agreed_not_found_stays_in_human_review():
+    audit = route_field(key="consignee", label="Consignee", si="Buyer SI", bl="Buyer BL")
     result = apply_verdicts(audit, [verdict("a", "si", "not_found"), verdict("a", "bl", "not_found")],
                             [verdict("b", "si", "not_found"), verdict("b", "bl", "not_found")])
     assert result.decision == "missing"
-    assert disputed_sides(result) == []
+    assert result.decision == "missing"
 
 
-def test_adjudicator_uses_a_different_openai_model():
-    assert settings.openai_adjudicator_model != settings.openai_verifier_model
-    assert settings.openai_verifier_b_model != settings.openai_verifier_model
-    assert settings.openai_adjudicator_model != settings.openai_verifier_b_model
-    assert ADJUDICATOR_INSTRUCTIONS != INSTRUCTIONS
-    audit = route_field(key="consignee", label="Consignee", si="Buyer Ltd", bl="Buyer Ltd")
-    apply_verdicts(audit, [verdict("a", "si", "verified"), verdict("a", "bl", "verified")],
-                   [verdict("b", "si", "not_found"), verdict("b", "bl", "verified")])
-    payload = adjudication_payload([audit], "Consignee: Buyer Ltd")
-    assert "disputed_fields" in payload
-    assert "verifier_a" in payload
-    assert "Buyer Ltd" in payload
+def test_verifiers_use_different_openai_models():
+    assert settings.openai_verifier_model != settings.openai_verifier_b_model
+    assert "evidence-only" in INSTRUCTIONS
+
+
+def test_field_normalization_casefolds_then_normalizes_whitespace_and_separators():
+    normalized, rules = normalize_candidate("consignee", "  ACME/Trading--Sdn_Bhd  ")
+    assert normalized == "acme trading sdn bhd"
+    assert rules == ["casefold", "normalize_whitespace", "normalize_separators"]
 
 
 def test_low_confidence_ocr_requires_image_for_both_verifiers():

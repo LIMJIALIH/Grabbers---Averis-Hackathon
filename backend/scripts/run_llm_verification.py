@@ -7,15 +7,16 @@ implemented; this command never lets a text-only model approve those records.
 
 import argparse
 import json
+import random
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.integrations.llm_verifiers import adjudicate_openai, verify_openai, verify_openai_b
+from app.integrations.llm_verifiers import verify_openai, verify_openai_b
 from app.schemas.llm_verification import FieldAudit
-from app.services.llm_verification import apply_adjudication, apply_verdicts, disputed_sides
+from app.services.llm_verification import apply_verdicts
 
 
 def main() -> None:
@@ -24,6 +25,8 @@ def main() -> None:
     parser.add_argument("extractions", type=Path)
     parser.add_argument("--email-id")
     parser.add_argument("--limit", type=int, default=1, help="Maximum emails to send; calibration-safe default is 1.")
+    parser.add_argument("--random", action="store_true", help="Randomly sample eligible emails instead of using export order.")
+    parser.add_argument("--seed", type=int, help="Optional seed for a repeatable random sample; requires --random.")
     parser.add_argument("--output", type=Path, default=Path("exports/llm_verification_audit.json"))
     parser.add_argument("--live", action="store_true", help="Required before any provider call is made.")
     args = parser.parse_args()
@@ -36,6 +39,10 @@ def main() -> None:
         if (not args.email_id or email["email_id"] == args.email_id)
         and any(field["route"]["route"] in {"single_side", "dual_side"} for field in email.get("fields", []))
     ]
+    if args.seed is not None and not args.random:
+        parser.error("--seed requires --random")
+    if args.random:
+        random.Random(args.seed).shuffle(eligible)
     selected = eligible[:args.limit]
     output = []
     for email in selected:
@@ -53,24 +60,12 @@ def main() -> None:
                 for audit in routed:
                     audit.decision = "needs_review"
                     audit.requires_human_review = True
-                    audit.suggested_resolution = f"Verifier call failed ({type(exc).__name__}); retry this email after the provider is available."
+                    audit.suggested_resolution = f"Verifier call failed ({type(exc).__name__}: {exc}); retry this email after the provider is available."
                 output.append({"email_id": email["email_id"], "fields": [audit.model_dump() for audit in audits]})
                 continue
             for audit in routed:
                 apply_verdicts(audit, [item for item in a if item.side in audit.route.applicable_sides and _matches(item, audit)],
                                [item for item in b if item.side in audit.route.applicable_sides and _matches(item, audit)])
-            disputed = [audit for audit in routed if disputed_sides(audit)]
-            if disputed:
-                try:
-                    c = adjudicate_openai(disputed, source_text, required_images)
-                except Exception as exc:
-                    for audit in disputed:
-                        audit.decision = "needs_review"
-                        audit.requires_human_review = True
-                        audit.suggested_resolution = f"Model-C call failed ({type(exc).__name__}); send this field to human review."
-                else:
-                    for audit in disputed:
-                        apply_adjudication(audit, [item for item in c if item.side in audit.route.applicable_sides and _matches(item, audit)])
         output.append({"email_id": email["email_id"], "fields": [audit.model_dump() for audit in audits]})
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps({"generated_at": datetime.now(timezone.utc).isoformat(), "emails": output}, indent=2), encoding="utf-8")

@@ -117,7 +117,7 @@ def save_audit(path: Path, audit: dict) -> None:
 
 def _item(email_id: str, record: FieldAudit) -> ReviewItem:
     evidence = [
-        item.evidence for group in (record.verifier_a, record.verifier_b, record.adjudicator)
+        item.evidence for group in (record.verifier_a, record.verifier_b)
         for item in group if item.evidence and item.evidence.text
     ]
     return ReviewItem(
@@ -130,7 +130,6 @@ def _item(email_id: str, record: FieldAudit) -> ReviewItem:
         evidence=evidence,
         verifier_a=record.verifier_a,
         verifier_b=record.verifier_b,
-        adjudicator=record.adjudicator,
     )
 
 

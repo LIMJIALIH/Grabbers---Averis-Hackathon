@@ -19,7 +19,6 @@ class Settings(BaseSettings):
     openai_api_key: SecretStr | None = None
     openai_verifier_model: str = "gpt-5.4-mini"
     openai_verifier_b_model: str = "gpt-4.1-mini"
-    openai_adjudicator_model: str = "gpt-5.4"
     verification_audit_path: Path = BACKEND_DIR / "exports" / "llm_verification_audit.json"
 
 

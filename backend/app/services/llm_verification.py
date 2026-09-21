@@ -17,9 +17,22 @@ HITL_DECISIONS = ("needs_review", "mislabeled", "missing", "unreadable", "ambigu
 
 
 def normalize_candidate(key: str, raw: str) -> tuple[str, list[str]]:
-    """Return a comparison value and an auditable list of rules that fired."""
-    value = " ".join(raw.split())
-    rules = ["collapse_whitespace"] if value != raw else []
+    """Return a comparison value using the shared field-comparison pipeline.
+
+    Values are compared only after case-folding, whitespace normalization, and
+    separator normalization, in that order.
+    """
+    value = raw.casefold()
+    rules = ["casefold"] if value != raw else []
+    whitespace_normalized = " ".join(value.split())
+    if whitespace_normalized != value:
+        rules.append("normalize_whitespace")
+    value = whitespace_normalized
+    separators_normalized = re.sub(r"[/_.-]+", " ", value)
+    separators_normalized = " ".join(separators_normalized.split())
+    if separators_normalized != value:
+        rules.append("normalize_separators")
+    value = separators_normalized
     if key == "gross_weight_kg" and value:
         compact = value.replace(",", "")
         if compact != value:
@@ -34,11 +47,6 @@ def normalize_candidate(key: str, raw: str) -> tuple[str, list[str]]:
         if digits and digits != value:
             value = digits
             rules.append("container_count_canonicalize")
-    else:
-        folded = value.casefold()
-        if folded != value:
-            value = folded
-            rules.append("casefold")
     return value, rules
 
 
@@ -73,6 +81,9 @@ def route_field(
         route = VerificationRoute(key=key, label=label, route="single_side", applicable_sides=[present],
                                   reason="Only one cleanly extracted document contains a candidate value.",
                                   requires_source_image=image)
+    elif si_normalized == bl_normalized and not image:
+        route = VerificationRoute(key=key, label=label, route="skip", applicable_sides=[],
+                                  reason="The SI and BL values match after deterministic normalization.")
     else:
         route = VerificationRoute(key=key, label=label, route="dual_side", applicable_sides=["si", "bl"],
                                   reason="Both documents contain candidates and require independent verification.",
@@ -84,6 +95,10 @@ def route_field(
                                       if "attachment is missing" in route.reason
                                       else "Both SI and BL are blank after clean extraction; confirm whether this required field is absent.")
         audit.requires_human_review = True
+    elif route.route == "skip":
+        audit.decision = "approved"
+        audit.final_value = si_normalized
+        audit.suggested_resolution = "SI and BL values match after deterministic normalization."
     return audit
 
 
@@ -108,16 +123,6 @@ def decide_side(a: VerifierVerdict, b: VerifierVerdict) -> tuple[Decision, str |
     return "needs_review", None, True
 
 
-def disputed_sides(audit: FieldAudit) -> list[FieldSide]:
-    """Return sides where complete A/B verdicts disagree and need Model-C."""
-    expected = set(audit.route.applicable_sides)
-    a_by_side = {item.side: item for item in audit.verifier_a}
-    b_by_side = {item.side: item for item in audit.verifier_b}
-    if set(a_by_side) != expected or set(b_by_side) != expected:
-        return []
-    return [side for side in expected if decide_side(a_by_side[side], b_by_side[side])[0] == "needs_review"]
-
-
 def apply_verdicts(audit: FieldAudit, a: Iterable[VerifierVerdict], b: Iterable[VerifierVerdict]) -> FieldAudit:
     """Apply independent responses and identify document mismatches.
 
@@ -134,40 +139,13 @@ def apply_verdicts(audit: FieldAudit, a: Iterable[VerifierVerdict], b: Iterable[
         audit.requires_human_review = True
         audit.suggested_resolution = "One or both verifier responses are incomplete; rerun the disputed field."
         return audit
-    if disputed_sides(audit):
-        audit.decision = "needs_review"
-        audit.requires_human_review = True
-        audit.suggested_resolution = "Evidence is conflicting; send only this field to Model-C."
-        return audit
     outcomes = {side: decide_side(a_by_side[side], b_by_side[side]) for side in expected}
-    return _finalize_field(audit, outcomes)
-
-
-def apply_adjudication(audit: FieldAudit, c: Iterable[VerifierVerdict]) -> FieldAudit:
-    """Resolve A/B disagreements with Model-C. Incomplete C stays in HITL."""
-    sides = set(disputed_sides(audit))
-    audit.adjudicator = [item for item in c if item.key == audit.key and item.side in audit.route.applicable_sides]
-    if not sides:
-        return audit
-    c_by_side = {item.side: item for item in audit.adjudicator}
-    if set(c_by_side) < sides:
+    if any(decision == "needs_review" for decision, _, _ in outcomes.values()):
         audit.decision = "needs_review"
         audit.requires_human_review = True
-        audit.suggested_resolution = "Model-C response is incomplete; send this field to human review."
+        audit.suggested_resolution = "The independent verifier evidence conflicts; send this field to human review."
         return audit
-    a_by_side = {item.side: item for item in audit.verifier_a}
-    b_by_side = {item.side: item for item in audit.verifier_b}
-    outcomes = {}
-    for side in audit.route.applicable_sides:
-        if side in sides:
-            verdict = c_by_side[side]
-            outcomes[side] = decide_side(verdict, verdict)
-        else:
-            outcomes[side] = decide_side(a_by_side[side], b_by_side[side])
-    result = _finalize_field(audit, outcomes)
-    if not result.requires_human_review:
-        result.suggested_resolution = "Model-C resolved the verifier disagreement from source evidence."
-    return result
+    return _finalize_field(audit, outcomes)
 
 
 def _finalize_field(audit: FieldAudit, outcomes: dict[FieldSide, tuple[Decision, str | None, bool]]) -> FieldAudit:
@@ -179,24 +157,48 @@ def _finalize_field(audit: FieldAudit, outcomes: dict[FieldSide, tuple[Decision,
         audit.suggested_resolution = "Evidence is conflicting or incomplete; send only this field to human review."
         return audit
     values = {candidate.side: candidate.normalized for candidate in audit.candidates}
+    for side in audit.route.applicable_sides:
+        evidence_value = _agreed_evidence_value(audit, side)
+        if evidence_value is not None:
+            values[side] = evidence_value
     for side, (decision, corrected, _) in outcomes.items():
         if decision == "auto_corrected" and corrected:
             values[side] = corrected
     if audit.route.route == "single_side":
         audit.decision = "document_mismatch"
         audit.final_value = values[audit.route.applicable_sides[0]]
-        audit.requires_human_review = False
-        audit.suggested_resolution = "Present-side value is verified; the cleanly extracted opposite document does not list this field."
+        audit.requires_human_review = True
+        audit.suggested_resolution = "Present-side value is verified, but the cleanly extracted opposite document does not list this field; send to human review."
     elif values["si"] != values["bl"]:
         audit.decision = "document_mismatch"
-        audit.requires_human_review = False
-        audit.suggested_resolution = "Both document-side values are verified but differ; review as a document mismatch."
+        audit.requires_human_review = True
+        audit.suggested_resolution = "Both document-side values are verified but differ; send to human review."
     else:
         audit.decision = "approved"
         audit.final_value = values["si"]
         audit.requires_human_review = False
         audit.suggested_resolution = None
     return audit
+
+
+def _agreed_evidence_value(audit: FieldAudit, side: FieldSide) -> str | None:
+    """Use an extracted source value only when both verifiers independently agree.
+
+    This repairs candidates that accidentally include a label fragment while
+    preserving the fail-closed behavior for missing or conflicting evidence.
+    """
+    a_by_side = {item.side: accept_known_alias(item) for item in audit.verifier_a}
+    b_by_side = {item.side: accept_known_alias(item) for item in audit.verifier_b}
+    a, b = a_by_side.get(side), b_by_side.get(side)
+    if not a or not b or a.status != "verified" or b.status != "verified":
+        return None
+    a_value = (a.evidence.value_seen or "").strip()
+    b_value = (b.evidence.value_seen or "").strip()
+    if not a_value or not b_value:
+        return None
+    normalized_a, _ = normalize_candidate(audit.key, a_value)
+    normalized_b, _ = normalize_candidate(audit.key, b_value)
+    return normalized_a if normalized_a == normalized_b else None
 
 
 def accept_known_alias(item: VerifierVerdict) -> VerifierVerdict:
@@ -225,12 +227,8 @@ def _fold_label(value: str) -> str:
 
 
 def refresh_field(audit: FieldAudit) -> FieldAudit:
-    """Recompute decisions from stored A/B/C verdicts after alias or finalize fixes."""
-    stored_c = list(audit.adjudicator)
-    apply_verdicts(audit, audit.verifier_a, audit.verifier_b)
-    if disputed_sides(audit) and stored_c:
-        apply_adjudication(audit, stored_c)
-    return audit
+    """Recompute decisions from stored A/B verdicts after alias or finalize fixes."""
+    return apply_verdicts(audit, audit.verifier_a, audit.verifier_b)
 
 
 def _status(value: str) -> str:

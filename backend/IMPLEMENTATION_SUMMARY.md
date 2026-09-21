@@ -11,7 +11,6 @@ Implemented:
 - Bundle-level extraction export.
 - OCR recovery for scanned PDFs, including rendered evidence images and per-field confidence.
 - Independent OpenAI verifier adapters (two models) with structured evidence responses.
-- Model-C adjudication on genuine A/B disagreements, using the OpenAI API with a different model.
 - HITL queue with source evidence and reason; a person can confirm or correct a field, then the comparison report refreshes from that decision.
 - Pre-routing, HITL routing, field-level decisions, audit output, and batch metrics.
 
@@ -38,7 +37,7 @@ Not yet implemented:
 - Container Count
 - Gross Weight (kg)
 
-It recognizes aliases such as `POL`, `POD`, `P/D`, and `Gross Wt`, then normalizes whitespace, container counts, and weight units. The original `confidence` is an SI/BL comparison score, **not** an LLM confidence or probability:
+It recognizes aliases such as `POL`, `POD`, `P/D`, and `Gross Wt`. Before a field comparison, text values are case-folded, whitespace is normalized, and separators (`/`, `_`, `.`, `-`) are normalized. Container counts and weight units then use their field-specific canonical forms. The original `confidence` is an SI/BL comparison score, **not** an LLM confidence or probability:
 
 | Score | Meaning |
 |---:|---|
@@ -60,15 +59,13 @@ The checker is evidence-grounded and fail-closed:
 1. [`scripts/plan_llm_verification.py`](scripts/plan_llm_verification.py) routes every field before any provider call.
 2. Two OpenAI models receive the same batched document request independently; neither sees the other verifier's response.
 3. Each verifier confirms the requested label and candidate value, supplies source quote/location, and returns `verified`, `incorrect`, `mislabeled`, `not_found`, `ambiguous`, or `unreadable`.
-4. [`app/services/llm_verification.py`](app/services/llm_verification.py) makes deterministic decisions. Mixed A/B verdicts go to Model-C, not silent approval. Agreed missing/unreadable/ambiguous cases stay in HITL.
-5. Model-C reuses `DOCUVERIFY_OPENAI_API_KEY` with `DOCUVERIFY_OPENAI_ADJUDICATOR_MODEL` (default `gpt-5.4`, distinct from A and B). It only runs on disputed field-sides and must cite source evidence. Incomplete C remains HITL.
-6. [`scripts/run_llm_verification.py`](scripts/run_llm_verification.py) writes the audit. It sends only `dual_side` and `single_side` records and requires an explicit `--live` flag.
+4. [`app/services/llm_verification.py`](app/services/llm_verification.py) makes deterministic decisions. Mixed A/B verdicts go directly to human review; agreed missing/unreadable/ambiguous cases also stay in HITL.
+5. [`scripts/run_llm_verification.py`](scripts/run_llm_verification.py) writes the audit. It sends only `dual_side` and `single_side` records and requires an explicit `--live` flag.
 
 Provider adapters are in [`app/integrations/llm_verifiers.py`](app/integrations/llm_verifiers.py). Keep credentials only in local `.env`:
 
 - `DOCUVERIFY_OPENAI_API_KEY` / `DOCUVERIFY_OPENAI_VERIFIER_MODEL` (A, default `gpt-5.4-mini`)
 - `DOCUVERIFY_OPENAI_VERIFIER_B_MODEL` (B, default `gpt-4.1-mini`; same OpenAI key, different model)
-- `DOCUVERIFY_OPENAI_ADJUDICATOR_MODEL` (C, default `gpt-5.4`; same OpenAI key, different from A and B)
 
 Use [`.env.example`](.env.example) as the safe template. `.env` is Git-ignored and must never be committed.
 
@@ -78,11 +75,12 @@ Use [`.env.example`](.env.example) as the safe template. `.env` is Git-ignored a
 |---|---|---|
 | SI or BL attachment missing | `hitl` / `missing` | No |
 | Both values blank after clean extraction | `hitl` / `missing` | No |
+| Both values match after deterministic normalization | `skip` / `approved` | No |
 | PDF unreadable or `ocr_needed` | `ocr_recovery` | No, until OCR succeeds |
 | One side cleanly blank but its attachment exists | `single_side` | Verify the present side with both models |
 | Both values present | `dual_side` | Verify SI and BL with both models |
 
-A verified `single_side` value becomes `document_mismatch`, not an extraction error. A **missing attachment** always goes to HITL.
+A verified `single_side` value becomes `document_mismatch`, not an extraction error. Every document mismatch is sent to HITL for confirmation. A **missing attachment** always goes to HITL.
 
 ### OCR recovery and image evidence
 
@@ -167,6 +165,9 @@ From `backend/`:
   exports/attachment_extraction_ocr.json \
   --limit 20 --live \
   --output exports/llm_verification_audit.json
+
+# Add --random to sample eligible emails instead of taking export order.
+# Use --seed 42 as well when the random sample must be repeatable.
 
 # 5. Summarize decisions and the HITL queue
 .venv/bin/python scripts/report_llm_verification.py \
