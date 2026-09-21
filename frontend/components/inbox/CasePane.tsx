@@ -242,7 +242,7 @@ function FixModal({ state, c, onClose }: { state: Field | null; c: Case; onClose
         <form className="grid gap-4" onSubmit={(e) => { e.preventDefault(); correct(c.id, state.key, value.trim(), reason.trim()); onClose(); }}>
           <div className="flex flex-wrap gap-2">
             {[["SI", state.si], ["BL", state.bl]].map(([l, v]) => v && (
-              <button type="button" key={l} className="btn btn-sm num" onClick={() => setValue(v)}>Use {l}: {v.length > 28 ? `${v.slice(0, 27)}…` : v}</button>
+              <button type="button" key={l} aria-pressed={value === v} className={cn("btn btn-sm num", value === v && "btn-primary")} onClick={() => setValue(v)}>Use {l}: {v.length > 28 ? `${v.slice(0, 27)}…` : v}</button>
             ))}
           </div>
           <label className="grid gap-1.5"><span className="label">Corrected value</span>
