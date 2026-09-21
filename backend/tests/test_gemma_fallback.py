@@ -35,3 +35,11 @@ def test_unreadable_attachment_uses_gemma_and_requires_review(tmp_path):
     assert result.documents[0].document_type == "SI"
     assert result.fields[0].si == "ALPHA PAPER"
     assert "Gemma 4 fallback" in result.documents[0].warnings[0]
+
+
+def test_gemma_numeric_json_values_are_coerced_to_text():
+    result = GemmaDocumentExtraction.model_validate(
+        {"container_count": 2, "gross_weight_kg": 20000}
+    )
+    assert result.container_count == "2"
+    assert result.gross_weight_kg == "20000"

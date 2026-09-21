@@ -52,6 +52,8 @@ type Case = {
   body: string;
   attachments: { name: string; url: string | null; text: string | null }[];
   state: "review" | "approved" | "escalated";
+  gemmaUsed?: boolean;
+  processingWarnings?: string[];
 };
 type VerificationUploadResponse = {
   case: Case;
@@ -72,6 +74,13 @@ const matches = (f: Field) =>
   (f.key === "port_of_loading" &&
     f.si === "MYTPP" &&
     f.bl.trim().toLowerCase() === "tanjung pelepas");
+const formatCaseTime = (value: string) => {
+  if (!value) return "";
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime())
+    ? value
+    : parsed.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+};
 function Badge({
   children,
   tone = "neutral",
@@ -245,30 +254,46 @@ export default function Page() {
       if (file !== emailFiles[0]) formData.append("attachments", file);
     }
     setUploading(true);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 135_000);
     try {
-      const response = await fetch("/api/v1/verifications", {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000";
+      const response = await fetch(`${backendUrl}/api/v1/verifications`, {
         method: "POST",
         body: formData,
+        signal: controller.signal,
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error(payload.detail || "Unable to prepare this verification.");
       }
       const result = payload as VerificationUploadResponse;
+      const uploadedCase: Case = {
+        ...result.case,
+        gemmaUsed: result.gemma_used,
+        processingWarnings: result.warnings,
+      };
       setCases((current) => [
-        result.case,
-        ...current.filter((item) => item.id !== result.case.id),
+        uploadedCase,
+        ...current.filter((item) => item.id !== uploadedCase.id),
       ]);
-      setActiveId(result.case.id);
+      setActiveId(uploadedCase.id);
       setAttachmentIndex(0);
       setView("Verification inbox");
       setModal(null);
       const fallback = result.gemma_used ? " Gemma fallback was used; review extracted values." : "";
       const warning = result.warnings[0] ? ` ${result.warnings[0]}` : "";
-      setToast(`Verification ${result.case.id} prepared.${fallback}${warning}`);
+      setToast(`Verification ${uploadedCase.id} prepared.${fallback}${warning}`);
     } catch (error) {
-      setToast(error instanceof Error ? error.message : "Unable to prepare this verification.");
+      setToast(
+        error instanceof DOMException && error.name === "AbortError"
+          ? "Verification timed out while waiting for Gemma. Try again or check the backend log."
+          : error instanceof Error
+            ? error.message
+            : "Unable to prepare this verification.",
+      );
     } finally {
+      window.clearTimeout(timeout);
       setUploading(false);
     }
   }
@@ -692,7 +717,7 @@ export default function Page() {
                       >
                         <div className="queue-item-meta">
                           <span>{c.id}</span>
-                          <time>{c.time}</time>
+                          <time>{formatCaseTime(c.time)}</time>
                         </div>
                         <strong>{c.vessel}</strong>
                         <p>{c.company}</p>
@@ -788,7 +813,13 @@ export default function Page() {
                       tone={active.state === "approved" ? "green" : "orange"}
                     >
                       {active.state === "review"
-                        ? active.fields.length ? `${unresolved} fields to review` : "Awaiting extraction"
+                        ? active.fields.length
+                          ? unresolved
+                            ? `${unresolved} fields to review`
+                            : active.gemmaUsed
+                              ? `${active.fields.length} matches · confirm Gemma`
+                              : "All fields match"
+                          : "Awaiting extraction"
                         : `${active.state} locally`}
                     </Badge>
                   </div>
@@ -798,7 +829,35 @@ export default function Page() {
                       <p><strong>From:</strong> {active.company}</p>
                       <p><strong>Subject:</strong> {active.vessel}</p>
                       <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontFamily: "inherit", lineHeight: 1.6 }}>{active.body || "This email has no body."}</pre>
-                      <div className="info-note">Field extraction and comparison have not been run for this email.</div>
+                      {active.fields.length ? <>
+                        <div className="subsection-heading"><h3>Field comparison</h3><span>{active.fields.length} required fields</span></div>
+                        <div className="table-head">
+                          <span>FIELD</span>
+                          <span>SHIPPING INSTRUCTION</span>
+                          <span>DRAFT BILL OF LADING</span>
+                        </div>
+                        {active.fields.map((field) => {
+                          const flagged = !matches(field) || field.confidence < 85;
+                          return (
+                            <div className={`comparison-row ${flagged ? "flagged" : ""}`} key={field.key}>
+                              <div className="field-label">
+                                <span>{field.label}</span>
+                                <small>{flagged ? "Needs confirmation" : "Matched"} · {field.confidence}%</small>
+                              </div>
+                              <div className="reference-value">{field.si || "Not extracted"}</div>
+                              <div className="draft-value">
+                                <span className="value-button">{field.bl || "Not extracted"}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {active.gemmaUsed && (
+                          <div className="info-note">Gemma recovered at least one document. The values are shown above and require human confirmation even when they match.</div>
+                        )}
+                        {active.processingWarnings?.map((warning, index) => (
+                          <div className="info-note" key={`${warning}-${index}`}>{warning}</div>
+                        ))}
+                      </> : <div className="info-note">No comparison fields were produced. Classification may have completed without SI/BL attachments.</div>}
                     </section>
                     <section className="source-panel">
                       <div className="subsection-heading"><h3>Attachments</h3><span>{active.attachments.length} files</span></div>
@@ -808,11 +867,13 @@ export default function Page() {
                             {active.attachments.map((file, index) => <option key={index} value={index}>{file.name}</option>)}
                           </select>
                         </label>
-                        {attachment?.url ? <>
-                          <a className="text-button" href={attachment.url} target="_blank" rel="noreferrer">Open / download {attachment.name} <ArrowDownToLine size={14} /></a>
+                        {attachment ? <>
+                          {attachment.url && <a className="text-button" href={attachment.url} target="_blank" rel="noreferrer">Open / download {attachment.name} <ArrowDownToLine size={14} /></a>}
                           {attachment.text !== null ? <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", maxHeight: 600, overflow: "auto", lineHeight: 1.6 }}>{attachment.text}</pre>
-                            : <p className="info-note">Download this attachment to view its original contents.</p>}
-                        </> : <p role="status">This attachment is missing from the sample bundle.</p>}
+                            : attachment.url
+                              ? <p className="info-note">Download this attachment to view its original contents.</p>
+                              : <p className="info-note">This temporary upload has no retained preview.</p>}
+                        </> : <p role="status">Select an attachment to view its extracted text.</p>}
                       </> : <p>No attachments on this email.</p>}
                     </section>
                   </div>
@@ -823,7 +884,11 @@ export default function Page() {
                         ? "Decision recorded in this demo session"
                         : unresolved
                           ? `${unresolved} fields need your confirmation`
-                          : "Awaiting field extraction and comparison."}
+                          : active.gemmaUsed
+                            ? "All fields match; confirm the Gemma-assisted extraction."
+                            : active.fields.length
+                              ? "All extracted fields match."
+                              : "Awaiting field extraction and comparison."}
                     </span>
                     <div>
                       <button
@@ -922,8 +987,9 @@ export default function Page() {
               </div>
             ))}
             <div className="info-note">
-              The email JSON is required. Documents use local extraction first
-              and are sent to Gemma only if deterministic parsing fails.
+              {uploading
+                ? "Processing documents. A Gemma fallback can take one to two minutes; keep this dialog open."
+                : "The email JSON is required. Documents use local extraction first and are sent to Gemma only if deterministic parsing fails."}
             </div>
             <button
               className="button primary full-width"

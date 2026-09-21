@@ -6,7 +6,7 @@ from pathlib import Path
 from threading import Lock
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, field_validator
 
 
 class GemmaUnavailableError(RuntimeError):
@@ -23,6 +23,21 @@ class GemmaDocumentExtraction(BaseModel):
     container_count: str = ""
     gross_weight_kg: str = ""
     extracted_text: str = ""
+
+    @field_validator(
+        "shipper",
+        "consignee",
+        "notify_party",
+        "port_of_loading",
+        "port_of_discharge",
+        "container_count",
+        "gross_weight_kg",
+        "extracted_text",
+        mode="before",
+    )
+    @classmethod
+    def coerce_text_values(cls, value):
+        return "" if value is None else str(value)
 
     def canonical_text(self) -> str:
         labels = {
@@ -42,7 +57,8 @@ PROMPT = """Extract this shipping document into one JSON object only. Do not use
 The exact keys are: document_type, shipper, consignee, notify_party,
 port_of_loading, port_of_discharge, container_count, gross_weight_kg,
 extracted_text. document_type must be SI, BL, or UNKNOWN. Use an empty string
-when a value is absent. Preserve a compact plain-text transcription in
+when a value is absent. Return container_count as digits and gross_weight_kg as
+digits in kilograms without units. Preserve a compact plain-text transcription in
 extracted_text. Never invent missing values."""
 
 
@@ -58,9 +74,10 @@ def _json_object(text: str) -> dict:
 
 
 class GemmaAttachmentExtractor:
-    def __init__(self, api_key: str | None, model: str):
+    def __init__(self, api_key: str | None, model: str, timeout_ms: int = 120_000):
         self.api_key = api_key
         self.model = model
+        self.timeout_ms = timeout_ms
         self._client = None
         self._lock = Lock()
 
@@ -74,9 +91,13 @@ class GemmaAttachmentExtractor:
         if self._client is None:
             try:
                 from google import genai
+                from google.genai import types
             except ImportError as exc:
                 raise GemmaUnavailableError("google-genai is not installed") from exc
-            self._client = genai.Client(api_key=self.api_key)
+            self._client = genai.Client(
+                api_key=self.api_key,
+                http_options=types.HttpOptions(timeout=self.timeout_ms),
+            )
         return self._client
 
     def extract(self, path: Path, deterministic_text: str = "") -> GemmaDocumentExtraction:

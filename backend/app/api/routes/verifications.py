@@ -25,7 +25,11 @@ router = APIRouter(prefix="/verifications", tags=["verification-upload"])
 MAX_EMAIL_JSON_BYTES = 1024 * 1024
 MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".xlsx", ".txt", ".png", ".jpg", ".jpeg"}
-gemma_extractor = GemmaAttachmentExtractor(settings.gemma_api_key, settings.gemma_model)
+gemma_extractor = GemmaAttachmentExtractor(
+    settings.gemma_api_key,
+    settings.gemma_model,
+    settings.gemma_timeout_ms,
+)
 
 
 def _safe_name(filename: str | None) -> str:

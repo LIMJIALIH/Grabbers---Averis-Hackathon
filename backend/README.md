@@ -87,6 +87,7 @@ Settings load from `backend/.env` and environment variables (environment variabl
 | `DOCUVERIFY_MODEL_DEVICE` | `auto` | Inference device: `auto`, `cpu`, or `cuda` |
 | `DOCUVERIFY_GEMMA_API_KEY` | unset | Google AI Studio key for failed attachment extraction only |
 | `DOCUVERIFY_GEMMA_MODEL` | `gemma-4-26b-a4b-it` | Hosted Gemma fallback model |
+| `DOCUVERIFY_GEMMA_TIMEOUT_MS` | `120000` | Hosted fallback timeout in milliseconds |
 
 For the frontend on port 3101, for example:
 
@@ -169,6 +170,11 @@ is sent to Google's API, marked with a warning, and always requires human review
 Without an API key, deterministic processing still works and incomplete documents
 remain review items. The current dashboard stores newly returned cases only in
 browser memory, so they disappear on refresh.
+
+The frontend sends this potentially long-running upload directly to FastAPI to
+avoid development-proxy timeouts. It defaults to `http://127.0.0.1:8000`; set
+`NEXT_PUBLIC_BACKEND_URL` before starting Next.js when the backend uses another
+origin. That frontend origin must also appear in `DOCUVERIFY_CORS_ORIGINS`.
 
 ## Local resources (not committed)
 
