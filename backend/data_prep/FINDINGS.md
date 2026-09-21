@@ -235,3 +235,60 @@ their attachments for exactly that. The rules' answers are sealed in
 
 11. Headline numbers: 520 emails classified, 45 genuine document defects caught, 20 escalated to human review with a specific reason attached.
 12. The honest framing is *precision* — no false alarms across 45 mismatches — not model accuracy.
+
+---
+
+## 6. The fine-tuned BERT — as trained, 21 Sep 2026
+
+Merged from `feature/finetuned-bert` (`baa7346`). Source of every number below:
+the saved cell outputs in `backend/model/finetuned_bert.ipynb`.
+
+### Training setup
+
+| | |
+|---|---|
+| Base model | `bert-base-uncased` |
+| Input | `subject + "
+" + body`, truncated at 512 tokens (nothing truncates — see §1) |
+| Labels | the 5 SDOC classes, order frozen to match `build_dataset.py` |
+| Split | `train.csv` 500 rows → 400 fit / 100 validation (stratified, seed 42); `test.csv` 20 rows held out |
+| Schedule | 5 epochs, lr 2e-5, batch 8, weight decay 0.01, fp16 |
+| Checkpoint | best by **macro-F1**, evaluated every epoch — the §5 item-2 advice was followed |
+| Hardware | Colab **GPU**, ~3 min wall clock for the run |
+
+### Results
+
+Validation, per epoch (accuracy / macro-F1):
+
+```
+epoch 1   0.650  0.533
+epoch 2   0.980  0.959
+epoch 3   1.000  1.000
+epoch 4   1.000  1.000
+epoch 5   1.000  1.000
+```
+
+Held-out test (20 rows, run once): **accuracy 1.000, macro-F1 1.000**, loss 0.158.
+Inference confidences on the 20 holdout emails run 0.65–0.97, lowest on SPAM.
+
+### What the number does and does not prove
+
+§5 item 4 still stands and is now measurable: the ceiling was hit at **epoch 3**,
+on a corpus of 177 distinct templates with 13 duplicate `bert_text` rows in
+`train.csv`, and 2 of the 20 test texts also appear in train after normalisation.
+A perfect score here means *the templates were learned*, not that the model
+generalises to a live inbox. Quote it as corpus performance, and keep
+attachment-presence (§2a) as a rule — the model cannot see attachments at all.
+
+### Serving
+
+The model is wired into the API, not just the notebook:
+
+- `POST /api/v1/classification` → `{category, confidence, scores{5}, device}`
+  (`app/api/routes/classification.py`)
+- `app/services/email_classifier.py` loads weights **once** behind a lock, reuses
+  them for every request, picks CUDA when available and falls back to CPU, and
+  raises `503 ModelUnavailableError` rather than crashing when the model
+  directory is absent.
+- Weights are **not** in the repo. Point `DOCUVERIFY_MODEL_DIR` at a local copy;
+  the default is `backend/model/email_multiclass_classifier`.

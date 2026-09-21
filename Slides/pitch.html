@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<title>DocuVerify</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Lato:wght@900&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   DocuVerify — 3-minute deck, 10 slides.
+   Tokens, ramp, status system and motion come from
+   frontend/DESIGN_STYLE.md §2 §5 §6, so the deck and the product
+   read as one thing. Dark tokens, because the demo room is dark.
+
+   MOTION BUDGET: every animation on a slide is finished within
+   1000ms of that slide appearing. Nothing may outlive --cap.
+   ═══════════════════════════════════════════════════════════════ */
+:root{
+  --paper:#0B0A0A; --surface:#141212; --surface-2:#1C1919;
+  --line:#2A2624; --line-strong:#3A3431;
+  --ink:#F7F4F2; --ink-2:#B8AFAA; --ink-3:#7E756F;
+  --burgundy:#A81233; --burgundy-2:#C21B40; --burgundy-tint:#24090E;
+  --review:#F2A24E; --review-tint:#2B1D0C;
+  --ok:#3FA876;     --ok-tint:#0E2119;
+  /* one hue, five values (§2.4), inverted for dark paper:
+     here the BRIGHT end carries "real work" and the dark end recedes */
+  --c-bl:#E0304F; --c-si:#8C2038; --c-inv:#63202D; --c-gen:#452026; --c-spam:#2E2322;
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --cap:1000ms;               /* hard ceiling — see MOTION BUDGET above */
+  --radius-card:14px; --radius-control:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--paper);overflow:hidden}
+body{font-family:Inter,system-ui,-apple-system,sans-serif;color:var(--ink);
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+#fit{position:fixed;inset:0;display:grid;place-items:center}
+/* transform-origin is declared here, not only in fit(), so the very first paint
+   is already centred — otherwise a slow script leaves the stage clipped. */
+#stage{width:1280px;height:720px;position:relative;background:var(--paper);overflow:hidden;
+  transform-origin:center center}
+/* sponsor signature: the one full-width orange rule (§4) */
+#stage:before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:var(--review);z-index:5}
+
+/* ── type (§3) ─────────────────────────────────────────────── */
+.label,.eyebrow{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.eyebrow b{color:var(--burgundy-2);font-weight:600}
+.head{font-size:52px;line-height:1.05;font-weight:600;letter-spacing:-.025em}
+.head em{font-style:normal;color:var(--ink-3)}
+.kicker{font-size:17px;line-height:1.5;color:var(--ink-2);max-width:940px}
+.kicker b{color:var(--ink);font-weight:600}
+.num{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;
+  font-weight:600;letter-spacing:-.04em;line-height:.88}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+
+/* status = colour + shape + word, never colour alone (§2.6) */
+.pill{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;
+  font-size:12px;font-weight:600}
+.pill i{font-style:normal;font-size:10px;line-height:1}
+.pill.ok{background:var(--ok-tint);color:var(--ok)}
+.pill.mm{background:var(--burgundy-tint);color:var(--burgundy-2)}
+.pill.nr{background:var(--review-tint);color:var(--review)}
+
+/* ── slide frame ───────────────────────────────────────────── */
+.slide{position:absolute;inset:0;padding:60px 76px 84px;display:flex;flex-direction:column;
+  opacity:0;visibility:hidden;transition:opacity .26s var(--ease),visibility .26s}
+.slide.on{opacity:1;visibility:visible}
+/* eyebrow and headline are pinned, so they land on the same pixel every slide
+   and the eye never hunts for the start. The body centres in what is left. */
+.slide:has(.head){justify-content:center;padding-top:174px}
+.slide:has(.head) > .eyebrow{position:absolute;top:60px;left:76px}
+.slide:has(.head) > .head{position:absolute;top:82px;left:76px;right:76px}
+
+/* entrance, staggered along the reading path — this IS the visual guide.
+   Worst case (i=7): 385ms delay + 300ms = 685ms, inside --cap. */
+.fx{opacity:0;transform:translateY(12px);transition:opacity .3s var(--ease),transform .3s var(--ease)}
+.fx.x{transform:translateX(-22px)}
+.fx.g{transform:scaleX(0);transform-origin:left center;transition:transform .5s var(--ease),opacity .25s}
+.slide.on .fx{opacity:1;transform:none;transition-delay:calc(var(--i,0)*55ms + 50ms)}
+
+/* ── chrome ────────────────────────────────────────────────── */
+#foot{position:absolute;left:76px;right:76px;bottom:26px;display:flex;justify-content:space-between;
+  align-items:baseline;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+#foot .r{font-family:'JetBrains Mono',monospace;letter-spacing:.06em}
+#foot .r b{color:var(--ink)}
+#bar{position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--line)}
+#bar i{display:block;height:100%;width:0;background:var(--burgundy-2);transition:width .3s var(--ease)}
+
+/* ══ 1 · title ══════════════════════════════════════════════ */
+.s-title{justify-content:center}
+.wordmark{font-size:118px;font-weight:600;letter-spacing:-.045em;line-height:1;margin-top:24px}
+.wordmark span{color:var(--burgundy-2)}
+.s-title .tagline{font-size:34px;font-weight:500;letter-spacing:-.022em;margin-top:18px}
+.s-title .rule{height:1px;background:var(--line-strong);margin:30px 0 20px;width:600px}
+.s-title .sub{font-size:17px;line-height:1.55;color:var(--ink-2);max-width:620px}
+.s-title .sponsor{position:absolute;right:76px;bottom:104px;text-align:right}
+.s-title .sponsor small{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.s-title .sponsor b{display:block;margin-top:9px;font-family:Lato,sans-serif;font-weight:900;
+  font-size:26px;letter-spacing:.05em;color:var(--review)}
+
+/* ══ 2 · the inbox — 520 squares, the figure sitting in them ══ */
+.field{position:relative}
+#grid{display:grid;grid-template-columns:repeat(40,1fr);gap:5px}
+/* Each square carries its final colour from the start and animates only its own
+   opacity, on its own delay — so the field genuinely lights up one square at a
+   time rather than fading in as a block. Deliberate exception to --cap: this one
+   run is ~4.5s, because watching 520 squares fill IS the argument. */
+#grid i{display:block;aspect-ratio:1;border-radius:2px;
+  opacity:0;transform:scale(.55);
+  transition:opacity .26s var(--ease),transform .26s var(--ease)}
+.slide.on #grid i{opacity:1;transform:none}
+/* The number sits PROUD of the field, not cut into it. The glyph is lighter than
+   the substrate, so the lighting inverts: a pale lip along the top edge is the
+   light catching the raised face, and a dark lip along the bottom edge is the
+   shadow it throws back onto the squares. That pairing is the whole illusion —
+   remove either and it flattens. */
+/* The stamp fades in behind the sweep. A raised figure needs material to stand
+   on, so it stays out until enough squares are lit to carry it. */
+.stamp{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;
+  opacity:0;transition:opacity 1.5s var(--ease);transition-delay:900ms}
+.slide.on .stamp{opacity:1}
+.stamp span{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;
+  font-weight:700;font-size:216px;letter-spacing:-.06em;line-height:1;
+  color:var(--ink);
+  text-shadow:
+    0 -2px 1px rgba(255,255,255,.9),
+    0 3px 0 rgba(11,10,10,.55),
+    0 4px 2px rgba(11,10,10,.38),
+    0 9px 18px rgba(0,0,0,.6);}
+.key{display:flex;gap:34px;margin-top:26px;font-size:15px;color:var(--ink-2)}
+.key div{display:flex;align-items:center;gap:10px}
+.key i{width:13px;height:13px;border-radius:3px;flex:none}
+.key b{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;
+  font-weight:600;color:var(--ink);font-size:17px}
+
+/* ══ 3 · the cost — descending staircase ════════════════════ */
+.step{display:flex;align-items:center;gap:28px;padding:15px 0;border-top:1px solid var(--line)}
+.step:last-child{border-bottom:1px solid var(--line)}
+.step .n{font-size:58px;width:190px;text-align:right;flex:none}
+.step .t{font-size:21px;color:var(--ink-2);line-height:1.3}
+.step .t i{font-style:normal;display:block;margin-top:4px;font-size:13px;color:var(--ink-3);
+  font-family:'JetBrains Mono',monospace}
+/* the one phrase that names who actually pays for a miss */
+.step .t mark{background:rgba(242,162,78,.15);color:var(--review);font-weight:600;
+  padding:2px 7px;border-radius:5px;box-shadow:inset 0 0 0 1px rgba(242,162,78,.32)}
+.step.a .n{color:var(--ink-3)}
+.step.b{margin-left:78px}.step.b .n{color:var(--ink);font-size:76px}
+.step.c{margin-left:156px}.step.c .n{color:var(--burgundy-2)}
+.step.d{margin-left:234px}.step.d .n{color:var(--review)}
+
+/* ══ 4 · pipeline ═══════════════════════════════════════════ */
+.pipe{position:relative;display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+.pipe:before{content:"";position:absolute;left:5px;right:5px;top:15px;height:1px;background:var(--line-strong)}
+.stg{position:relative;padding-top:42px}
+.stg:after{content:"";position:absolute;left:0;top:10px;width:11px;height:11px;border-radius:50%;
+  background:var(--paper);border:2px solid var(--burgundy-2)}
+.stg.last:after{background:var(--review);border-color:var(--review)}
+.stg .k{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);letter-spacing:.08em}
+.stg h4{font-size:21px;font-weight:600;letter-spacing:-.015em;margin:7px 0 0}
+.stg .v{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:38px;
+  font-weight:600;letter-spacing:-.04em;line-height:.9;margin:14px 0 0}
+.stg .v small{display:block;margin-top:8px;font-family:Inter,sans-serif;font-size:10px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.stg p{margin-top:16px;font-size:14px;line-height:1.45;color:var(--ink-3)}
+.stg .tech{margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.7;color:var(--burgundy-2)}
+.stg.last h4,.stg.last .v{color:var(--review)}
+.stg.last .tech{color:var(--review)}
+
+/* ══ 5 · the 64 ═════════════════════════════════════════════ */
+.split{display:grid;grid-template-columns:380px 1fr;gap:60px;align-items:start}
+.big{font-size:224px;line-height:.78;color:var(--burgundy-2)}
+.split .u{margin-top:18px;font-size:17px;line-height:1.45;color:var(--ink-2)}
+.split .u b{color:var(--ink)}
+.math{margin-top:18px;padding-top:18px;border-top:1px solid var(--line);
+  font-family:'JetBrains Mono',monospace;font-size:16px;color:var(--ink-3)}
+.math b{color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:26px}
+.chip{font-family:'JetBrains Mono',monospace;font-size:14px;padding:9px 13px;border-radius:6px;
+  border:1px solid var(--line-strong);background:var(--surface);color:var(--ink-2)}
+.chip.h{border-color:var(--burgundy);background:var(--burgundy-tint);color:var(--ink)}
+
+/* ══ 6 · results ════════════════════════════════════════════ */
+.seg{display:flex;height:82px;border-radius:var(--radius-control);overflow:hidden;background:var(--surface-2)}
+.seg div{display:flex;align-items:center;padding-left:22px;font-family:'JetBrains Mono',monospace;
+  font-variant-numeric:tabular-nums;font-size:34px;font-weight:600;letter-spacing:-.04em;
+  width:0;overflow:hidden;transition:width .6s var(--ease);transition-delay:180ms}
+.seg .s1{background:var(--ok-tint);color:var(--ok);box-shadow:inset 3px 0 0 var(--ok)}
+.seg .s2{background:var(--burgundy-tint);color:var(--burgundy-2);box-shadow:inset 3px 0 0 var(--burgundy-2)}
+.seg .s3{background:var(--review-tint);color:var(--review);box-shadow:inset 3px 0 0 var(--review)}
+.slide.on .seg div{width:var(--w)}
+.legend{display:flex;margin-top:16px}
+.legend div{font-size:14px;line-height:1.45;color:var(--ink-3);padding-right:28px}
+.legend .pill{margin-bottom:8px}
+.claim{margin-top:40px;padding-top:26px;border-top:1px solid var(--line-strong);
+  display:flex;align-items:baseline;gap:26px}
+.claim .z{font-size:92px;color:var(--ok);flex:none}
+.claim .c{font-size:30px;font-weight:600;letter-spacing:-.02em;line-height:1.2}
+.claim .c small{display:block;margin-top:10px;font-size:15px;font-weight:400;letter-spacing:0;
+  line-height:1.5;color:var(--ink-3)}
+.claim .c small b{color:var(--ink-2)}
+
+/* ══ 7 · defect bars — DefectBars widget behaviour ══════════ */
+.bars li{display:grid;grid-template-columns:190px minmax(0,1fr) 96px;align-items:center;gap:18px;height:46px}
+.bars .f{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--ink-2)}
+.bars .t{height:13px;border-radius:999px;background:var(--surface-2);overflow:hidden}
+.bars .t i{display:block;height:100%;border-radius:999px;width:0;
+  transition:width .6s var(--ease);transition-delay:180ms}
+.slide.on .bars .t i{width:var(--w)}
+.bars .v{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:15px;
+  font-weight:600;text-align:right}
+.bars .v span{color:var(--ink-3);font-weight:400}
+
+/* ══ 8 · refusal grid ═══════════════════════════════════════ */
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.cell{padding:22px;border-radius:var(--radius-card);background:var(--surface);
+  border:1px solid var(--line);border-top:2px solid var(--review)}
+.cell .n{font-size:56px;color:var(--review)}
+.cell code{display:block;margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--ink)}
+.cell p{margin-top:8px;font-size:13px;line-height:1.45;color:var(--ink-3)}
+
+/* ══ 9 · roadmap ════════════════════════════════════════════ */
+.road{display:grid;grid-template-columns:repeat(3,1fr)}
+.leg{padding:0 30px;border-left:1px solid var(--line)}
+.leg:first-child{border-left:0;padding-left:0}
+.leg .k{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--burgundy-2)}
+.leg h4{font-size:25px;font-weight:600;letter-spacing:-.02em;line-height:1.2;margin:12px 0 12px}
+.leg p{font-size:15px;line-height:1.5;color:var(--ink-3)}
+.leg p b{color:var(--ink-2);font-weight:600}
+.leg .tag{display:inline-block;margin-top:16px;padding:4px 10px;border-radius:999px;font-size:10px;
+  font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--review);border:1px solid var(--review)}
+
+/* ══ 10 · close ═════════════════════════════════════════════ */
+.s-close{justify-content:center;align-items:center;text-align:center}
+.s-close .line{font-size:62px;font-weight:600;letter-spacing:-.03em;line-height:1.16}
+.s-close .line span{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;letter-spacing:-.045em}
+.s-close .a{color:var(--ink)}.s-close .b{color:var(--burgundy-2)}.s-close .c{color:var(--review)}
+.s-close .mark{margin-top:46px;font-size:36px;font-weight:600;letter-spacing:-.025em}
+.s-close .mark span{color:var(--burgundy-2)}
+.s-close .tl{margin-top:11px;font-size:17px;color:var(--ink-2)}
+.s-close .links{margin-top:38px;display:flex;gap:34px;font-family:'JetBrains Mono',monospace;
+  font-size:13px;color:var(--ink-3)}
+.s-close .links b{color:var(--ink-2);font-weight:500}
+
+@media (prefers-reduced-motion:reduce){
+  .fx,.seg div,.bars .t i,#grid i,#bar i,.stamp{transition-duration:.01ms!important;transition-delay:0ms!important}
+}
+/* ?still — finished state, no motion. For PDF export and screenshots. */
+html.still .fx,html.still .seg div,html.still .bars .t i,html.still #grid i,html.still #bar i,
+html.still .stamp{transition:none!important;transition-delay:0ms!important}
+</style>
+</head>
+<body>
+<div id="fit"><div id="stage">
+
+<!-- ══ 1 ═══════════════════════════════════════════════════ -->
+<section class="slide s-title" data-t="Title">
+  <p class="eyebrow fx" style="--i:0">Averis &times; Monash Hackathon 2026 &nbsp;·&nbsp; Team Grabbers</p>
+  <h1 class="wordmark fx" style="--i:1">Docu<span>Verify</span></h1>
+  <p class="tagline fx" style="--i:2">From inbox to discrepancy report.</p>
+  <div class="rule fx g" style="--i:3"></div>
+  <p class="sub fx" style="--i:4">Reads the inbox. Compares the Bill of Lading against the Shipping Instruction. Escalates what it cannot prove.</p>
+  <div class="sponsor fx" style="--i:5"><small>Built for</small><b>AVERIS</b></div>
+</section>
+
+<!-- ══ 2 ═══════════════════════════════════════════════════ -->
+<section class="slide" data-t="The inbox">
+  <p class="eyebrow fx" style="--i:0"><b>01</b> &nbsp;/&nbsp; The problem</p>
+  <h2 class="head fx" style="--i:1">Most of the inbox <em>is noise.</em></h2>
+  <div class="field fx" style="--i:2">
+    <div id="grid" aria-hidden="true"></div>
+    <div class="stamp"><span data-count="75" data-suffix="%" data-ms="4150">0%</span></div>
+  </div>
+  <div class="key fx" style="--i:4">
+    <div><i style="background:var(--c-bl)"></i><b>129</b> need checking</div>
+    <div><i style="background:var(--c-si)"></i><b>391</b> do not</div>
+    <div style="color:var(--ink-3)">One square is one email. The operator reads all 520.</div>
+  </div>
+</section>
+
+<!-- ══ 3 ═══════════════════════════════════════════════════ -->
+<section class="slide" data-t="The cost">
+  <p class="eyebrow fx" style="--i:0"><b>02</b> &nbsp;/&nbsp; The cost</p>
+  <h2 class="head fx" style="--i:1">Then the real work <em>starts.</em></h2>
+  <div>
+    <div class="step a fx x" style="--i:2"><div class="n num" data-count="129">0</div><div class="t">document checks<i>an SI and a draft BL, side by side</i></div></div>
+    <div class="step b fx x" style="--i:3"><div class="n num" data-count="903">0</div><div class="t">comparisons, by hand<i>129 cases &times; 7 fields</i></div></div>
+    <div class="step c fx x" style="--i:4"><div class="n num" data-count="71">0</div><div class="t">are a real defect<i>7.9%, and never more than 2 fields per case</i></div></div>
+    <div class="step d fx x" style="--i:5"><div class="n">1</div><div class="t">miss ships the wrong Bill of Lading<i>paperwork redone, cargo stuck at port, <mark>and someone pays for it</mark></i></div></div>
+  </div>
+</section>
+
+<!-- ══ 4 ═══════════════════════════════════════════════════ -->
+<section class="slide" data-t="How it works">
+  <p class="eyebrow fx" style="--i:0"><b>03</b> &nbsp;/&nbsp; How it works</p>
+  <h2 class="head fx" style="--i:1">Five stages. <em>Five frozen contracts.</em></h2>
+  <div class="pipe">
+    <div class="stg fx" style="--i:2"><div class="k">01</div><h4>Ingest</h4>
+      <div class="v"><span data-count="250">0</span><small>attachments read</small></div>
+      <p>Four formats, one scanner. OCR fires per page.</p>
+      <div class="tech">pypdfium2<br>pytesseract</div></div>
+    <div class="stg fx" style="--i:3"><div class="k">02</div><h4>Classify</h4>
+      <div class="v"><span data-count="520">0</span><small>0 fell through</small></div>
+      <p>Body only. The subjects mislead on purpose.</p>
+      <div class="tech">20 rules + BERT<br>macro-F1</div></div>
+    <div class="stg fx" style="--i:4"><div class="k">03</div><h4>Extract</h4>
+      <div class="v"><span data-count="14">0</span><small>values per case</small></div>
+      <p>7 fields &times; 2 docs, each with its source span.</p>
+      <div class="tech">Pydantic<br>schema-enforced</div></div>
+    <div class="stg fx" style="--i:5"><div class="k">04</div><h4>Compare</h4>
+      <div class="v"><span data-count="45">0</span><small>defects found</small></div>
+      <p>Units, ports and names normalised. Then diff.</p>
+      <div class="tech">Pint<br>RapidFuzz</div></div>
+    <div class="stg fx last" style="--i:6"><div class="k">05</div><h4>Gate</h4>
+      <div class="v"><span data-count="20">0</span><small>sent to a human</small></div>
+      <p>With the evidence attached.</p>
+      <div class="tech">HITL dashboard<br>audit trail</div></div>
+  </div>
+  <p class="kicker fx" style="--i:7;margin-top:38px">The fixed steps and the judgement calls stay separate, so <b>every failure has an owner.</b></p>
+</section>
+
+<!-- ══ 5 ═══════════════════════════════════════════════════ -->
+<section class="slide" data-t="The hard part">
+  <p class="eyebrow fx" style="--i:0"><b>04</b> &nbsp;/&nbsp; The hard part</p>
+  <h2 class="head fx" style="--i:1">One field. <em>Nine names.</em></h2>
+  <div class="split">
+    <div>
+      <div class="big num fx x" style="--i:2" data-count="64">0</div>
+      <p class="u fx x" style="--i:3"><b>spellings</b> of the same 7 fields.</p>
+      <p class="math fx x" style="--i:4">64 &divide; 7 = <b>9.1</b> per field</p>
+    </div>
+    <div>
+      <div class="chips">
+        <span class="chip fx" style="--i:4">GROSS WEIGHT</span>
+        <span class="chip fx" style="--i:4">Gross Wt (kgs)</span>
+        <span class="chip h fx" style="--i:5">Gross Weight&#27611;&#37325;(KGS)</span>
+        <span class="chip fx" style="--i:5">TOTAL Gross Wt (kgs)</span>
+        <span class="chip fx" style="--i:5">PORT OF LOADING</span>
+        <span class="chip fx" style="--i:6">Load Port</span>
+        <span class="chip fx" style="--i:6">POL</span>
+        <span class="chip h fx" style="--i:6">&#35013;&#36135;&#28207;</span>
+        <span class="chip fx" style="--i:6">Notify Party/Intermediate Consignee</span>
+      </div>
+      <p class="kicker fx" style="--i:7">Normalise the label, strip the CJK gloss, then match 7 ordered patterns. <span class="mono">NOTIFY</span> before <span class="mono">CONSIGNEE</span> &mdash; or that last chip lands on the wrong field.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 6 ═══════════════════════════════════════════════════ -->
+<section class="slide" data-t="Results">
+  <p class="eyebrow fx" style="--i:0"><b>05</b> &nbsp;/&nbsp; Results</p>
+  <h2 class="head fx" style="--i:1">129 cases. <em>Three outcomes.</em></h2>
+  <div class="seg fx" style="--i:2">
+    <div class="s1" style="--w:49.6%"><span data-count="64">0</span></div>
+    <div class="s2" style="--w:34.9%"><span data-count="45">0</span></div>
+    <div class="s3" style="--w:15.5%"><span data-count="20">0</span></div>
+  </div>
+  <div class="legend">
+    <div class="fx" style="--i:3;width:49.6%"><span class="pill ok"><i>&#9679;</i>Verified</span><br>All 7 fields match</div>
+    <div class="fx" style="--i:4;width:34.9%"><span class="pill mm"><i>&#9650;</i>Defect</span><br>71 field defects inside</div>
+    <div class="fx" style="--i:5;width:15.5%;padding-right:0"><span class="pill nr"><i>&#9670;</i>Needs review</span><br>Sent to an operator</div>
+  </div>
+  <div class="claim">
+    <div class="z num fx" style="--i:6" data-count="0">0</div>
+    <div class="c fx" style="--i:7">false positives across all 45.
+      <small>Every one checked by hand. We quote <b>precision</b>, not accuracy &mdash; 520 emails hold only 177 templates, so accuracy would measure memorisation.</small></div>
+  </div>
+</section>
+
+<!-- ══ 7 ═══════════════════════════════════════════════════ -->
+<section class="slide" data-t="Where it breaks">
+  <p class="eyebrow fx" style="--i:0"><b>06</b> &nbsp;/&nbsp; Where it breaks</p>
+  <h2 class="head fx" style="--i:1">71 defects. <em>One field does the damage.</em></h2>
+  <ul class="bars">
+    <li class="fx" style="--i:2"><span class="f">container_count</span><span class="t"><i style="--w:100%;background:#D8264C"></i></span><span class="v"><span data-count="19">0</span> <span>&middot; 42%</span></span></li>
+    <li class="fx" style="--i:2"><span class="f">port_of_discharge</span><span class="t"><i style="--w:68%;background:#B81E3F"></i></span><span class="v"><span data-count="13">0</span> <span>&middot; 29%</span></span></li>
+    <li class="fx" style="--i:3"><span class="f">gross_weight_kg</span><span class="t"><i style="--w:63%;background:#9B1934"></i></span><span class="v"><span data-count="12">0</span> <span>&middot; 27%</span></span></li>
+    <li class="fx" style="--i:3"><span class="f">notify_party</span><span class="t"><i style="--w:42%;background:#7E1A2E"></i></span><span class="v"><span data-count="8">0</span> <span>&middot; 18%</span></span></li>
+    <li class="fx" style="--i:4"><span class="f">consignee</span><span class="t"><i style="--w:37%;background:#622029"></i></span><span class="v"><span data-count="7">0</span> <span>&middot; 16%</span></span></li>
+    <li class="fx" style="--i:4"><span class="f">port_of_loading</span><span class="t"><i style="--w:32%;background:#4A2326"></i></span><span class="v"><span data-count="6">0</span> <span>&middot; 13%</span></span></li>
+    <li class="fx" style="--i:5"><span class="f">shipper</span><span class="t"><i style="--w:32%;background:#3A2423"></i></span><span class="v"><span data-count="6">0</span> <span>&middot; 13%</span></span></li>
+  </ul>
+  <p class="kicker fx" style="--i:6;margin-top:30px">A defect hides beside <b>six correct fields.</b> That is why skim-reading fails and a field-by-field diff does not.</p>
+</section>
+
+<!-- ══ 8 ═══════════════════════════════════════════════════ -->
+<section class="slide" data-t="Human in the loop">
+  <p class="eyebrow fx" style="--i:0"><b>07</b> &nbsp;/&nbsp; Human in the loop</p>
+  <h2 class="head fx" style="--i:1">It says <em>&ldquo;I don&rsquo;t know&rdquo;</em> &mdash; and says why.</h2>
+  <div class="g4">
+    <div class="cell fx" style="--i:2"><div class="n num" data-count="5">0</div><code>wrong_doc_type</code><p>Not an SI or a BL.</p></div>
+    <div class="cell fx" style="--i:3"><div class="n num" data-count="5">0</div><code>missing_attachment</code><p>The document never arrived.</p></div>
+    <div class="cell fx" style="--i:4"><div class="n num" data-count="5">0</div><code>unreadable</code><p>Image-only scan, no text.</p></div>
+    <div class="cell fx" style="--i:5"><div class="n num" data-count="5">0</div><code>missing_value</code><p>The customer left it blank.</p></div>
+  </div>
+  <p class="kicker fx" style="--i:6;margin-top:34px">20 planted edge cases land <b>exactly 5 / 5 / 5 / 5.</b> A blank <span class="mono">____MT</span> is a question, never a mismatch.</p>
+</section>
+
+<!-- ══ 9 ═══════════════════════════════════════════════════ -->
+<section class="slide" data-t="Roadmap">
+  <p class="eyebrow fx" style="--i:0"><b>08</b> &nbsp;/&nbsp; What&rsquo;s next</p>
+  <h2 class="head fx" style="--i:1">Three things, <em>in order.</em></h2>
+  <div class="road">
+    <div class="leg fx x" style="--i:2"><div class="k">NEAR</div><h4>A live inbox</h4><p>Gmail OAuth, <b>read-only</b>. It clears a real queue instead of a fixture.</p></div>
+    <div class="leg fx x" style="--i:3"><div class="k">NEXT</div><h4>An LLM behind the rules</h4><p>It runs <b>only where the rules abstain</b>, so an outage costs coverage, never correctness.</p></div>
+    <div class="leg fx x" style="--i:4"><div class="k">THEN</div><h4>The loop closes</h4><p>Corrections become training data behind a gate: ship only on <b>&ge; 0.5 macro-F1</b> gain.</p><span class="tag">Prototyped as a simulation</span></div>
+  </div>
+</section>
+
+<!-- ══ 10 ══════════════════════════════════════════════════ -->
+<section class="slide s-close" data-t="Close">
+  <p class="line fx" style="--i:0"><span class="a" data-count="520">0</span> in.<br><span class="b" data-count="45">0</span> defects out.<br><span class="c" data-count="20">0</span> questions asked.</p>
+  <p class="mark fx" style="--i:3">Docu<span>Verify</span></p>
+  <p class="tl fx" style="--i:4">From inbox to discrepancy report.</p>
+  <div class="links fx" style="--i:5"><span><b>Team</b> Grabbers</span><span><b>Repo</b> github.com/LIMJIALIH/Grabbers---Averis-Hackathon</span></div>
+</section>
+
+<div id="foot"><span id="ft"></span><span class="r"><b id="fn">1</b> / <span id="fc"></span></span></div>
+<div id="bar"><i id="bi"></i></div>
+</div></div>
+
+<script>
+/* ── 520 squares, 40 × 13, sorted so the block that matters reads as a block.
+      Fills left→right, top→bottom, done in 420ms. ── */
+const GRID_STRIDE = 8;                 /* ms between squares */
+const GRID_RUN = 519 * GRID_STRIDE + 40 + 260;   /* ≈ 4.45s, the whole sweep */
+(() => {
+  const mix = [[129,'--c-bl'],[216,'--c-si'],[75,'--c-inv'],[60,'--c-gen'],[40,'--c-spam']];
+  const g = document.getElementById('grid'); let n = 0;
+  for (const [count, tok] of mix) for (let k = 0; k < count; k++, n++) {
+    const d = document.createElement('i');
+    d.style.background = `var(${tok})`;
+    d.style.transitionDelay = (n * GRID_STRIDE + 40) + 'ms';
+    g.appendChild(d);
+  }
+})();
+
+const stage  = document.getElementById('stage');
+const slides = [...document.querySelectorAll('.slide')];
+const still  = location.search.includes('still');
+const reduce = still || matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (still) document.documentElement.classList.add('still');
+
+/* MOTION BUDGET — every slide is settled inside --cap (worst case, the 7-figure
+   defect slide: 140 + 6 × 35 + 620 = 970ms). The one deliberate exception is the
+   520-square field on slide 2, which sweeps for ~4.5s; its figure is timed to
+   finish with it, so the slide still resolves as a single gesture. */
+const HOLD = reduce ? 0 : 140, COUNT_MS = 620, STAGGER = 35;
+let i = 0, timers = [];
+
+const fit = () => {
+  stage.style.transform = `scale(${Math.min(innerWidth / 1280, innerHeight / 720)})`;
+  stage.style.transformOrigin = 'center center';
+};
+
+/* Same shape as CountUp in components/ui.tsx, shortened to fit the budget.
+   The timer is the guarantee: rAF is throttled in a hidden window, so without
+   it a figure can freeze part-way on a slide whose whole job is the number. */
+function countUp(el, to, ms = COUNT_MS) {
+  const suffix = el.dataset.suffix || '';
+  const land = () => { el.textContent = to + suffix; };
+  if (reduce) return land();
+  let done = false;
+  const t0 = performance.now();
+  (function step(t) {
+    if (done) return;
+    const p = Math.min(Math.max((t - t0) / ms, 0), 1);
+    el.textContent = Math.round(to * (1 - (1 - p) ** 3)) + suffix;
+    if (p < 1) requestAnimationFrame(step);
+  })(performance.now());
+  timers.push(setTimeout(() => { done = true; land(); }, ms + 40));
+}
+
+function show(n) {
+  timers.forEach(clearTimeout); timers = [];
+  i = Math.max(0, Math.min(slides.length - 1, n));
+  slides.forEach((s, k) => s.classList.toggle('on', k === i));
+
+  const cur  = slides[i];
+  const figs = [...cur.querySelectorAll('[data-count]')];
+
+  /* Snap every square dark with no transition, then hand control back to CSS so the
+     staggered delays replay from the top each time the slide is opened. */
+  const grid = document.getElementById('grid');
+  if (grid && !reduce) {
+    const dots = grid.children;
+    /* transitionPROPERTY, never the `transition` shorthand: the shorthand resets
+       transition-delay, which would wipe each square's place in the sweep and
+       collapse the whole thing into one block fade. */
+    for (const d of dots) { d.style.transitionProperty = 'none'; d.style.opacity = '0'; }
+    void grid.offsetWidth;                                   /* force the reflow */
+    for (const d of dots) { d.style.transitionProperty = ''; d.style.opacity = ''; }
+  }
+
+  if (reduce) {
+    figs.forEach(el => el.textContent = el.dataset.count + (el.dataset.suffix || ''));
+  } else {
+    figs.forEach(el => el.textContent = '0' + (el.dataset.suffix || ''));
+    timers.push(setTimeout(() => figs.forEach((el, k) =>
+      timers.push(setTimeout(() => countUp(el, +el.dataset.count, +el.dataset.ms || COUNT_MS), k * STAGGER))
+    ), HOLD));
+  }
+
+  document.getElementById('ft').textContent = cur.dataset.t;
+  document.getElementById('fn').textContent = i + 1;
+  document.getElementById('bi').style.width = ((i + 1) / slides.length * 100) + '%';
+  history.replaceState(null, '', '#' + (i + 1));
+}
+
+document.getElementById('fc').textContent = slides.length;
+addEventListener('resize', fit);
+/* A hidden tab throttles timers to ~1/s, so alt-tabbing mid-slide strands the
+   figures part-counted. Replay on return so the presenter sees them land. */
+addEventListener('visibilitychange', () => { if (!document.hidden) show(i); });
+/* deep links: #7 opens slide 7. show() uses replaceState, which never re-fires this. */
+addEventListener('hashchange', () => {
+  const n = (parseInt(location.hash.slice(1)) || 1) - 1;
+  if (n !== i) show(n);
+});
+addEventListener('keydown', e => {
+  if (['ArrowRight','ArrowDown',' ','PageDown','Enter'].includes(e.key)) { e.preventDefault(); show(i + 1); }
+  else if (['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(e.key)) { e.preventDefault(); show(i - 1); }
+  else if (e.key === 'Home') show(0);
+  else if (e.key === 'End') show(slides.length - 1);
+});
+addEventListener('click', e => show(i + (e.clientX < innerWidth * 0.25 ? -1 : 1)));
+fit();
+show((parseInt(location.hash.slice(1)) || 1) - 1);
+</script>
+</body>
+</html>

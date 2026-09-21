@@ -35,3 +35,10 @@ backend/resources/sdoc-hackathon-docker/data_v2/ground_truth.json
 /frontend/tsconfig.tsbuildinfo
 /frontend/.git-history-backup/
 note.md
+
+# Organizer-supplied email corpus (520 emails + 250 attachments). Customer
+# correspondence: provision it locally, never commit.
+/sdoc-hackathon-bundle/
+
+# Local design-tooling cache.
+/.impeccable/
