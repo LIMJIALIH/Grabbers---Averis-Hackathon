@@ -14,6 +14,15 @@ node_modules/
 # Legacy dataset output location (current output is under backend/data_prep)
 /data_prep/out/
 
+# Local email corpora and derived training tables. These may contain customer
+# correspondence and attachments; regenerate/provision them locally, never commit.
+/backend/data_prep/cleaned_data/
+/backend/data_prep/inference_data/
+
+# Fine-tuned weights and Trainer checkpoints are reproducible local artifacts.
+/backend/model/results/
+/backend/model/email_multiclass_classifier/
+
 # Organizer-only answer key: do not publish.
 backend/resources/sdoc-hackathon-docker/data_v2/ground_truth.json
 
