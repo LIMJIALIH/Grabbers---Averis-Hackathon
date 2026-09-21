@@ -5,7 +5,6 @@ import { createPortal } from "react-dom";
 import { Select } from "@base-ui/react/select";
 import { AlertTriangle, Check, ChevronDown, Circle, CircleDot, Diamond, Loader2, X } from "lucide-react";
 import { CATEGORY_SHADE, HITL_THRESHOLD, categoryLabel, type Case, type Category } from "@/lib/cases";
-import { OFFLINE } from "@/lib/sample";
 import { cn } from "@/lib/utils";
 
 /* Status = colour + shape + word (§2.6). Shapes: ● ▲ ◆ ○ ◌ */
@@ -77,7 +76,7 @@ export function DocumentText({ a, className = "max-h-[420px]" }: { a?: { text: s
     </pre>
   );
 }
-export const hasFile = (a?: { url: string | null }) => !!a?.url && a.url !== OFFLINE;
+export const hasFile = (a?: { url: string | null }) => !!a?.url;
 
 export const Skeleton = ({ className }: { className?: string }) => <div className={cn("skeleton", className)} aria-hidden />;
 
@@ -108,9 +107,8 @@ export function Loading({ children }: { children: React.ReactNode }) {
   );
 }
 
-// TEST-ONLY: drop the "Switch to Test data" sentence below for production.
 export const OfflineNote = ({ onRetry }: { onRetry: () => void }) => (
-  <ErrorNote message="Couldn’t reach the mailbox service, so there is nothing to show. Switch to Test data at the top to see a full sample inbox." onRetry={onRetry} />
+  <ErrorNote message="Couldn’t reach the mailbox service, so there is nothing to show." onRetry={onRetry} />
 );
 
 export function ErrorNote({ message, onRetry }: { message: string; onRetry: () => void }) {

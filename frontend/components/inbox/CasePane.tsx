@@ -43,7 +43,7 @@ function verdict(c: Case) {
 }
 
 export function CasePane({ c }: { c: Case }) {
-  const { resolutions, corrections, approve, extract, demo } = useCases();
+  const { resolutions, corrections, approve, extract } = useCases();
   const [extracting, setExtracting] = useState(false);
   const [extractErr, setExtractErr] = useState(false);
   const { account } = useAccount();
@@ -167,13 +167,13 @@ export function CasePane({ c }: { c: Case }) {
             </p>
           </section>
         )}
-        {isBl && !demo && (
+        {isBl && (
           <button className="btn btn-sm justify-self-start" disabled={extracting}
             onClick={() => { setExtracting(true); setExtractErr(false); extract(c.id).catch((e) => { console.error(e); setExtractErr(true); }).finally(() => setExtracting(false)); }}>
             {extracting ? "Extracting…" : "Extract with Gemini"}
           </button>
         )}
-        {isBl && !demo && extractErr && (
+        {isBl && extractErr && (
           <p className="text-[13px] text-defect">Extraction failed. Gemini may be busy; try again in a moment.</p>
         )}
         {isBl && rows.length === 0 && c.status !== "NEEDS_REVIEW" && (

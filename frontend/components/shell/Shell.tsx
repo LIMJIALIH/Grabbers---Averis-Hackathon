@@ -113,7 +113,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
             </ol>
           </nav>
           <div className="ml-auto flex items-center gap-1.5">
-            <ModeSwitch />{/* TEST-ONLY */}
             <button
               onClick={() => setSearch(true)}
               className="hidden h-10 w-56 items-center gap-2 rounded-full border border-line-strong bg-paper px-3.5 text-ink-3 transition-colors hover:border-ink-3 md:flex lg:w-72"
@@ -137,28 +136,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
-// TEST-ONLY:start (ModeSwitch)
-/* Live = real backend (empty when it is down). Test = the built-in sample inbox. Labelled so nobody mistakes it for real mail. */
-function ModeSwitch() {
-  const { mode, setMode } = useAccount();
-  return (
-    <div role="group" aria-label="Data source" className="mr-1 flex rounded-full border border-line-strong p-0.5 text-[12px] font-medium">
-      {([["live", "Live"], ["demo", "Test data"]] as const).map(([m, label]) => (
-        <button key={m} aria-pressed={mode === m} onClick={() => mode !== m && setMode(m)} title={m === "live" ? "Real mailbox service (empty if not connected)" : "Built-in sample inbox with mock data"}
-          className={cn("h-7 rounded-full px-3", mode === m ? (m === "demo" ? "bg-[#e78823] text-ink" : "bg-ink text-paper") : "text-ink-2 hover:bg-surface-2")}>
-          {label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-// TEST-ONLY:end
-
 function SidebarBody({ compact, onToggle }: { compact: boolean; onToggle?: () => void }) {
   const path = usePathname();
   const { account } = useAccount();
-  const { summary, syncedAt, offline, demo, reload } = useCases();
+  const { summary, syncedAt, offline, reload } = useCases();
   const now = useNow();
   const open = summary.open; // needs review + unresolved defects: the real queue depth
   const [spin, setSpin] = useState(false);
@@ -179,7 +160,7 @@ function SidebarBody({ compact, onToggle }: { compact: boolean; onToggle?: () =>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[13px] font-medium" title={account!.email}>{greetingName(account!)}</div>
                 <div className="text-[12px] text-ink-3-on-2">
-                  {offline ? "Not connected" : demo ? "Test data" /* TEST-ONLY */ : syncedAt ? `Synced ${relTime(syncedAt, now)}` : "Syncing…"}
+                  {offline ? "Not connected" : syncedAt ? `Synced ${relTime(syncedAt, now)}` : "Syncing…"}
                 </div>
               </div>
               <button
