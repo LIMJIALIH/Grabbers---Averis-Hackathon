@@ -1,37 +1,18 @@
-# Grabbers---Averis-Hackathon
+# DocuVerify frontend
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [v0](https://v0.app).
-
-## Built with v0
-
-This repository is linked to a [v0](https://v0.app) project. You can continue developing by visiting the link below -- start new chats to make changes, and v0 will push commits directly to this repo. Every merge to `main` will automatically deploy.
-
-[Continue working on v0 →](https://v0.app/chat/projects/prj_AnFnDiKSUrQMwsgqtX4ORFboHxoU)
-
-## Getting Started
-
-First, run the development server:
+Next.js 16 · React 19 · TypeScript · Tailwind 4. Design source of truth: [`DESIGN_STYLE.md`](./DESIGN_STYLE.md); build plan: [`NEW_UI_BUILD_CHECKLIST.md`](./NEW_UI_BUILD_CHECKLIST.md).
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
+pnpm install
+pnpm dev          # http://localhost:3000, proxies /api/v1/* to BACKEND_URL (default http://127.0.0.1:8000)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| Route | What |
+|---|---|
+| `/` | Overview: greeting, KPIs, charts, queue preview, activity |
+| `/inbox?case=email_004` | Work screen: queue rail + SI vs BL comparison |
+| `/documents` | Attachment grid |
+| `/audit` | Session audit trail (in-memory, Export JSON) |
+| `/login` | Sample-inbox sign-in (Google OAuth not wired) |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-## Learn More
-
-To learn more, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-- [v0 Documentation](https://v0.app/docs) - learn about v0 and how to use it.
-
-## Verification and audit workflow
-
-The verification workflow is integrated at `/verification`. Start this frontend with `npm run dev` and choose **Verification workspace** from the dashboard. There is no separate Vite app or install step. See the [file responsibility map](docs/verification.md).
+Every Overview number comes from one selector, `summarise()` in `lib/cases.ts`. If the backend is down the app falls back to `lib/sample.ts` and says so.
