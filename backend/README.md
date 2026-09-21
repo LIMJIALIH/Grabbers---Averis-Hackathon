@@ -1,6 +1,6 @@
 # DocuVerify Backend
 
-FastAPI application served by **Uvicorn**, for the DocuVerify shipping document verification project. The dependency set includes LangChain and its OpenAI/community integrations for the future document-processing pipeline.
+FastAPI application served by **Uvicorn**, for the DocuVerify shipping document verification project. Stage 5 uses two Gemini models through the Google Gen AI SDK and accepts fields only when their normalized outputs agree. PDFs are passed directly to Gemini for native document vision; Tesseract is not required.
 
 The API provides health checks, local email classification, a sample email review queue, and independent Stage 4 attachment ingestion. `GET /api/v1/cases` reads emails from the configured participant bundle's `inbox/`, includes text attachment previews, and links to `GET /api/v1/cases/{email_id}/attachments/{index}` for original files. Only attachments under the bundle's `attachments/` directory can be downloaded. Email classification and SI/BL comparison are implemented; review persistence is not. The supplied SDOC inbox/scoring server is a separate optional service.
 
@@ -12,6 +12,11 @@ Run the backend on port 8000 and the frontend together to use the Review Queue. 
 - Docker Desktop only if running the optional SDOC scoring service.
 
 Run all commands below from the `backend/` directory unless stated otherwise.
+
+Tests (`tests/`, `data_prep/test_pipeline.py`) and mock fixtures (`examples/`,
+`scripts/create_mock_emails.py`) are local-only and excluded from Git. Commands
+below that use these files require an existing local copy; a fresh clone does
+not include them. Model weights and source datasets are also local-only.
 
 Offline dataset preparation lives in [`data_prep/`](data_prep/README.md). Run `python data_prep/build_dataset.py` to generate datasets and `python data_prep/test_pipeline.py` for its self-check, using the backend environment. It reads the local bundle under `resources/` and keeps generated datasets under `data_prep/out/`.
 
@@ -170,9 +175,9 @@ This separate service runs at http://localhost:8080. Its `/submit` endpoint scor
 
 Supported files: PDF, DOCX, XLSX, and TXT (UTF-8, UTF-8 BOM, or UTF-16 BOM). DOC/XLS and misspelled extensions are rejected with a controlled attachment error; export them to supported formats. Do not simply rename binary files.
 
-Install the Python dependencies using the setup instructions above. For scanned PDFs, additionally install Tesseract with English language data and make `tesseract --version` work in the server's environment. Missing Tesseract or OCR timeouts produce page errors and a human-review result. Digital PDF extraction needs no external executable.
+Install the Python dependencies using the setup instructions above. PDFs, including scanned PDFs, are sent directly to Gemini for native document vision during Stage 5. Tesseract is not used or required.
 
-Run against the committed mock without earlier stages, from `backend/`:
+Run against a locally provisioned mock without earlier stages, from `backend/`:
 
 ```powershell
 $env:DOCUVERIFY_BUNDLE_DIR = (Resolve-Path ./examples).Path
@@ -189,14 +194,15 @@ Or call `ingest_email(ClassifiedEmail.model_validate(payload), attachment_root)`
 
 The output includes concatenated `text` and located `segments`, per-document `ok`/`partial`/`error` status, errors, warnings, and top-level `requires_human_review`. PDFs include real page numbers; Word blocks and Excel rows do not invent page counts. Attachment type inference is advisory: conflicting evidence returns `UNKNOWN`. An email's `DL` tag does not automatically relabel all attachments as BL.
 
-Limits: 30 attachments per request, 25 MB per file, 100 PDF pages, 100 MB expanded Office archives, 200,000 spreadsheet cells, and 60 seconds per OCR page. PDFium work is serialized within each worker for thread safety. This synchronous MVP needs background jobs/process isolation and overall resource quotas before processing untrusted mail at scale. Embedded Office images, Word text boxes, and scanned regions on otherwise text-rich PDF pages are not fully extracted. Excel formulas are preserved as expressions and flagged for review; formulas are never executed. Stage 5 must honor review flags rather than treating partial text as verified data.
+Limits: 30 attachments per request, 25 MB per file, 100 PDF pages, 100 MB expanded Office archives, and 200,000 spreadsheet cells. PDFium work is serialized within each worker for document-type detection. This synchronous MVP needs background jobs/process isolation and overall resource quotas before processing untrusted mail at scale. Embedded Office images and Word text boxes are not sent through native PDF vision. Excel formulas are preserved as expressions and flagged for review; formulas are never executed. Stage 5 must honor review flags rather than treating partial text as verified data.
 
 ## Automatic Stage 4 to Stage 5 workflow
 
 `POST /api/v1/ingestion` now runs both stages in order:
 
-1. Stage 4 reads each attachment once, including PDF OCR where needed, and retains text, source segments, warnings, and errors.
-2. Stage 5 consumes that in-memory text to extract and normalize the seven SI/BL comparison fields. It does not reopen attachments.
+1. Stage 4 reads each attachment once and retains text, source segments, warnings, errors, and the trusted local PDF reference.
+2. Stage 5 sends each eligible PDF directly to two distinct Gemini models independently for native vision; non-PDF documents use their parsed text. Neither model receives the other's output.
+3. Python validates and normalizes each model's seven raw fields, checks agreement per field, then compares agreed SI and BL values. Source text, both attempts, and consensus results remain inspectable.
 
 The existing request format and ingestion response fields remain available. Supply `document_type: "SI"` or `"BL"` when the attachment role is known; otherwise Stage 4 infers it. Conflicting evidence remains `UNKNOWN` and requires review. The email tag `DL` is not an attachment role.
 
@@ -205,10 +211,75 @@ Additional response fields:
 - `fields`: seven entries containing `key`, `label`, `si`, `bl`, and `confidence`.
 - `extraction_status`: `ok`, `review_required`, or `skipped`.
 - `review_reasons`: missing fields/documents, mismatches, duplicate roles, or ingestion issues.
+- `document_extractions`: filename, document type, two model `attempts`, seven `field_checks`, consensus `normalized_fields`, issues, and an error summary. Each attempt includes model ID, nullable raw/normalized fields, issues, and an error. The previous document-level `model` and `raw_fields` now live inside `attempts`.
 
 `status` still describes Stage 4 ingestion. The top-level `requires_human_review` now covers both stages. A document can be readable (`status: "ok"`) while its extracted fields need review. Partial text can produce provisional fields, but errors and warnings remain flagged. If multiple documents have the same role, that side is left empty until a document is selected. Pending human-review emails skip both stages; if neither side has usable, identified text, extraction is skipped.
 
-Stage 5 currently uses deterministic label extraction and normalization, not an LLM. Its existing confidence values are comparison scores (100 matching, 70 different, 60 one-sided, 0 absent), not calibrated probabilities.
+Stage 5 uses Gemini JSON-schema structured output with strict Pydantic validation,
+independently for each model and each SI/BL document.
+The seven raw fields are required keys with nullable string values; missing or
+ambiguous values remain null. Original weight units are retained in the raw
+`gross_weight_kg` field. Python converts explicit kg/metric-tonne values to decimal
+kilograms and unambiguous counts to integers. Names/ports receive whitespace and
+boundary-punctuation cleanup only. Unsupported units, unitless weights, and
+ambiguous numbers require review. Port aliases, company suffix mapping, and fuzzy
+matching are deferred. Decimal weights serialize as strings in normalized JSON;
+the existing comparison `si`/`bl` fields remain display strings.
+
+Model agreement is evaluated after normalization:
+
+| Field check | Meaning | Consensus value |
+| --- | --- | --- |
+| `agreed` | Both valid normalized outputs match | Accepted value (primary spelling for case-only differences) |
+| `disagreed` | Two valid but different values | null |
+| `missing_or_invalid` | Either value is absent or cannot be normalized | null |
+| `model_error` | Either model attempt failed | null |
+
+Two missing values never count as agreement. Text comparison ignores case; numeric
+comparison is exact. A disagreement affects only that field; the other agreed
+fields remain available. If either model call fails, every field for that document
+is unresolved, but the successful attempt remains visible. Unresolved consensus
+values display as empty strings in the existing comparison fields and require
+human review. Agreement is not proof of correctness: models can share errors,
+including errors already present in the document.
+
+Existing confidence values remain comparison scores (100 matching, 70 different,
+60 one-sided, 0 absent), not model confidence or calibrated probabilities.
+
+Configure the following in your local `backend/.env` (never commit real keys):
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `DOCUVERIFY_GEMINI_API_KEY` | unset | Gemini Developer API credential; needed only when extraction is attempted |
+| `DOCUVERIFY_EXTRACTION_PRIMARY_MODEL` | `gemini-3.8-flash` | First independent extractor |
+| `DOCUVERIFY_EXTRACTION_SECONDARY_MODEL` | `gemini-3.7-flash` | Second independent extractor; must differ from the first |
+| `DOCUVERIFY_EXTRACTION_TIMEOUT_SECONDS` | `60` | Provider timeout per attempt |
+| `DOCUVERIFY_EXTRACTION_MAX_RETRIES` | `1` | Application retries for network failures and HTTP 408/500/502/503/504; SDK retries are disabled |
+| `DOCUVERIFY_EXTRACTION_MAX_INPUT_CHARS` | `100000` | Per-document text limit; larger documents require review without truncation |
+
+Migration: replace the previous `DOCUVERIFY_OPENAI_API_KEY` and
+`DOCUVERIFY_EXTRACTION_MODEL` settings with the Gemini variables above; old settings
+are ignored. Install updated dependencies and restart the backend. The application
+does not rewrite your local `.env` or select fallback models. Empty or identical
+model IDs produce a controlled review result without a provider request.
+
+Calling ingestion with eligible documents sends their text to Gemini. Model
+construction is lazy: health checks and Stage 4-only ingestion work without a key.
+Missing credentials, refusals, invalid output, and provider failures preserve Stage
+4 text and set extraction to `review_required`; no regex fallback occurs. A failed
+document leaves its comparison values empty while retaining the other side's
+successful extraction. Existing Stage 4 warnings always remain review reasons.
+
+Calls are sequential: two per document, normally four per SI/BL pair before
+retries. Each retry waits one second. Quota/rate-limit errors (HTTP 429), credential
+errors, blocked output, and invalid schemas are not retried. The 60-second timeout
+is per provider attempt, not a whole-email deadline. There is no OpenAI or regex
+fallback. Stage 4 parsing, legacy cases, and exports retain their existing paths.
+
+Google currently lists free-tier usage for the default models, subject to account
+availability and quota; a billing-enabled project may incur charges. Free-tier
+content is listed as used to improve Google's products. Check the current
+[Gemini pricing](https://ai.google.dev/gemini-api/docs/pricing) and account limits.
 
 For Python callers:
 
@@ -224,11 +295,17 @@ email = ClassifiedEmail(
         {"filename": "BL.txt", "path": "BL.txt", "document_type": "BL"},
     ],
 )
-result = process_email(email, Path("examples/attachments"))
+result = process_email(email, Path("examples/attachments"))  # Calls both Gemini models.
 print(result.model_dump_json(indent=2))
 ```
 
 Use real attachment filenames for your bundle. `extract_ingested_fields(ingestion_result)` also accepts previously produced Stage 4 output. The standalone `ingest_email` function and legacy file-based extraction functions remain available; the existing cases listing/export helpers still use their original file-based path.
+
+For offline tests, pass `extractor=callable` to either `process_email` or
+`extract_ingested_fields`. It receives `(text, document_type, *, model)` and returns a
+`RawFields` object. Automated tests mock Gemini; they do not measure live-model
+accuracy. A live smoke test is opt-in: configure a key and invoke the endpoint
+with the synthetic files in `examples/`, then inspect `document_extractions`.
 
 Run the combined workflow tests with sample output:
 

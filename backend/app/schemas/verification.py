@@ -5,6 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from app.schemas.ingestion import IngestionResult
+from app.schemas.extraction import DocumentExtraction
 
 
 class ComparisonField(BaseModel):
@@ -20,3 +21,4 @@ class VerificationResult(IngestionResult):
     extraction_status: Literal["ok", "review_required", "skipped"]
     fields: list[ComparisonField] = Field(default_factory=list)
     review_reasons: list[str] = Field(default_factory=list)
+    document_extractions: list[DocumentExtraction] = Field(default_factory=list)

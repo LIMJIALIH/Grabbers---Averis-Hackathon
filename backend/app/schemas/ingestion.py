@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -31,6 +32,7 @@ class IngestedDocument(BaseModel):
     status: Literal["ok", "partial", "error"] = "error"
     pages: int | None = None
     text: str = ""
+    source_path: Path | None = Field(default=None, exclude=True)
     ocr_used: bool = False
     segments: list[SourceSegment] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)

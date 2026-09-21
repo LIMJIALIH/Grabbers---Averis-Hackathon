@@ -52,8 +52,18 @@ type Case = {
   body: string;
   attachments: { name: string; url: string | null; text: string | null }[];
   state: "review" | "approved" | "escalated";
+  extraction_source?: string;
 };
 const fieldKeys = ["shipper", "consignee", "notify_party", "port_of_loading", "port_of_discharge", "container_count", "gross_weight_kg"];
+const fieldLabels: Record<string, string> = {
+  shipper: "Shipper",
+  consignee: "Consignee",
+  notify_party: "Notify party",
+  port_of_loading: "Port of loading",
+  port_of_discharge: "Port of discharge",
+  container_count: "Container count",
+  gross_weight_kg: "Gross weight (kg)",
+};
 const QUEUE_PAGE_SIZE = 10;
 const stages = [
   { title: "Classify", sub: "Email intent", icon: Mail },
@@ -94,6 +104,7 @@ export default function Page() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [reload, setReload] = useState(0);
+  const [extracting, setExtracting] = useState(false);
   const [modal, setModal] = useState<string | null>(null);
   const [toast, setToast] = useState("");
   const [reason, setReason] = useState("");
@@ -266,6 +277,22 @@ export default function Page() {
     setActiveId(id);
     setAttachmentIndex(0);
     setView("Overview");
+  }
+  async function runNativeExtraction() {
+    if (!active || extracting) return;
+    setExtracting(true);
+    try {
+      const response = await fetch(`/api/v1/cases/${encodeURIComponent(active.id)}/extract`, { method: "POST" });
+      if (!response.ok) throw new Error("Gemini extraction could not complete. Check the backend log.");
+      const result = await response.json() as { fields: Field[]; extraction_source: string; review_reasons: string[] };
+      setCases((items) => items.map((item) => item.id === active.id
+        ? { ...item, fields: result.fields, extraction_source: result.extraction_source } : item));
+      setToast(result.review_reasons.length ? "Gemini extraction completed; review flagged fields." : "Gemini native PDF extraction completed.");
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : "Gemini extraction could not complete.");
+    } finally {
+      setExtracting(false);
+    }
   }
   return (
     <div className={`app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
@@ -746,14 +773,41 @@ export default function Page() {
                         ? active.fields.length ? `${unresolved} fields to review` : "Awaiting extraction"
                         : `${active.state} locally`}
                     </Badge>
+                    <button className="button primary" onClick={runNativeExtraction} disabled={extracting}>
+                      <ScanLine size={14} /> {extracting ? "Extracting…" : "Run Gemini extraction"}
+                    </button>
                   </div>
                   <div className="review-body">
                     <section className="comparison">
-                      <div className="subsection-heading"><h3>Sample email</h3></div>
+                      <div className="subsection-heading"><h3>Email summary</h3><span>{active.id}</span></div>
                       <p><strong>From:</strong> {active.company}</p>
                       <p><strong>Subject:</strong> {active.vessel}</p>
                       <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontFamily: "inherit", lineHeight: 1.6 }}>{active.body || "This email has no body."}</pre>
-                      <div className="info-note">Field extraction and comparison have not been run for this email.</div>
+                      <div className="extracted-heading">
+                        <div>
+                          <h3>Extracted fields</h3>
+                          <p>Compare shipping instructions with the bill of lading</p>
+                        </div>
+                        <span>{fieldKeys.filter((key) => active.fields.some((field) => field.key === key && field.si.trim() && field.bl.trim())).length}/7 complete pairs</span>
+                      </div>
+                      <p className="extraction-source">{active.extraction_source ?? "Text parser results"}{active.extraction_source === "Gemini native PDF vision" ? " · Native PDF vision and structured field extraction." : " · OCR and AI extraction have not run for these values."}</p>
+                      <dl className="extracted-fields" aria-label="Extracted shipping fields">
+                        {fieldKeys.map((key, index) => {
+                          const field = active.fields.find((item) => item.key === key);
+                          const si = field?.si?.trim() || "—";
+                          const bl = field?.bl?.trim() || "—";
+                          const resolved = si !== "—" && bl !== "—" && matches(field!);
+                          return <div className="extracted-field-row" key={key}>
+                            <dt className="extracted-field-key">
+                              <span className="extracted-field-number">{String(index + 1).padStart(2, "0")}</span>
+                              <span>{field?.label || fieldLabels[key]}<code>{key}</code></span>
+                            </dt>
+                            <dd className="extracted-field-value"><small>Shipping instructions · SI</small><strong>{si === "—" ? "Not found" : si}</strong></dd>
+                            <dd className="extracted-field-value"><small>Bill of lading · BL</small><strong>{bl === "—" ? "Not found" : bl}</strong></dd>
+                            <dd className={`extracted-status ${resolved ? "matched" : "review"}`}>{resolved ? "Matched" : si === "—" || bl === "—" ? "Missing value" : "Check difference"}</dd>
+                          </div>;
+                        })}
+                      </dl>
                     </section>
                     <section className="source-panel">
                       <div className="subsection-heading"><h3>Attachments</h3><span>{active.attachments.length} files</span></div>
