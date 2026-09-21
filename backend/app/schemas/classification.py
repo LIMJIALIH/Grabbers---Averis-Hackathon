@@ -30,3 +30,8 @@ class ClassificationResponse(BaseModel):
     confidence: float = Field(ge=0, le=1)
     scores: dict[EmailCategory, float]
     device: str
+    source: Literal["bert", "gemma_fallback", "bert_low_confidence"] = "bert"
+    bert_category: EmailCategory | None = None
+    bert_confidence: float | None = Field(default=None, ge=0, le=1)
+    requires_human_review: bool = False
+    fallback_reason: str | None = None

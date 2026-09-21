@@ -42,13 +42,13 @@ export function CategoryPill({ category }: { category: Category }) {
 }
 
 /** Number + bar; below the HITL threshold picks up the orange treatment (§6). */
-export function Confidence({ value }: { value: number | null }) {
+export function FieldScore({ value }: { value: number | null }) {
   if (value == null) return <span className="text-ink-3">—</span>;
   const low = value < HITL_THRESHOLD;
   return (
     <span className="inline-flex items-center gap-2">
       <span className={cn("num w-7 text-right text-[13px]", low && "font-semibold text-review-ink")}>{value}</span>
-      <span className="relative h-1.5 w-12 rounded-full bg-surface-2" aria-hidden title={`Gate: ${HITL_THRESHOLD}`}>
+      <span className="relative h-1.5 w-12 rounded-full bg-surface-2" aria-hidden title={`Human-review gate: ${HITL_THRESHOLD}`}>
         <span className="block h-full rounded-full" style={{ width: `${value}%`, background: low ? "var(--review)" : "var(--ink-3)" }} />
         <i className="absolute -top-0.5 h-2.5 w-px bg-ink" style={{ left: `${HITL_THRESHOLD}%` }} />
       </span>

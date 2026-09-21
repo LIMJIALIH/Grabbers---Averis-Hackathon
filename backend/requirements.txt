@@ -3,12 +3,13 @@
 
 # API runtime
 fastapi>=0.115
+python-multipart>=0.0.9
 uvicorn[standard]>=0.30
 pydantic-settings>=2.5
+Authlib>=1.6,<2
 
 # LLM orchestration and provider integrations
 langchain>=1.0
-google-genai>=1.75,<2
 langchain-community>=0.3
 
 # Development and API testing
@@ -27,3 +28,5 @@ pypdf>=5,<7
 # Local BERT email classification
 torch>=2.6,<3
 transformers>=5,<6
+google-genai>=2.3,<3
+python-multipart>=0.0.20,<1

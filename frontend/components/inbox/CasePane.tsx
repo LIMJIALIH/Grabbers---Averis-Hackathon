@@ -5,7 +5,7 @@ import { Download, Flag, Mail, Paperclip, Pencil, Printer } from "lucide-react";
 import { useAccount, useCases } from "@/lib/app-state";
 import { recordUserAction } from "@/lib/auditTrailStore";
 import { HITL_THRESHOLD, categoryLabel, diffSpan, fieldLabel, matches, type Case, type Field } from "@/lib/cases";
-import { Abbr, CategoryPill, Confidence, DocumentText, Modal, StatusPill, hasFile } from "@/components/ui";
+import { Abbr, CategoryPill, DocumentText, FieldScore, Modal, StatusPill, hasFile } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
 type Row = { f: Field; state: "match" | "defect" | "missing" | "corrected"; fix?: { value: string; reason: string } };
@@ -27,6 +27,7 @@ function Diff({ a, b }: { a: string; b: string }) {
 
 const RESULT_WORD = { match: "Verified", defect: "Defect", missing: "Missing", corrected: "Corrected" } as const;
 const REASON_VERDICT = {
+  classification_uncertain: "The email category is uncertain and needs a person to review it.",
   missing_attachment: "An attachment is missing.",
   unreadable: "Couldn’t read these attachments.",
   missing_value: "A value is missing from the SI or the BL.",
@@ -35,8 +36,8 @@ const REASON_VERDICT = {
 
 /** The answer to the operator's only question, in a sentence. */
 function verdict(c: Case) {
-  if (c.category !== "BL_COMPARISON") return `This reads as ${categoryLabel(c.category).toLowerCase()}, so no SI/BL comparison applies.`;
   if (c.status === "NEEDS_REVIEW") return REASON_VERDICT[c.reason ?? "unreadable"];
+  if (c.category !== "BL_COMPARISON") return `This reads as ${categoryLabel(c.category).toLowerCase()}, so no SI/BL comparison applies.`;
   if (c.status === "OK") return "All seven fields match the SI.";
   const n = c.defects.map((k) => fieldLabel(k).toLowerCase());
   return `BL differs from SI on ${n.length > 1 ? `${n.slice(0, -1).join(", ")} and ${n[n.length - 1]}` : n[0]}.`;
@@ -151,7 +152,7 @@ export function CasePane({ c }: { c: Case }) {
                               {{ match: "● Match", corrected: "● Corrected", defect: "▲ Defect", missing: "▲ Missing" }[state]}
                             </span>
                             {blocking(r) && <span className="text-[11px] font-medium text-defect">Blocks approval</span>}
-                            <Confidence value={f.confidence} />
+                            <FieldScore value={f.confidence} />
                             {f.confidence < HITL_THRESHOLD && <span className="text-[11px] text-review-ink">Below {HITL_THRESHOLD}: could be wrong</span>}
                             {state !== "match" && !res && <button className="btn btn-sm" onClick={() => setModal({ kind: "fix", f })}><Pencil size={13} aria-hidden />{state === "corrected" ? "Edit…" : "Correct…"}</button>}
                           </div>
@@ -163,7 +164,7 @@ export function CasePane({ c }: { c: Case }) {
               </table>
             </div>
             <p className="border-t border-line px-5 py-3 text-[12px] text-ink-3">
-              Confidence is extraction confidence, 0–100. The tick on each bar is the {HITL_THRESHOLD} gate; under it goes to a human. Values are normalised (case, spacing, port codes).
+              Field score is a deterministic comparison signal, not BERT confidence: 100 means equal, 70 means both values exist but differ, 60 means one side is missing, and 0 means both are absent. The tick is the {HITL_THRESHOLD} human-review gate.
             </p>
           </section>
         )}

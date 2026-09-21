@@ -8,6 +8,8 @@ Run the backend on port 8000 and the frontend together to use the Review Queue. 
 
 ## Requirements
 
+For Google sign-in and the separate read-only Gmail inbox, follow [Google setup](GOOGLE_SETUP.md). Guest sample access does not require Google credentials.
+
 - Python 3.11 or newer, with pip and venv.
 - Docker Desktop only if running the optional SDOC scoring service.
 
@@ -90,6 +92,9 @@ Settings load from `backend/.env` and environment variables (environment variabl
 | `DOCUVERIFY_BUNDLE_DIR` | Absolute path to `backend/resources/sdoc-hackathon-bundle` | Local participant bundle location |
 | `DOCUVERIFY_MODEL_DIR` | Absolute path to `backend/model/email_multiclass_classifier` | Saved Hugging Face classifier directory |
 | `DOCUVERIFY_MODEL_DEVICE` | `auto` | Inference device: `auto`, `cpu`, or `cuda` |
+| `DOCUVERIFY_GEMMA_API_KEY` | unset | Google AI Studio key for failed attachment extraction only |
+| `DOCUVERIFY_GEMMA_MODEL` | `gemma-4-26b-a4b-it` | Hosted Gemma fallback model |
+| `DOCUVERIFY_GEMMA_TIMEOUT_MS` | `120000` | Hosted fallback timeout in milliseconds |
 
 For the frontend on port 3101, for example:
 
@@ -137,6 +142,57 @@ uv run --project . --no-sync python -c "import torch; print(torch.cuda.is_availa
 Keep a single Uvicorn worker for the local demo because every worker loads its own
 copy of the roughly 438 MB model. The endpoint uses inference mode and does not
 calculate gradients or update model weights.
+
+## Hybrid email normalization and verification uploads
+
+`POST /api/v1/verifications` accepts multipart form data with one required
+`email` file and zero or more optional `attachments`. JSON, EML, and plain text
+emails are normalized locally. PDF, DOCX, PNG, and JPEG email inputs (and malformed
+standard inputs) use Gemma to produce the stable organizer contract:
+`email_id`, `from`, `subject`, `body`, and `attachments`.
+Attachment paths in the JSON are used only for basename matching and are never
+trusted as server paths.
+
+```powershell
+curl.exe -X POST http://127.0.0.1:8000/api/v1/verifications `
+  -F "email=@data_prep/inference_data/email_009.json;type=application/json" `
+  -F "attachments=@data_prep/inference_data/email_009_SI.txt;type=text/plain" `
+  -F "attachments=@data_prep/inference_data/email_009_BL.txt;type=text/plain"
+```
+
+The normalized subject and body are classified by the local fine-tuned BERT model.
+Per-category confidence thresholds and a top-two margin gate route uncertain
+predictions to Gemma. A confident Gemma agreement is accepted; BERT/Gemma
+disagreement, low Gemma confidence, or an unavailable fallback is marked for
+human review. Responses expose `normalization_source`, classification `source`,
+the original BERT decision, and the review flag.
+
+The queue endpoint uses the same hybrid classifier and caches decisions in the
+backend process. The frontend consumes the returned category rather than applying
+keyword rules. Non-comparison emails and emails without uploaded documents return
+a classification-only dashboard case. A
+`BL_COMPARISON` email with documents runs deterministic ingestion, extraction,
+and comparison. Uploads are held in a request-specific temporary directory and
+are not persisted after the response.
+
+When deterministic extraction yields no usable fields, the backend can use
+hosted Gemma 4 through Google AI Studio. Add the API key only to `backend/.env`:
+
+```dotenv
+DOCUVERIFY_GEMMA_API_KEY=your-google-ai-studio-key
+DOCUVERIFY_GEMMA_MODEL=gemma-4-26b-a4b-it
+```
+
+Gemma is not called for documents handled by local parsers. A fallback document
+is sent to Google's API, marked with a warning, and always requires human review.
+Without an API key, deterministic processing still works and incomplete documents
+remain review items. The current dashboard stores newly returned cases only in
+browser memory, so they disappear on refresh.
+
+The frontend sends this potentially long-running upload directly to FastAPI to
+avoid development-proxy timeouts. It defaults to `http://127.0.0.1:8000`; set
+`NEXT_PUBLIC_BACKEND_URL` before starting Next.js when the backend uses another
+origin. That frontend origin must also appear in `DOCUVERIFY_CORS_ORIGINS`.
 
 ## Local resources (not committed)
 
