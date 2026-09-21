@@ -285,7 +285,7 @@ function AccountMenu() {
       <Menu.Portal>
         <Menu.Positioner sideOffset={6} align="end" className="z-50">
           <Menu.Popup className="pop w-72 rounded-[var(--radius-card)] border border-line bg-surface p-1.5 shadow-[var(--shadow-pop)] outline-none">
-            <div className="label px-3 py-2">Active mailbox</div>
+            <div className="label px-3 py-2">Signed in account</div>
             <div className="flex items-center gap-3 rounded-lg px-3 py-2">
               <Avatar name={account.name} picture={account.picture} />
               <div className="min-w-0 flex-1">
@@ -295,11 +295,7 @@ function AccountMenu() {
               <Check size={16} className="text-ok" aria-label="Active" />
             </div>
             <Menu.Separator className="my-1 h-px bg-line" />
-            <Menu.Item disabled className="flex items-center gap-2 rounded-lg px-3 py-2 text-ink-3 opacity-70">
-              Add another account <span className="ml-auto text-[11px]">needs Google OAuth</span>
-            </Menu.Item>
-            <Menu.Separator className="my-1 h-px bg-line" />
-            <Menu.Item onClick={() => { signOut(); router.push("/login"); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 outline-none data-[highlighted]:bg-surface-2">
+            <Menu.Item onClick={() => { void signOut(); router.push("/login"); }} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 outline-none data-[highlighted]:bg-surface-2">
               <LogOut size={15} aria-hidden /> Sign out
             </Menu.Item>
           </Menu.Popup>

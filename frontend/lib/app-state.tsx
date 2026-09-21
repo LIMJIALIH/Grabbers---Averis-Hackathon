@@ -3,10 +3,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { derive, isOpen, summarise, type Case, type Corrections, type RawCase, type Resolution, type Summary } from "./cases";
 import { clearAuditTrail, getAuditTrail, recordUserAction } from "./auditTrailStore";
+import { useGoogleIdentity } from "@/components/GoogleInbox";
 
-/* ---- Account -------------------------------------------------------------
-   Shaped like the future /api/v1/me response so nothing downstream changes when
-   Google OAuth lands. Until then the only identity is the sample inbox. */
+/* ---- Account: server-verified Google identity or an explicit demo session. */
 export type Account = { id: string; email: string; name: string; given_name: string; picture: string | null };
 export const SAMPLE_ACCOUNT: Account = {
   id: "sample",
@@ -27,7 +26,8 @@ export const greetingName = (a: Account) =>
     .map((w) => w[0].toUpperCase() + w.slice(1))
     .join(" ");
 
-type Session = { account: Account | null; ready: boolean; signIn: () => void; signOut: () => void };
+type Session = { account: Account | null; ready: boolean; configured: boolean; error: string;
+  logoutPending: boolean; signIn: () => void; signOut: () => Promise<void>; retry: () => Promise<void> };
 const SessionCtx = createContext<Session | null>(null);
 export const useAccount = () => useContext(SessionCtx)!;
 
@@ -63,29 +63,46 @@ const CasesCtx = createContext<CasesState | null>(null);
 export const useCases = () => useContext(CasesCtx)!;
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [account, setAccount] = useState<Account | null>(null);
-  const [ready, setReady] = useState(false);
+  const google = useGoogleIdentity();
+  const [demo, setDemo] = useState(false);
+  const [demoReady, setDemoReady] = useState(false);
   useEffect(() => {
     try {
-      if (localStorage.getItem(SESSION_KEY) === "sample") setAccount(SAMPLE_ACCOUNT);
+      localStorage.removeItem(SESSION_KEY); // Retire the old persistent demo login.
+      setDemo(sessionStorage.getItem(SESSION_KEY) === "sample");
     } catch {}
-    setReady(true);
+    setDemoReady(true);
   }, []);
-  const session = useMemo<Session>(
-    () => ({
+  useEffect(() => {
+    if (google.user) {
+      setDemo(false);
+      try { sessionStorage.removeItem(SESSION_KEY); } catch {}
+    }
+  }, [google.user]);
+  const account: Account | null = google.user ? {
+    id: google.user.sub, email: google.user.email, name: google.user.name || google.user.email,
+    given_name: google.user.name?.split(" ")[0] || "", picture: google.user.picture,
+  } : demo ? SAMPLE_ACCOUNT : null;
+  useEffect(() => { inflight = null; clearAuditTrail(); }, [account?.id]);
+  const session: Session = {
       account,
-      ready,
+      ready: demoReady && !google.loading,
+      configured: google.configured,
+      error: google.error,
+      logoutPending: google.logoutPending,
+      retry: google.check,
       signIn: () => {
-        try { localStorage.setItem(SESSION_KEY, "sample"); } catch {}
-        setAccount(SAMPLE_ACCOUNT);
+        try { sessionStorage.setItem(SESSION_KEY, "sample"); } catch {}
+        setDemo(true);
       },
-      signOut: () => {
-        try { localStorage.removeItem(SESSION_KEY); } catch {}
-        setAccount(null);
+      signOut: async () => {
+        try { sessionStorage.removeItem(SESSION_KEY); } catch {}
+        setDemo(false);
+        inflight = null;
+        clearAuditTrail();
+        if (google.user || google.logoutPending) await google.logout();
       },
-    }),
-    [account, ready],
-  );
+  };
   return (
     <SessionCtx.Provider value={session}>
       {/* key = account id: switching accounts remounts and drops every cached number (checklist §0.3). */}

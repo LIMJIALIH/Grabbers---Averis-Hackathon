@@ -5,6 +5,7 @@
 fastapi>=0.115
 uvicorn[standard]>=0.30
 pydantic-settings>=2.5
+Authlib>=1.6,<2
 
 # LLM orchestration and provider integrations
 langchain>=1.0

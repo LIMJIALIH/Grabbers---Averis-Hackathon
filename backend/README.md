@@ -8,6 +8,8 @@ Run the backend on port 8000 and the frontend together to use the Review Queue. 
 
 ## Requirements
 
+For Google sign-in and the separate read-only Gmail inbox, follow [Google setup](GOOGLE_SETUP.md). Guest sample access does not require Google credentials.
+
 - Python 3.11 or newer, with pip and venv.
 - Docker Desktop only if running the optional SDOC scoring service.
 
