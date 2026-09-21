@@ -14,7 +14,7 @@ from app.core.config import settings
 from app.main import create_app
 from app.schemas.ingestion import ClassifiedEmail
 from app.services.attachment_text import extract_attachment_text
-from app.services.document_fields import extract_comparison_fields
+from app.services.document_fields import extract_comparison_fields, extract_fields_from_text
 from app.services.ingestion import ingest_email
 from app.services.verification import process_email, extract_ingested_fields
 
@@ -104,6 +104,17 @@ def test_stage5_normalization_mismatch_and_missing_fields(tmp_path):
     assert by_key["notify_party"]["si"] == by_key["notify_party"]["bl"] == ""
     assert by_key["notify_party"]["confidence"] == 0
     print(json.dumps({"stage5_fields": fields}, indent=2))
+
+
+def test_stage5_extracts_gross_weight_from_carton_table_without_a_field_label():
+    table = (
+        "Carton No.      Net Wt (kg)     Gross Wt (kg)     Dimensions\n"
+        "CTN-001          571             635             120x100x110\n"
+    )
+    fields = {field["key"]: field for field in extract_fields_from_text(table, table)}
+    assert fields["gross_weight_kg"]["si"] == "635"
+    assert fields["gross_weight_kg"]["bl"] == "635"
+    assert fields["gross_weight_kg"]["confidence"] == 100
 
 
 def test_stage5_missing_bl(tmp_path):

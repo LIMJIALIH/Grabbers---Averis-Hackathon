@@ -7,7 +7,7 @@ from pathlib import Path
 from app.schemas.hitl import ComparisonReport, HumanDecision, ReportField, ReviewItem
 from app.schemas.llm_verification import FieldAudit, HumanResolution
 from app.services.document_fields import FIELD_SPECS
-from app.services.llm_verification import normalize_candidate
+from app.services.llm_verification import normalize_candidate, values_match
 
 PENDING = "[pending review]"
 ABSENT = "[not listed]"
@@ -161,7 +161,7 @@ def _resolve(record: FieldAudit, decision: HumanDecision, stamp: str) -> FieldAu
         record.suggested_resolution = decision.note.strip()
         return record
     si, bl = values.get("si") or "", values.get("bl") or ""
-    if si and bl and si == bl:
+    if si and bl and values_match(si, bl):
         record.decision = "approved"
         record.final_value = si
         record.suggested_resolution = decision.note.strip()
@@ -193,13 +193,13 @@ def _report_field(record: FieldAudit, label: str) -> ReportField:
     si, bl = values.get("si") or ABSENT, values.get("bl") or ABSENT
     if si == ABSENT or bl == ABSENT or record.decision == "document_mismatch":
         result = "mismatch" if si != ABSENT or bl != ABSENT else "unresolved"
-        if si != ABSENT and bl != ABSENT and si != bl:
+        if si != ABSENT and bl != ABSENT and not values_match(si, bl):
             result = "mismatch"
         elif si == ABSENT or bl == ABSENT:
             result = "mismatch"
         return ReportField(key=record.key, label=label, si_value=si, bl_value=bl, result=result,
                            note=record.suggested_resolution)
-    if si == bl:
+    if values_match(si, bl):
         return ReportField(key=record.key, label=label, si_value=si, bl_value=bl, result="matched",
                            note=record.suggested_resolution)
     return ReportField(key=record.key, label=label, si_value=si, bl_value=bl, result="mismatch",

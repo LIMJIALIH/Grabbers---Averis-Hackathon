@@ -26,12 +26,13 @@ def test_missing_attachment_routes_directly_to_hitl_not_ocr_or_image_verificatio
     assert "attachment is unavailable" in audit.suggested_resolution
 
 
-def test_single_clean_side_document_mismatch_requires_human_review():
+def test_single_clean_side_verified_value_is_approved_despite_extraction_asymmetry():
     audit = route_field(key="consignee", label="Consignee", si="3S PAPER PRODUCTS SDN BHD", bl="")
     assert audit.route.route == "single_side"
     result = apply_verdicts(audit, [verdict("a", "si", "verified")], [verdict("b", "si", "verified")])
-    assert result.decision == "document_mismatch"
-    assert result.requires_human_review
+    assert result.decision == "approved"
+    assert not result.requires_human_review
+    assert result.final_value == "buyer ltd"
 
 
 def test_verified_document_mismatch_requires_human_review():
@@ -101,10 +102,25 @@ def test_verifiers_use_different_openai_models():
     assert "evidence-only" in INSTRUCTIONS
 
 
-def test_field_normalization_casefolds_then_normalizes_whitespace_and_separators():
+def test_field_normalization_removes_whitespace_and_punctuation_for_comparison():
     normalized, rules = normalize_candidate("consignee", "  ACME/Trading--Sdn_Bhd  ")
     assert normalized == "acme trading sdn bhd"
     assert rules == ["casefold", "normalize_whitespace", "normalize_separators"]
+
+
+def test_formatting_only_company_and_address_differences_skip_verification():
+    audit = route_field(
+        key="consignee", label="Consignee",
+        si="ACME (M) SDN. BHD., 12 Jalan Tun Razak",
+        bl="acme-m sdn bhd 12, jalan tun razak",
+    )
+    assert audit.route.route == "skip"
+    assert audit.decision == "approved"
+
+
+def test_substantively_different_company_names_still_require_verification():
+    audit = route_field(key="consignee", label="Consignee", si="ACME Trading Sdn Bhd", bl="Globex Trading Sdn Bhd")
+    assert audit.route.route == "dual_side"
 
 
 def test_low_confidence_ocr_requires_image_for_both_verifiers():

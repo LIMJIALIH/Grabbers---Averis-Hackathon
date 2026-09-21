@@ -19,8 +19,9 @@ HITL_DECISIONS = ("needs_review", "mislabeled", "missing", "unreadable", "ambigu
 def normalize_candidate(key: str, raw: str) -> tuple[str, list[str]]:
     """Return a comparison value using the shared field-comparison pipeline.
 
-    Values are compared only after case-folding, whitespace normalization, and
-    separator normalization, in that order.
+    This returns the readable normalized value stored in audit output.  Its
+    punctuation-insensitive comparison key is created separately so reports do
+    not turn company names and addresses into unreadable run-on strings.
     """
     value = raw.casefold()
     rules = ["casefold"] if value != raw else []
@@ -48,6 +49,20 @@ def normalize_candidate(key: str, raw: str) -> tuple[str, list[str]]:
             value = digits
             rules.append("container_count_canonicalize")
     return value, rules
+
+
+def comparison_key(value: str) -> str:
+    """Return a formatting-insensitive key for deciding whether values agree.
+
+    Spaces and punctuation often vary between SI and BL extraction output; they
+    are not evidence of a different company, address, or identifier.  Letters
+    and digits remain intact, so meaningful content changes still mismatch.
+    """
+    return "".join(character for character in value if character.isalnum())
+
+
+def values_match(left: str, right: str) -> bool:
+    return comparison_key(left) == comparison_key(right)
 
 
 def route_field(
@@ -81,7 +96,7 @@ def route_field(
         route = VerificationRoute(key=key, label=label, route="single_side", applicable_sides=[present],
                                   reason="Only one cleanly extracted document contains a candidate value.",
                                   requires_source_image=image)
-    elif si_normalized == bl_normalized and not image:
+    elif values_match(si_normalized, bl_normalized) and not image:
         route = VerificationRoute(key=key, label=label, route="skip", applicable_sides=[],
                                   reason="The SI and BL values match after deterministic normalization.")
     else:
@@ -165,11 +180,14 @@ def _finalize_field(audit: FieldAudit, outcomes: dict[FieldSide, tuple[Decision,
         if decision == "auto_corrected" and corrected:
             values[side] = corrected
     if audit.route.route == "single_side":
-        audit.decision = "document_mismatch"
+        # A clean extraction can omit a field even when the source document
+        # contains it.  Once both verifiers independently confirm the present
+        # value, do not turn that extraction asymmetry into a false mismatch.
+        audit.decision = "approved"
         audit.final_value = values[audit.route.applicable_sides[0]]
-        audit.requires_human_review = True
-        audit.suggested_resolution = "Present-side value is verified, but the cleanly extracted opposite document does not list this field; send to human review."
-    elif values["si"] != values["bl"]:
+        audit.requires_human_review = False
+        audit.suggested_resolution = "Present-side value is independently verified; the opposite extraction is blank."
+    elif not values_match(values["si"], values["bl"]):
         audit.decision = "document_mismatch"
         audit.requires_human_review = True
         audit.suggested_resolution = "Both document-side values are verified but differ; send to human review."
@@ -198,7 +216,7 @@ def _agreed_evidence_value(audit: FieldAudit, side: FieldSide) -> str | None:
         return None
     normalized_a, _ = normalize_candidate(audit.key, a_value)
     normalized_b, _ = normalize_candidate(audit.key, b_value)
-    return normalized_a if normalized_a == normalized_b else None
+    return normalized_a if values_match(normalized_a, normalized_b) else None
 
 
 def accept_known_alias(item: VerifierVerdict) -> VerifierVerdict:
