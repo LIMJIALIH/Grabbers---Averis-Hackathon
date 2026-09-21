@@ -66,4 +66,4 @@ Desktop.ini
 *.swp
 *.swo
 
-# Intentionally retain application source, tests, and dependency manifests.
+# Retain application source and dependency manifests; local tests are ignored at the repository root.

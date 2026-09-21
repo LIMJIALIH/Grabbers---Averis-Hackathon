@@ -42,3 +42,14 @@ note.md
 
 # Local design-tooling cache.
 /.impeccable/
+
+# Local test suites and standalone mock fixtures (kept on disk).
+/backend/tests/
+/backend/data_prep/test_pipeline.py
+/backend/examples/
+/backend/scripts/create_mock_emails.py
+
+# Local agent instructions and planning notes.
+/frontend/AGENTS.md
+/frontend/CLAUDE.md
+/core-feature_checklist.md
