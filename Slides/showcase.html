@@ -4,273 +4,575 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>DocuVerify</title>
+<meta http-equiv="Pragma" content="no-cache">
+<title>DocuVerify — Architecture</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Lato:wght@700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Lato:wght@900&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════════════════════════
-   DocuVerify — 3-minute deck, 9 slides, ~20s each.
+   DocuVerify — the architecture deck, 12 slides.
 
-   THE RULE OF THIS DECK: one slide, one idea, one number.
-   If a slide needs a second number to make its point, the point
-   is wrong. Everything else is whitespace.
+   THE RULE: one slide, one claim, one animated figure. If a
+   sentence is longer than twelve words it is a script note, not
+   a slide. The presenter says the prose; the slide shows the
+   number arriving.
 
-   VISUAL FLOW: every slide is read the same way, so the eye never
-   has to hunt for the entry point —
+   Same visual and motion system as pitch.html. What changes is
+   the argument: the rubric scores architecture (15), integration
+   (15) and validation (15) — and corpus statistics nowhere.
+   See ARCHITECTURE_DECK_PLAN.md.
 
-        eyebrow (top-left)
-             ↓
-        TAGLINE (large, left, the claim)
-             ↘
-                        THE NUMBER (opposite corner, the proof)
-
-   The number's corner alternates slide to slide, so across the
-   deck the eye snakes: right, left, right, left. The claim always
-   starts in the same place; only the payoff moves.
-
-   MOTION BUDGET: everything on a slide is settled within 1000ms.
-   Max --i is 4 → 4 × 80 + 520 = 840ms.
+   MOTION BUDGET: every animation on a slide is finished within
+   1000ms. Worst case is the pipeline (--i:6): 50 + 330 + 550 =
+   930ms for the rail draw.
    ═══════════════════════════════════════════════════════════════ */
 :root{
-  --paper:#FBF9F7; --ink:#141410; --ink-2:#5B544B; --ink-3:#978D82;
-  --line:#E7DFD6;
-  --orange:#E78823; --orange-2:#C26C10;
+  --paper:#0B0A0A; --surface:#141212; --surface-2:#1C1919;
+  --line:#2A2624; --line-strong:#3A3431;
+  --ink:#F7F4F2; --ink-2:#B8AFAA; --ink-3:#7E756F;
+  --burgundy:#A81233; --burgundy-2:#C21B40; --burgundy-tint:#24090E;
+  --review:#F2A24E; --review-tint:#2B1D0C;
+  --ok:#3FA876;     --ok-tint:#0E2119;
   --ease:cubic-bezier(.2,.8,.2,1);
+  --cap:1000ms;
+  --radius-card:14px; --radius-control:10px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:#E9E3DC;overflow:hidden}
+html,body{height:100%;background:var(--paper);overflow:hidden}
 body{font-family:Inter,system-ui,-apple-system,sans-serif;color:var(--ink);
   -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 #fit{position:fixed;inset:0;display:grid;place-items:center}
 #stage{width:1280px;height:720px;position:relative;background:var(--paper);overflow:hidden;
-  transform-origin:center center;box-shadow:0 24px 70px rgba(20,20,16,.2)}
-/* the one orange rule — sponsor signature, and the deck's only chrome */
-#stage:before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:var(--orange);z-index:5}
+  transform-origin:center center}
+#stage:before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:var(--review);z-index:5}
 
-/* ── chrome, kept nearly invisible ─────────────────────────── */
-#foot{position:absolute;left:84px;right:84px;bottom:30px;display:flex;justify-content:space-between;
-  font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;
-  color:#BCB2A6;z-index:6}
-#bar{position:absolute;left:0;right:0;bottom:0;height:3px;background:#F0EAE3;z-index:6}
-/* scaleX, not width: the bar animates on every slide change, and a transform
-   stays on the compositor where a width animation would relayout. */
-#bi{display:block;width:100%;height:100%;background:var(--orange);
-  transform:scaleX(0);transform-origin:left center;transition:transform .45s var(--ease)}
+/* ── type ──────────────────────────────────────────────────── */
+.label,.eyebrow{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.eyebrow b{color:var(--burgundy-2);font-weight:600}
+.eyebrow .req{color:var(--review);font-weight:600}
+.head{font-size:52px;line-height:1.05;font-weight:600;letter-spacing:-.025em}
+.head em{font-style:normal;color:var(--ink-3)}
+.kicker{font-size:17px;line-height:1.5;color:var(--ink-2)}
+.kicker b{color:var(--ink);font-weight:600}
+.num{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;
+  font-weight:600;letter-spacing:-.04em;line-height:.88}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
 
-/* ── slide + motion ────────────────────────────────────────── */
-.slide{position:absolute;inset:0;padding:70px 84px 104px;display:none;flex-direction:column;z-index:2}
-.slide.on{display:flex}
-.fx{opacity:0;transform:translateY(14px);
-  transition:opacity .52s var(--ease),transform .52s var(--ease);
-  transition-delay:calc(var(--i,0) * 80ms)}
-.slide.on .fx{opacity:1;transform:none}
+.pill{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;
+  font-size:12px;font-weight:600}
+.pill i{font-style:normal;font-size:10px;line-height:1}
+.pill.ok{background:var(--ok-tint);color:var(--ok)}
+.pill.mm{background:var(--burgundy-tint);color:var(--burgundy-2)}
+.pill.nr{background:var(--review-tint);color:var(--review)}
 
-/* ── the three fixed parts of every slide ─────────────────── */
-.eyebrow{font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:500;letter-spacing:.24em;
-  text-transform:uppercase;color:var(--ink-3)}
-.eyebrow b{color:var(--orange-2);font-weight:700}
-/* the claim: one sentence, big enough that it is the only thing you can read first */
-.tag{font-family:Lato,sans-serif;font-weight:900;font-size:76px;line-height:1.02;letter-spacing:-.032em;
-  max-width:900px;margin-top:24px}
-.tag em{font-style:normal;color:var(--orange)}
-/* the proof: the number, in the opposite corner */
-.pay{display:flex;align-items:flex-end;gap:38px;margin-top:auto}
-.pay.right{flex-direction:row-reverse;text-align:right}
-.big{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:700;
-  font-size:168px;line-height:.8;letter-spacing:-.055em;color:var(--orange);white-space:nowrap}
-.pay .say{max-width:470px;padding-bottom:16px}
-/* stacked variant: number on top, its own label directly beneath, caption last.
-   Used where the figure is not self-evident (a count, a ratio) rather than a
-   percentage or a plain tally. */
-.pay.stack{flex-direction:column;align-items:flex-end;text-align:right;gap:6px}
-.pay.stack .say{padding-bottom:0;max-width:540px}
-.big.eq{font-size:104px;color:var(--ink)}
-.big.eq b{color:var(--orange);font-weight:700}
-.big.eq i{font-style:normal;color:var(--ink-3);font-size:.6em;padding:0 .14em;vertical-align:.09em}
-.sub{margin-top:13px;font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:500;
-  letter-spacing:.17em;text-transform:uppercase;color:var(--ink-3)}
-.sub b{color:var(--orange-2);font-weight:700}
-.pay .say h3{font-size:19px;font-weight:600;letter-spacing:-.015em;line-height:1.3}
-.pay .say p{margin-top:9px;font-size:15px;line-height:1.55;color:var(--ink-2)}
-.pay .say p b{color:var(--ink);font-weight:600}
-.mono{font-family:'JetBrains Mono',monospace}
+/* ── slide frame ───────────────────────────────────────────── */
+.slide{position:absolute;inset:0;padding:60px 76px 84px;display:flex;flex-direction:column;
+  opacity:0;visibility:hidden;transition:opacity .26s var(--ease),visibility .26s}
+.slide.on{opacity:1;visibility:visible}
+.slide:has(.head){justify-content:center;padding-top:174px}
+.slide:has(.head) > .eyebrow{position:absolute;top:60px;left:76px}
+.slide:has(.head) > .head{position:absolute;top:82px;left:76px;right:76px}
 
-/* ── 1 · title ─────────────────────────────────────────────── */
+.fx{opacity:0;transform:translateY(12px);transition:opacity .3s var(--ease),transform .3s var(--ease)}
+.fx.x{transform:translateX(-22px)}
+.fx.g{transform:scaleX(0);transform-origin:left center;transition:transform .5s var(--ease),opacity .25s}
+.slide.on .fx{opacity:1;transform:none;transition-delay:calc(var(--i,0)*55ms + 50ms)}
+
+/* ── chrome ────────────────────────────────────────────────── */
+#foot{position:absolute;left:76px;right:76px;bottom:26px;display:flex;justify-content:space-between;
+  align-items:baseline;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+#foot .r{font-family:'JetBrains Mono',monospace;letter-spacing:.06em}
+#foot .r b{color:var(--ink)}
+#bar{position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--line)}
+#bar i{display:block;height:100%;width:0;background:var(--burgundy-2);transition:width .3s var(--ease)}
+
+/* ══ 1 · title ══════════════════════════════════════════════ */
 .s-title{justify-content:center}
-.s-title .wordmark{font-family:Lato,sans-serif;font-weight:900;font-size:118px;letter-spacing:-.04em;
-  line-height:1;margin-top:20px}
-.s-title .wordmark span{color:var(--orange)}
-.s-title .line{margin-top:24px;font-size:30px;font-weight:500;letter-spacing:-.022em;color:var(--ink-2)}
-.s-title .foot{margin-top:64px;display:flex;gap:16px;align-items:center;
-  font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.04em;color:var(--ink-3)}
-.s-title .foot i{font-style:normal;width:5px;height:5px;border-radius:50%;background:var(--orange)}
+.wordmark{font-size:118px;font-weight:600;letter-spacing:-.045em;line-height:1;margin-top:24px}
+.wordmark span{color:var(--burgundy-2)}
+.s-title .tagline{font-size:34px;font-weight:500;letter-spacing:-.022em;margin-top:18px}
+.s-title .rule{height:1px;background:var(--line-strong);margin:30px 0 24px;width:600px}
+.s-title .sponsor{position:absolute;right:76px;bottom:104px;text-align:right}
+.s-title .sponsor small{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.s-title .sponsor b{display:block;margin-top:9px;font-family:Lato,sans-serif;font-weight:900;
+  font-size:26px;letter-spacing:.05em;color:var(--review)}
+/* three counters, the deck in one line */
+.trio{display:flex;gap:52px}
+.trio div{display:flex;align-items:baseline;gap:12px}
+.trio .n{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:600;
+  font-size:44px;letter-spacing:-.04em;line-height:1;color:var(--burgundy-2)}
+.trio .l{font-size:14px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
 
-/* ── 3 · the three verbs ───────────────────────────────────── */
-.verbs{display:flex;align-items:flex-end;gap:0;margin-top:auto}
-.verb{flex:1;padding-right:34px}
-.verb .v{font-family:Lato,sans-serif;font-weight:900;font-size:68px;letter-spacing:-.03em;line-height:1;
-  color:var(--ink)}
-.verb.hero .v{color:var(--orange)}
-.verb p{margin-top:16px;font-size:15px;line-height:1.55;color:var(--ink-2);max-width:250px}
-.verb p b{color:var(--ink);font-weight:600}
+/* ══ 2 · the cost — descending staircase, counted ═══════════ */
+.step{display:flex;align-items:center;gap:28px;padding:15px 0;border-top:1px solid var(--line)}
+.step:last-child{border-bottom:1px solid var(--line)}
+.step .n{font-size:58px;width:190px;text-align:right;flex:none}
+.step .t{font-size:23px;color:var(--ink-2);line-height:1.25}
+.step .t i{font-style:normal;display:block;margin-top:4px;font-size:13px;color:var(--ink-3);
+  font-family:'JetBrains Mono',monospace}
+.step .t mark{background:rgba(242,162,78,.15);color:var(--review);font-weight:600;
+  padding:2px 7px;border-radius:5px;box-shadow:inset 0 0 0 1px rgba(242,162,78,.32)}
+.step.a .n{color:var(--ink-3)}
+.step.b{margin-left:78px}.step.b .n{color:var(--ink);font-size:76px}
+.step.c{margin-left:156px}.step.c .n{color:var(--burgundy-2)}
+.step.d{margin-left:234px}.step.d .n{color:var(--review)}
 
-/* ── 8 · five stages, one line ─────────────────────────────── */
-.pipe{display:flex;align-items:stretch;gap:0;margin-top:auto;border-top:2px solid var(--ink)}
-.stg{flex:1;padding:26px 22px 0 0}
-.stg .k{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;letter-spacing:.16em;
-  color:var(--ink-3)}
-.stg.ai .k{color:var(--orange-2)}
-.stg h4{margin-top:11px;font-size:25px;font-weight:600;letter-spacing:-.022em}
-.stg.ai h4{color:var(--orange)}
-.stg p{margin-top:9px;font-size:13.5px;line-height:1.5;color:var(--ink-2)}
+/* ══ 3 · four screens ═══════════════════════════════════════ */
+.screens{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.scr{padding:24px;border-radius:var(--radius-card);background:var(--surface);
+  border:1px solid var(--line);border-top:2px solid var(--burgundy-2)}
+.scr .k{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);letter-spacing:.08em}
+.scr h4{font-size:26px;font-weight:600;letter-spacing:-.02em;margin:10px 0 0}
+.scr p{margin-top:12px;font-size:15px;line-height:1.4;color:var(--ink-3)}
+.scr .r{margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--burgundy-2)}
+.scr.last{border-top-color:var(--review)}
+.scr.last h4,.scr.last .r{color:var(--review)}
 
-/* ── 9 · close ─────────────────────────────────────────────── */
+/* ══ 4 · pipeline — the rail draws, the dots land ═══════════ */
+.pipe{position:relative;display:grid;grid-template-columns:repeat(5,1fr);gap:15px}
+/* the rail is drawn left to right: the flow IS the argument, so it moves */
+.pipe:before{content:"";position:absolute;left:5px;right:5px;top:15px;height:1px;background:var(--line-strong);
+  transform:scaleX(0);transform-origin:left center;transition:transform .55s var(--ease);transition-delay:80ms}
+.slide.on .pipe:before{transform:scaleX(1)}
+.stg{position:relative;padding-top:42px;display:flex;flex-direction:column}
+/* each dot pops as the rail reaches it */
+.stg:after{content:"";position:absolute;left:0;top:10px;width:11px;height:11px;border-radius:50%;
+  background:var(--paper);border:2px solid var(--burgundy-2);
+  transform:scale(0);transition:transform .3s var(--ease)}
+.slide.on .stg:after{transform:scale(1);transition-delay:calc(var(--i,0)*55ms + 130ms)}
+.stg.ai:after{background:var(--burgundy-2)}
+.stg.last:after{background:var(--review);border-color:var(--review)}
+.stg .k{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3);letter-spacing:.08em}
+.stg h4{font-size:23px;font-weight:600;letter-spacing:-.018em;margin:7px 0 0}
+.stg .v{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-size:40px;
+  font-weight:600;letter-spacing:-.04em;line-height:.9;margin:16px 0 0}
+.stg .v small{display:block;margin-top:8px;font-family:Inter,sans-serif;font-size:10px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.stg .tech{margin-top:16px;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.7;
+  color:var(--burgundy-2)}
+.stg .ct{margin-top:auto;padding-top:13px;border-top:1px solid var(--line);
+  font-family:'JetBrains Mono',monospace;font-size:10.5px;line-height:1.6;color:var(--ink-3);display:block}
+.stg.ai h4{color:var(--burgundy-2)}
+.stg.last h4,.stg.last .tech,.stg.last .v{color:var(--review)}
+
+/* ══ 5 · why / 11 · roadmap ═════════════════════════════════ */
+.road{display:grid;grid-template-columns:repeat(3,1fr)}
+.leg{padding:0 34px;border-left:1px solid var(--line)}
+.leg:first-child{border-left:0;padding-left:0}
+.leg .k{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--burgundy-2)}
+.leg .n{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:600;
+  font-size:96px;letter-spacing:-.05em;line-height:.9;margin:14px 0 0;color:var(--ink)}
+.leg h4{font-size:26px;font-weight:600;letter-spacing:-.02em;line-height:1.2;margin:16px 0 10px}
+.leg p{font-size:15.5px;line-height:1.5;color:var(--ink-3)}
+.leg p b{color:var(--ink-2);font-weight:600}
+.leg .tag{display:inline-block;margin-top:14px;padding:4px 10px;border-radius:999px;font-size:10px;
+  font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--review);border:1px solid var(--review)}
+
+/* ══ 6 · the stack ══════════════════════════════════════════ */
+.rows{list-style:none}
+.rows li{display:grid;grid-template-columns:184px minmax(0,1fr) 250px;align-items:center;gap:26px;
+  padding:19px 0;border-top:1px solid var(--line)}
+.rows li:last-child{border-bottom:1px solid var(--line)}
+.rows .f{font-size:19px;font-weight:600;letter-spacing:-.015em}
+.rows .f small{display:block;margin-top:4px;font-family:'JetBrains Mono',monospace;font-size:10px;
+  font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.rows .e{font-size:14.5px;line-height:1.4;color:var(--ink-3)}
+.rows .e b{color:var(--ink-2);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+/* chips land one at a time, so the layer assembles rather than appears */
+.chip{font-family:'JetBrains Mono',monospace;font-size:13px;padding:8px 12px;border-radius:6px;
+  border:1px solid var(--line-strong);background:var(--surface);color:var(--ink-2);
+  opacity:0;transform:scale(.88);transition:opacity .26s var(--ease),transform .26s var(--ease)}
+.slide.on .chip{opacity:1;transform:none;transition-delay:calc(var(--c,0)*45ms + 220ms)}
+.chip.h{border-color:var(--burgundy);background:var(--burgundy-tint);color:var(--ink)}
+
+/* ══ 7 · two models — the seven-field agreement strip ═══════ */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.pan{padding:24px 28px;border-radius:var(--radius-card);background:var(--surface);
+  border:1px solid var(--line);border-top:2px solid var(--burgundy-2)}
+.pan.g{border-top-color:var(--review)}
+.pan .k{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--ink-3)}
+.pan h4{font-size:32px;font-weight:600;letter-spacing:-.024em;margin:10px 0 0}
+.pan.g h4{color:var(--review)}
+.pan .m{margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--burgundy-2);line-height:1.6}
+.pan.g .m{color:var(--review)}
+.pan p{margin-top:12px;font-size:16px;line-height:1.4;color:var(--ink-3)}
+.pan p b{color:var(--ink-2);font-weight:600}
+/* seven fields, checked twice. Six land green; one disagrees and stays null. */
+.agree{margin-top:26px;padding-top:22px;border-top:1px solid var(--line-strong)}
+.agree .h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
+.agree .h b{font-size:19px;font-weight:600}
+.fields{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}
+.fld{padding:12px 14px;border-radius:var(--radius-control);background:var(--surface);
+  border:1px solid var(--line);
+  opacity:0;transform:translateY(10px);transition:opacity .28s var(--ease),transform .28s var(--ease)}
+.slide.on .fld{opacity:1;transform:none;transition-delay:calc(var(--c,0)*60ms + 260ms)}
+.fld .s{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600;color:var(--ok)}
+.fld .n{margin-top:5px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3)}
+.fld.no{border-color:var(--review);background:var(--review-tint)}
+.fld.no .s{color:var(--review)}
+
+/* ══ 8 · human in the loop ═════════════════════════════════
+   The one slide where the machine is not the subject. Left: what
+   it hands over. Right: the card the operator actually decides on,
+   assembled row by row so the handoff is watched, not described. */
+.hitl{display:grid;grid-template-columns:398px 1fr;gap:54px;align-items:start}
+.hstep{display:flex;align-items:baseline;gap:22px;padding:17px 0;border-top:1px solid var(--line)}
+.hstep:last-child{border-bottom:1px solid var(--line)}
+.hstep .n{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:600;
+  font-size:60px;letter-spacing:-.045em;line-height:.9;width:104px;text-align:right;flex:none;color:var(--review)}
+.hstep .t{font-size:19px;font-weight:600;letter-spacing:-.015em;line-height:1.25}
+.hstep .t i{font-style:normal;display:block;margin-top:6px;font-family:'JetBrains Mono',monospace;
+  font-size:12px;font-weight:400;color:var(--ink-3)}
+.hstep.you .n{color:var(--ok)}
+.hstep.you .t{color:var(--ok)}
+
+/* the operator's card */
+.rvw{border-radius:var(--radius-card);background:var(--surface);border:1px solid var(--line);
+  border-top:2px solid var(--review);overflow:hidden}
+.rvw .hd{display:flex;justify-content:space-between;align-items:center;
+  padding:15px 22px;border-bottom:1px solid var(--line)}
+.rvw .hd .id{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--ink-2)}
+.rvw .bd{padding:20px 22px}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cmp div{padding:13px 16px;border-radius:var(--radius-control);background:var(--surface-2)}
+.cmp .l{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.cmp .v{margin-top:7px;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;
+  font-size:25px;font-weight:600;letter-spacing:-.03em}
+.cmp .b .v{color:var(--review)}
+.reads{margin-top:14px;padding-top:13px;border-top:1px solid var(--line);display:flex;gap:24px;
+  font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--ink-3)}
+.reads b{color:var(--ink-2);font-weight:500}
+.acts{display:flex;align-items:center;gap:10px;padding:15px 22px;border-top:1px solid var(--line)}
+.btn{padding:9px 14px;border-radius:9px;font-size:13px;font-weight:600;
+  border:1px solid var(--line-strong);color:var(--ink-2)}
+.btn.p{background:var(--ok-tint);border-color:var(--ok);color:var(--ok)}
+.acts .log{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-3)}
+
+/* ══ 9 · validation ════════════════════════════════════════ */
+.seg{display:flex;height:84px;border-radius:var(--radius-control);overflow:hidden;background:var(--surface-2)}
+.seg div{display:flex;align-items:center;padding-left:22px;font-family:'JetBrains Mono',monospace;
+  font-variant-numeric:tabular-nums;font-size:34px;font-weight:600;letter-spacing:-.04em;
+  width:0;overflow:hidden;transition:width .6s var(--ease);transition-delay:180ms}
+.seg .s1{background:var(--ok-tint);color:var(--ok);box-shadow:inset 3px 0 0 var(--ok)}
+.seg .s2{background:var(--burgundy-tint);color:var(--burgundy-2);box-shadow:inset 3px 0 0 var(--burgundy-2)}
+.seg .s3{background:var(--review-tint);color:var(--review);box-shadow:inset 3px 0 0 var(--review)}
+.slide.on .seg div{width:var(--w)}
+.legend{display:flex;margin-top:16px}
+.legend div{font-size:14px;line-height:1.4;color:var(--ink-3);padding-right:28px}
+.legend .pill{margin-bottom:8px}
+.claim{margin-top:40px;padding-top:26px;border-top:1px solid var(--line-strong);
+  display:flex;align-items:baseline;gap:26px}
+.claim .z{font-size:96px;color:var(--ok);flex:none}
+.claim .c{font-size:32px;font-weight:600;letter-spacing:-.02em;line-height:1.2}
+.claim .c small{display:block;margin-top:10px;font-size:15.5px;font-weight:400;letter-spacing:0;
+  line-height:1.45;color:var(--ink-3)}
+.claim .c small b{color:var(--ink-2)}
+
+/* ══ 10 · challenges — number, then the fix ════════════════ */
+.chal{list-style:none;display:grid;grid-template-columns:repeat(2,1fr);gap:22px 44px}
+.chal li{display:grid;grid-template-columns:104px 1fr;gap:20px;align-items:baseline}
+.chal li.wide{grid-column:1 / -1;border-top:1px solid var(--line);padding-top:20px}
+.chal .n{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:600;
+  font-size:52px;letter-spacing:-.045em;line-height:.9;text-align:right;color:var(--burgundy-2)}
+.chal h5{font-size:19px;font-weight:600;letter-spacing:-.015em;line-height:1.25}
+.chal p{margin-top:6px;font-size:14.5px;line-height:1.45;color:var(--ink-3)}
+.chal p b{color:var(--ok);font-weight:600}
+
+/* ══ 12 · close ════════════════════════════════════════════ */
 .s-close{justify-content:center;align-items:center;text-align:center}
-.s-close .wordmark{font-family:Lato,sans-serif;font-weight:900;font-size:92px;letter-spacing:-.04em;line-height:1}
-.s-close .wordmark span{color:var(--orange)}
-.s-close .line{margin-top:22px;font-size:28px;font-weight:500;letter-spacing:-.02em;color:var(--ink-2)}
-.s-close .chain{margin-top:54px;display:flex;align-items:center;gap:26px;
-  font-family:'JetBrains Mono',monospace;font-size:40px;font-weight:700;letter-spacing:-.04em;color:var(--ink)}
-.s-close .chain i{font-style:normal;font-size:22px;color:var(--orange)}
-.s-close .cap{margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.18em;
-  text-transform:uppercase;color:var(--ink-3)}
+.s-close .line{font-size:62px;font-weight:600;letter-spacing:-.03em;line-height:1.16}
+.s-close .line span{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;letter-spacing:-.045em}
+.s-close .a{color:var(--ink)}.s-close .b{color:var(--burgundy-2)}.s-close .c{color:var(--ok)}
+.s-close .mark{margin-top:46px;font-size:36px;font-weight:600;letter-spacing:-.025em}
+.s-close .mark span{color:var(--burgundy-2)}
+.s-close .tl{margin-top:11px;font-size:17px;color:var(--ink-2)}
+.s-close .links{margin-top:38px;display:flex;gap:34px;font-family:'JetBrains Mono',monospace;
+  font-size:13px;color:var(--ink-3)}
+.s-close .links b{color:var(--ink-2);font-weight:500}
 
 @media (prefers-reduced-motion:reduce){
-  .fx,#bi{transition-duration:.01ms!important;transition-delay:0ms!important}
+  .fx,.seg div,.chip,.fld,.pipe:before,.stg:after,#bar i{
+    transition-duration:.01ms!important;transition-delay:0ms!important}
 }
 /* ?still — finished state, no motion. For PDF export and screenshots. */
-html.still .fx,html.still #bi{transition:none!important;transition-delay:0ms!important}
+html.still .fx,html.still .seg div,html.still .chip,html.still .fld,html.still .pipe:before,
+html.still .stg:after,html.still #bar i{transition:none!important;transition-delay:0ms!important}
 </style>
 </head>
 <body>
 <div id="fit"><div id="stage">
 
 <!-- ══ 1 · title ═══════════════════════════════════════════ -->
-<section class="slide s-title" data-t="DocuVerify">
+<section class="slide s-title" data-t="Title">
   <p class="eyebrow fx" style="--i:0">Averis &times; Monash Hackathon 2026 &nbsp;·&nbsp; Team Grabbers</p>
   <h1 class="wordmark fx" style="--i:1">Docu<span>Verify</span></h1>
-  <p class="line fx" style="--i:2">From inbox to discrepancy report.</p>
-  <div class="foot fx" style="--i:3"><span>520 emails</span><i></i><span>129 document checks</span><i></i><span>one pass</span></div>
+  <p class="tagline fx" style="--i:2">From inbox to discrepancy report.</p>
+  <div class="rule fx g" style="--i:3"></div>
+  <div class="trio">
+    <div class="fx" style="--i:4"><span class="n" data-count="5">0</span><span class="l">stages</span></div>
+    <div class="fx" style="--i:5"><span class="n" data-count="2">0</span><span class="l">AI layers</span></div>
+    <div class="fx" style="--i:6"><span class="n" data-count="7">0</span><span class="l">fields</span></div>
+  </div>
+  <div class="sponsor fx" style="--i:7"><small>Built for</small><b>AVERIS</b></div>
 </section>
 
 <!-- ══ 2 · the problem ═════════════════════════════════════ -->
 <section class="slide" data-t="The problem">
-  <p class="eyebrow fx" style="--i:0"><b>01</b> &nbsp;·&nbsp; The problem</p>
-  <h2 class="tag fx" style="--i:1">Today, every check is done <em>by eye.</em></h2>
-  <div class="pay stack">
-    <div class="fx" style="--i:2">
-      <div class="big eq">129 <i>&times;</i> 7 <i>=</i> <b><span data-count="903">0</span></b></div>
-      <div class="sub">cases &nbsp;&times;&nbsp; fields &nbsp;=&nbsp; <b>comparisons</b></div>
-    </div>
-    <div class="say fx" style="--i:3">
-      <h3>field comparisons, by hand</h3>
-      <p>129 shipping instructions against 129 draft bills of lading, <b>seven fields each</b> &mdash;
-        read off two screens, one pair at a time.</p>
-    </div>
+  <p class="eyebrow fx" style="--i:0"><b>01</b> &nbsp;/&nbsp; The problem</p>
+  <h2 class="head fx" style="--i:1">Every check is done <em>by eye.</em></h2>
+  <div>
+    <div class="step a fx x" style="--i:2"><div class="n num" data-count="520">0</div>
+      <div class="t">emails, one inbox<i>subjects that lie about the body</i></div></div>
+    <div class="step b fx x" style="--i:3"><div class="n num" data-count="129">0</div>
+      <div class="t">need a document check<i>an SI and a draft BL, side by side</i></div></div>
+    <div class="step c fx x" style="--i:4"><div class="n num" data-count="64">0</div>
+      <div class="t">ways to spell 7 fields<i>POL &middot; Load Port &middot; &#35013;&#36135;&#28207;</i></div></div>
+    <div class="step d fx x" style="--i:5"><div class="n">1</div>
+      <div class="t">miss ships the wrong BL<i>cargo stuck at port, <mark>and someone pays</mark></i></div></div>
   </div>
 </section>
 
-<!-- ══ 3 · what it is ══════════════════════════════════════ -->
-<section class="slide" data-t="What it does">
-  <p class="eyebrow fx" style="--i:0"><b>02</b> &nbsp;·&nbsp; The product</p>
-  <h2 class="tag fx" style="--i:1">DocuVerify does that pass <em>first.</em></h2>
-  <div class="verbs">
-    <div class="verb fx" style="--i:2"><div class="v">Read</div>
-      <p>Sorts the inbox by what each email <b>actually asks for</b>.</p></div>
-    <div class="verb fx" style="--i:3"><div class="v">Check</div>
-      <p>Opens both documents and pulls <b>all seven fields</b>.</p></div>
-    <div class="verb hero fx" style="--i:4"><div class="v">Decide</div>
-      <p>Returns the answer <b>with the evidence attached</b>.</p></div>
+<!-- ══ 3 · the product ═════════════════════════════════════ -->
+<section class="slide" data-t="The product">
+  <p class="eyebrow fx" style="--i:0"><b>02</b> &nbsp;/&nbsp; The product</p>
+  <h2 class="head fx" style="--i:1">Not a script. <em>A queue.</em></h2>
+  <div class="screens">
+    <div class="scr fx" style="--i:2"><div class="k">SCREEN 01</div><h4>Inbox</h4>
+      <p>Routed on arrival.</p><div class="r">/inbox</div></div>
+    <div class="scr fx" style="--i:3"><div class="k">SCREEN 02</div><h4>Case</h4>
+      <p>SI beside BL, field by field.</p><div class="r">/case/[id]</div></div>
+    <div class="scr fx" style="--i:4"><div class="k">SCREEN 03</div><h4>Audit</h4>
+      <p>Who decided what, and when.</p><div class="r">/audit</div></div>
+    <div class="scr last fx" style="--i:5"><div class="k">SCREEN 04</div><h4>Review</h4>
+      <p>What it refused to answer.</p><div class="r">/verification</div></div>
   </div>
+  <p class="kicker fx" style="--i:6;margin-top:36px">A script prints JSON. <b>A queue can be handed to an ops team.</b></p>
 </section>
 
-<!-- ══ 4 · read ════════════════════════════════════════════ -->
-<section class="slide" data-t="Read">
-  <p class="eyebrow fx" style="--i:0"><b>03</b> &nbsp;·&nbsp; Read</p>
-  <h2 class="tag fx" style="--i:1">Every email routed <em>before you open it.</em></h2>
-  <div class="pay stack" style="align-items:flex-start;text-align:left">
-    <div class="fx" style="--i:2">
-      <div class="big"><span data-count="100" data-suffix="%">0%</span></div>
-      <div class="sub"><b>routed correctly</b></div>
-    </div>
-    <div class="say fx" style="--i:3">
-      <h3>macro&#8209;F1 1.00 on the held&#8209;out test set</h3>
-      <p>A <b>fine-tuned BERT</b> classifier, five categories, reading the body &mdash; so a subject line
-        written to mislead changes nothing.</p>
-    </div>
-  </div>
-</section>
-
-<!-- ══ 5 · check ═══════════════════════════════════════════ -->
-<section class="slide" data-t="Check">
-  <p class="eyebrow fx" style="--i:0"><b>04</b> &nbsp;·&nbsp; Check</p>
-  <h2 class="tag fx" style="--i:1">One field. <em>Sixty-four</em> ways to spell it.</h2>
-  <div class="pay stack">
-    <div class="fx" style="--i:2">
-      <div class="big eq"><b>64</b> <i>&rarr;</i> <b>7</b></div>
-      <div class="sub">spellings &nbsp;&rarr;&nbsp; <b>fields</b></div>
-    </div>
-    <div class="say fx" style="--i:3">
-      <h3>every label resolves to one of seven</h3>
-      <p><span class="mono">POL</span>, <span class="mono">Load Port</span>,
-        <span class="mono">装货港</span> all resolve to one field &mdash; across
-        <b>PDF, Word, Excel and plain text</b>, scanned or digital.</p>
-    </div>
-  </div>
-</section>
-
-<!-- ══ 6 · decide ══════════════════════════════════════════ -->
-<section class="slide" data-t="Decide">
-  <p class="eyebrow fx" style="--i:0"><b>05</b> &nbsp;·&nbsp; Decide</p>
-  <h2 class="tag fx" style="--i:1">It names the field <em>that is wrong.</em></h2>
-  <div class="pay">
-    <div class="big fx" style="--i:2"><span data-count="45">0</span></div>
-    <div class="say fx" style="--i:3">
-      <h3>real defects caught, zero false alarms</h3>
-      <p>Every mismatch was inspected by hand against its source documents. <b>Not one was raised
-        in error.</b></p>
-    </div>
-  </div>
-</section>
-
-<!-- ══ 7 · the gate ════════════════════════════════════════ -->
-<section class="slide" data-t="The gate">
-  <p class="eyebrow fx" style="--i:0"><b>06</b> &nbsp;·&nbsp; The gate</p>
-  <h2 class="tag fx" style="--i:1">And it knows <em>when to stop.</em></h2>
-  <div class="pay right">
-    <div class="big fx" style="--i:2"><span data-count="20">0</span></div>
-    <div class="say fx" style="--i:3">
-      <h3>escalated to a human, each with a reason</h3>
-      <p><span class="mono">wrong_doc_type</span> · <span class="mono">missing_attachment</span> ·
-        <span class="mono">unreadable</span> · <span class="mono">missing_value</span> &mdash;
-        <b>never &ldquo;not sure&rdquo;.</b></p>
-    </div>
-  </div>
-</section>
-
-<!-- ══ 8 · how it is built ═════════════════════════════════ -->
-<section class="slide" data-t="How it is built">
-  <p class="eyebrow fx" style="--i:0"><b>07</b> &nbsp;·&nbsp; Architecture</p>
-  <h2 class="tag fx" style="--i:1">Five stages. <em>Five contracts.</em></h2>
+<!-- ══ 4 · architecture ════════════════════════════════════ -->
+<section class="slide" data-t="Architecture">
+  <p class="eyebrow fx" style="--i:0"><b>03</b> &nbsp;/&nbsp; Technical architecture &nbsp;<span class="req">[required]</span></p>
+  <h2 class="head fx" style="--i:1">Five stages. <em>Five frozen contracts.</em></h2>
   <div class="pipe">
-    <div class="stg fx" style="--i:2"><div class="k">01</div><h4>Intake</h4><p>Gmail, or the supplied inbox.</p></div>
-    <div class="stg fx" style="--i:2"><div class="k">02</div><h4>Prepare</h4><p>Body text, cleaned.</p></div>
-    <div class="stg ai fx" style="--i:3"><div class="k">03 · AI</div><h4>Classify</h4><p>Fine-tuned BERT, on a Colab GPU.</p></div>
-    <div class="stg fx" style="--i:3"><div class="k">04</div><h4>Ingest</h4><p>Four formats, one scanner.</p></div>
-    <div class="stg fx" style="--i:4"><div class="k">05</div><h4>Compare</h4><p>Normalise, diff, report.</p></div>
+    <div class="stg fx" style="--i:2"><div class="k">STAGE 01</div><h4>Intake</h4>
+      <div class="v"><span data-count="520">0</span><small>emails in</small></div>
+      <div class="tech">Gmail API<br>FastAPI</div>
+      <code class="ct">body<br>attachments[]</code></div>
+    <div class="stg fx" style="--i:3"><div class="k">STAGE 02</div><h4>Prepare</h4>
+      <div class="v"><span data-count="1">0</span><small>text payload</small></div>
+      <div class="tech">Python<br>Pydantic</div>
+      <code class="ct">clean_subject<br>clean_body</code></div>
+    <div class="stg ai fx" style="--i:4"><div class="k">STAGE 03 · AI</div><h4>Route</h4>
+      <div class="v"><span data-count="5">0</span><small>categories</small></div>
+      <div class="tech">fine-tuned BERT<br>transformers</div>
+      <code class="ct">classification<br>requires_review</code></div>
+    <div class="stg fx" style="--i:5"><div class="k">STAGE 04</div><h4>Ingest</h4>
+      <div class="v"><span data-count="4">0</span><small>formats, one path</small></div>
+      <div class="tech">pypdfium2<br>docx &middot; openpyxl</div>
+      <code class="ct">documents[]<br>segments</code></div>
+    <div class="stg last fx" style="--i:6"><div class="k">STAGE 05 · AI</div><h4>Verify</h4>
+      <div class="v"><span data-count="7">0</span><small>fields, twice</small></div>
+      <div class="tech">google-genai &times;2<br>Pydantic</div>
+      <code class="ct">mismatches[]<br>review_reasons</code></div>
+  </div>
+  <p class="kicker fx" style="--i:7;margin-top:36px">Every arrow is a schema. <b>A stage may be rewritten; its contract may not.</b></p>
+</section>
+
+<!-- ══ 5 · why this shape ══════════════════════════════════ -->
+<section class="slide" data-t="Why this shape">
+  <p class="eyebrow fx" style="--i:0"><b>04</b> &nbsp;/&nbsp; Design decisions</p>
+  <h2 class="head fx" style="--i:1">The seams are <em>where the risk is.</em></h2>
+  <div class="road">
+    <div class="leg fx x" style="--i:2"><div class="k">PARALLELISM</div>
+      <div class="n num" data-count="5">0</div>
+      <h4>owners, zero blocking</h4>
+      <p>Contracts agreed first. Every stage tests against a <b>mocked upstream file</b>.</p></div>
+    <div class="leg fx x" style="--i:3"><div class="k">ATTRIBUTION</div>
+      <div class="n num" data-count="2">0</div>
+      <h4>stages may guess</h4>
+      <p>Only 03 and 05. Cleaning, normalising and comparing stay <b>deterministic</b>.</p></div>
+    <div class="leg fx x" style="--i:4"><div class="k">COST</div>
+      <div class="n num" data-count="1">0</div>
+      <h4>read per attachment</h4>
+      <p>Stage 5 consumes what stage 4 already parsed. <b>Nothing is opened twice.</b></p></div>
   </div>
 </section>
 
-<!-- ══ 9 · close ═══════════════════════════════════════════ -->
-<section class="slide s-close" data-t="Close">
-  <h2 class="wordmark fx" style="--i:0">Docu<span>Verify</span></h2>
-  <p class="line fx" style="--i:1">From inbox to discrepancy report.</p>
-  <div class="chain fx" style="--i:2"><span>520</span><i>&rarr;</i><span>129</span><i>&rarr;</i><span>45</span><i>&rarr;</i><span>20</span></div>
-  <p class="cap fx" style="--i:3">read &nbsp;·&nbsp; checked &nbsp;·&nbsp; caught &nbsp;·&nbsp; escalated</p>
+<!-- ══ 6 · the stack ═══════════════════════════════════════ -->
+<section class="slide" data-t="The stack">
+  <p class="eyebrow fx" style="--i:0"><b>05</b> &nbsp;/&nbsp; Implementation &nbsp;<span class="req">[required]</span></p>
+  <h2 class="head fx" style="--i:1">Four layers. <em>Every one earns it.</em></h2>
+  <ul class="rows">
+    <li class="fx x" style="--i:2">
+      <div class="f">Surface<small>Operator</small></div>
+      <div class="chips"><span class="chip" style="--c:0">Next.js 16</span><span class="chip" style="--c:1">React 19</span>
+        <span class="chip" style="--c:2">Tailwind 4</span><span class="chip" style="--c:3">Base UI</span>
+        <span class="chip" style="--c:4">Recharts</span></div>
+      <div class="e">The queue renders on the server. <b>The case view stays live.</b></div>
+    </li>
+    <li class="fx x" style="--i:3">
+      <div class="f">API<small>Contracts</small></div>
+      <div class="chips"><span class="chip" style="--c:5">FastAPI</span><span class="chip" style="--c:6">Uvicorn</span>
+        <span class="chip h" style="--c:7">Pydantic</span></div>
+      <div class="e">The five contracts are <b>code, not documentation.</b></div>
+    </li>
+    <li class="fx x" style="--i:4">
+      <div class="f">Intelligence<small>Two layers</small></div>
+      <div class="chips"><span class="chip h" style="--c:8">fine-tuned BERT</span><span class="chip" style="--c:9">transformers</span>
+        <span class="chip h" style="--c:10">Gemini 3.8 Flash</span><span class="chip h" style="--c:11">Gemini 3.7 Flash</span></div>
+      <div class="e">BERT routes free and local. <b>Gemini reads the documents.</b></div>
+    </li>
+    <li class="fx x" style="--i:5">
+      <div class="f">Documents<small>Four formats</small></div>
+      <div class="chips"><span class="chip" style="--c:12">pypdfium2</span><span class="chip" style="--c:13">python-docx</span>
+        <span class="chip" style="--c:14">openpyxl</span><span class="chip" style="--c:15">pypdf</span></div>
+      <div class="e"><b>No Tesseract.</b> Scans go to native vision instead.</div>
+    </li>
+  </ul>
+  <p class="kicker fx" style="--i:6;margin-top:32px">Nothing decorative: <b>every name here ships in the repo today.</b></p>
 </section>
 
-<div id="foot"><span id="ft"></span><span><b id="fn">1</b> / <span id="fc"></span></span></div>
+<!-- ══ 7 · two models ══════════════════════════════════════ -->
+<section class="slide" data-t="The AI layers">
+  <p class="eyebrow fx" style="--i:0"><b>06</b> &nbsp;/&nbsp; Where the AI is</p>
+  <h2 class="head fx" style="--i:1">Two models. <em>Two jobs.</em></h2>
+  <div class="duo">
+    <div class="pan fx" style="--i:2"><div class="k">STAGE 03 &nbsp;·&nbsp; ROUTING</div>
+      <h4>BERT reads the inbox</h4>
+      <div class="m">fine-tuned &middot; local &middot; 5 classes</div>
+      <p>Body only &mdash; <b>the subjects mislead on purpose.</b></p></div>
+    <div class="pan g fx" style="--i:3"><div class="k">STAGE 05 &nbsp;·&nbsp; EXTRACTION</div>
+      <h4>Two Geminis must agree</h4>
+      <div class="m">gemini-3.8-flash &nbsp;+&nbsp; gemini-3.7-flash</div>
+      <p>Read independently. <b>Disagree and the field stays null.</b></p></div>
+  </div>
+  <div class="agree">
+    <div class="h">
+      <b class="fx" style="--i:4">7 fields &times; 2 models, per document</b>
+      <span class="label fx" style="--i:4">agreement required</span>
+    </div>
+    <div class="fields">
+      <div class="fld" style="--c:0"><div class="s">&#10003;</div><div class="n">shipper</div></div>
+      <div class="fld" style="--c:1"><div class="s">&#10003;</div><div class="n">consignee</div></div>
+      <div class="fld" style="--c:2"><div class="s">&#10003;</div><div class="n">notify</div></div>
+      <div class="fld" style="--c:3"><div class="s">&#10003;</div><div class="n">POL</div></div>
+      <div class="fld" style="--c:4"><div class="s">&#10003;</div><div class="n">POD</div></div>
+      <div class="fld" style="--c:5"><div class="s">&#10003;</div><div class="n">containers</div></div>
+      <div class="fld no" style="--c:6"><div class="s">&#8800;</div><div class="n">gross_wt</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 8 · human in the loop ═══════════════════════════════ -->
+<section class="slide" data-t="Human in the loop">
+  <p class="eyebrow fx" style="--i:0"><b>07</b> &nbsp;/&nbsp; Human in the loop</p>
+  <h2 class="head fx" style="--i:1">The system stops. <em>A person decides.</em></h2>
+  <div class="hitl">
+    <div>
+      <div class="hstep fx x" style="--i:2"><div class="n num" data-count="20">0</div>
+        <div class="t">handed over, not guessed<i>15% of cases &mdash; never silently resolved</i></div></div>
+      <div class="hstep fx x" style="--i:3"><div class="n num" data-count="4">0</div>
+        <div class="t">named reasons, not a score<i>5 / 5 / 5 / 5 across the planted edge cases</i></div></div>
+      <div class="hstep you fx x" style="--i:4"><div class="n num" data-count="1">0</div>
+        <div class="t">operator, one click<i>accept &middot; override &middot; send back</i></div></div>
+    </div>
+    <div class="rvw fx" style="--i:3">
+      <div class="hd"><span class="id">case_118 &nbsp;&middot;&nbsp; gross_weight_kg</span>
+        <span class="pill nr"><i>&#9670;</i>Needs review</span></div>
+      <div class="bd">
+        <div class="cmp">
+          <div class="fx" style="--i:4"><div class="l">Shipping Instruction</div><div class="v">12,450 kg</div></div>
+          <div class="b fx" style="--i:5"><div class="l">Draft Bill of Lading</div><div class="v">12,540 kg</div></div>
+        </div>
+        <div class="reads fx" style="--i:6">
+          <span><b>gemini-3.8</b> &rarr; 12,450</span><span><b>gemini-3.7</b> &rarr; 12,540</span>
+          <span style="color:var(--review)">disagreed &rarr; null</span></div>
+      </div>
+      <div class="acts fx" style="--i:7"><span class="btn p">Accept SI value</span><span class="btn">Override</span>
+        <span class="btn">Send back</span><span class="log">&rarr; /audit</span></div>
+    </div>
+  </div>
+  <p class="kicker fx" style="--i:8;margin-top:32px">The operator sees both values <b>and both model readings</b> &mdash;
+    and every decision they make is stored with its reason.</p>
+</section>
+
+<!-- ══ 9 · validation ══════════════════════════════════════ -->
+<section class="slide" data-t="Validation">
+  <p class="eyebrow fx" style="--i:0"><b>08</b> &nbsp;/&nbsp; Feasibility &amp; validation</p>
+  <h2 class="head fx" style="--i:1">129 cases. <em>Three outcomes.</em></h2>
+  <div class="seg fx" style="--i:2">
+    <div class="s1" style="--w:49.6%"><span data-count="64">0</span></div>
+    <div class="s2" style="--w:34.9%"><span data-count="45">0</span></div>
+    <div class="s3" style="--w:15.5%"><span data-count="20">0</span></div>
+  </div>
+  <div class="legend">
+    <div class="fx" style="--i:3;width:49.6%"><span class="pill ok"><i>&#9679;</i>Verified</span><br>All seven match</div>
+    <div class="fx" style="--i:4;width:34.9%"><span class="pill mm"><i>&#9650;</i>Discrepancy</span><br>Field named, both values shown</div>
+    <div class="fx" style="--i:5;width:15.5%;padding-right:0"><span class="pill nr"><i>&#9670;</i>Needs review</span><br>Escalated with a reason</div>
+  </div>
+  <div class="claim">
+    <div class="z num fx" style="--i:6" data-count="0">0</div>
+    <div class="c fx" style="--i:7">false positives across all 45.
+      <small>Every one re-checked by hand against its source documents.</small></div>
+  </div>
+</section>
+
+<!-- ══ 10 · challenges ═════════════════════════════════════ -->
+<section class="slide" data-t="What was hard">
+  <p class="eyebrow fx" style="--i:0"><b>09</b> &nbsp;/&nbsp; Challenges faced &nbsp;<span class="req">[required]</span></p>
+  <h2 class="head fx" style="--i:1">Four traps. <em>One judgement call.</em></h2>
+  <ul class="chal">
+    <li class="fx" style="--i:2"><div class="n" data-count="64">0</div><div>
+      <h5>spellings of seven fields</h5>
+      <p><b>Normalise, then match ordered patterns</b> &mdash; NOTIFY before CONSIGNEE.</p></div></li>
+    <li class="fx" style="--i:2"><div class="n" data-count="5">0</div><div>
+      <h5>blanks that looked like defects</h5>
+      <p><span class="mono">____MT</span> is a question. <b>Placeholders route to missing_value.</b></p></div></li>
+    <li class="fx" style="--i:3"><div class="n" data-count="0">0</div><div>
+      <h5>subject lines trusted</h5>
+      <p>The corpus is adversarial. <b>Classification reads the body only.</b></p></div></li>
+    <li class="fx" style="--i:3"><div class="n" data-count="2">0</div><div>
+      <h5>models, because one lies well</h5>
+      <p>No way to grade a lone extractor. <b>The disagreement is the signal.</b></p></div></li>
+    <li class="wide fx" style="--i:4"><div class="n" data-count="91">0</div><div>
+      <h5>emails with nothing attached &mdash; 17% of the corpus</h5>
+      <p>&ldquo;Send the draft BL for checking&rdquo;, no document. Labelled <span class="mono">SI_REQUEST</span>:
+        <b>a reasoned decision, recorded &mdash; not hidden.</b></p></div></li>
+  </ul>
+</section>
+
+<!-- ══ 11 · roadmap ════════════════════════════════════════ -->
+<section class="slide" data-t="Roadmap">
+  <p class="eyebrow fx" style="--i:0"><b>10</b> &nbsp;/&nbsp; Future roadmap &nbsp;<span class="req">[required]</span></p>
+  <h2 class="head fx" style="--i:1">Three things, <em>in order.</em></h2>
+  <div class="road">
+    <div class="leg fx x" style="--i:2"><div class="k">NEAR</div>
+      <h4>A live inbox, deployed</h4>
+      <p>Gmail OAuth, <b>read-only</b>. A public URL, not a laptop.</p></div>
+    <div class="leg fx x" style="--i:3"><div class="k">NEXT</div>
+      <h4>Memory and scale</h4>
+      <p>Persist the audit trail. <b>Cache by document hash</b> &mdash; never pay twice.</p></div>
+    <div class="leg fx x" style="--i:4"><div class="k">THEN</div>
+      <h4>The loop closes</h4>
+      <p>Corrections become training data. <b>Ships only if it beats the incumbent.</b></p>
+      <span class="tag">Prototyped as a simulation</span></div>
+  </div>
+  <p class="kicker fx" style="--i:5;margin-top:40px">In that order: <b>a public link is worth more than a better model.</b></p>
+</section>
+
+<!-- ══ 12 · close ══════════════════════════════════════════ -->
+<section class="slide s-close" data-t="Close">
+  <p class="line fx" style="--i:0"><span class="a" data-count="5">0</span> stages.<br>
+    <span class="b" data-count="2">0</span> models that must agree.<br>
+    <span class="c" data-count="0">0</span> answers without evidence.</p>
+  <p class="mark fx" style="--i:3">Docu<span>Verify</span></p>
+  <p class="tl fx" style="--i:4">From inbox to discrepancy report.</p>
+  <div class="links fx" style="--i:5"><span><b>Team</b> Grabbers</span><span><b>Repo</b> github.com/LIMJIALIH/Grabbers---Averis-Hackathon</span></div>
+</section>
+
+<div id="foot"><span id="ft"></span><span class="r"><b id="fn">1</b> / <span id="fc"></span></span></div>
 <div id="bar"><i id="bi"></i></div>
 </div></div>
 
@@ -281,7 +583,9 @@ const still  = location.search.includes('still');
 const reduce = still || matchMedia('(prefers-reduced-motion: reduce)').matches;
 if (still) document.documentElement.classList.add('still');
 
-const HOLD = reduce ? 0 : 160, COUNT_MS = 640;
+/* MOTION BUDGET — every slide settles inside --cap. Worst case is the pipeline
+   rail: 80ms delay + 550ms draw = 630ms, and its last dot lands at 460ms. */
+const HOLD = reduce ? 0 : 140, COUNT_MS = 620, STAGGER = 35;
 let i = 0, timers = [];
 
 const fit = () => {
@@ -290,7 +594,7 @@ const fit = () => {
 };
 
 /* The timer is the guarantee: rAF is throttled in a hidden window, so without it
-   the one number the slide exists for can freeze part-way. */
+   a figure can freeze part-way on a slide whose whole job is the number. */
 function countUp(el, to, ms = COUNT_MS) {
   const suffix = el.dataset.suffix || '';
   const land = () => { el.textContent = to + suffix; };
@@ -311,26 +615,29 @@ function show(n) {
   i = Math.max(0, Math.min(slides.length - 1, n));
   slides.forEach((s, k) => s.classList.toggle('on', k === i));
 
-  const cur = slides[i];
+  const cur  = slides[i];
   const figs = [...cur.querySelectorAll('[data-count]')];
   if (reduce) {
     figs.forEach(el => el.textContent = el.dataset.count + (el.dataset.suffix || ''));
   } else {
     figs.forEach(el => el.textContent = '0' + (el.dataset.suffix || ''));
-    /* fires with the number's own entrance, not before it */
-    timers.push(setTimeout(() => figs.forEach(el =>
-      countUp(el, +el.dataset.count, +el.dataset.ms || COUNT_MS)), HOLD));
+    timers.push(setTimeout(() => figs.forEach((el, k) =>
+      timers.push(setTimeout(() => countUp(el, +el.dataset.count, +el.dataset.ms || COUNT_MS), k * STAGGER))
+    ), HOLD));
   }
 
   document.getElementById('ft').textContent = cur.dataset.t;
   document.getElementById('fn').textContent = i + 1;
-  document.getElementById('bi').style.transform = `scaleX(${(i + 1) / slides.length})`;
+  document.getElementById('bi').style.width = ((i + 1) / slides.length * 100) + '%';
   history.replaceState(null, '', '#' + (i + 1));
 }
 
 document.getElementById('fc').textContent = slides.length;
 addEventListener('resize', fit);
+/* A hidden tab throttles timers to ~1/s, so alt-tabbing mid-slide strands the
+   figures part-counted. Replay on return so the presenter sees them land. */
 addEventListener('visibilitychange', () => { if (!document.hidden) show(i); });
+/* deep links: #7 opens slide 7. show() uses replaceState, which never re-fires this. */
 addEventListener('hashchange', () => {
   const n = (parseInt(location.hash.slice(1)) || 1) - 1;
   if (n !== i) show(n);
