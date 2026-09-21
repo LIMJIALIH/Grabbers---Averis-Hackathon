@@ -53,6 +53,11 @@ type Case = {
   attachments: { name: string; url: string | null; text: string | null }[];
   state: "review" | "approved" | "escalated";
 };
+type VerificationUploadResponse = {
+  case: Case;
+  gemma_used: boolean;
+  warnings: string[];
+};
 const fieldKeys = ["shipper", "consignee", "notify_party", "port_of_loading", "port_of_discharge", "container_count", "gross_weight_kg"];
 const QUEUE_PAGE_SIZE = 10;
 const stages = [
@@ -98,6 +103,7 @@ export default function Page() {
   const [toast, setToast] = useState("");
   const [reason, setReason] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -226,6 +232,45 @@ export default function Page() {
       },
       ...a,
     ]);
+  }
+  async function prepareVerification() {
+    const emailFiles = files.filter((file) => /\.json$/i.test(file.name));
+    if (emailFiles.length !== 1) {
+      setToast("Choose exactly one email JSON file. Attachments are optional.");
+      return;
+    }
+    const formData = new FormData();
+    formData.append("email", emailFiles[0]);
+    for (const file of files) {
+      if (file !== emailFiles[0]) formData.append("attachments", file);
+    }
+    setUploading(true);
+    try {
+      const response = await fetch("/api/v1/verifications", {
+        method: "POST",
+        body: formData,
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.detail || "Unable to prepare this verification.");
+      }
+      const result = payload as VerificationUploadResponse;
+      setCases((current) => [
+        result.case,
+        ...current.filter((item) => item.id !== result.case.id),
+      ]);
+      setActiveId(result.case.id);
+      setAttachmentIndex(0);
+      setView("Verification inbox");
+      setModal(null);
+      const fallback = result.gemma_used ? " Gemma fallback was used; review extracted values." : "";
+      const warning = result.warnings[0] ? ` ${result.warnings[0]}` : "";
+      setToast(`Verification ${result.case.id} prepared.${fallback}${warning}`);
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : "Unable to prepare this verification.");
+    } finally {
+      setUploading(false);
+    }
   }
   function exportReport() {
     if (!active) return;
@@ -840,28 +885,28 @@ export default function Page() {
         {modal === "Upload documents" ? (
           <>
             <p>
-              Add a Shipping Instruction and draft Bill of Lading to start a
-              verification.
+              Add one email JSON file to classify it. SI and draft BL
+              attachments are optional.
             </p>
             <label className="upload-zone">
               <Upload size={28} />
-              <strong>Choose your shipping documents</strong>
-              <span>PDF, DOCX, TXT or JSON · up to 20 MB each</span>
+              <strong>Choose an email JSON and optional documents</strong>
+              <span>JSON, PDF, DOCX, XLSX, TXT, PNG or JPEG · up to 20 MB each</span>
               <input
                 type="file"
                 multiple
-                accept=".pdf,.docx,.txt,.json"
+                accept=".pdf,.docx,.xlsx,.txt,.json,.png,.jpg,.jpeg"
                 onChange={(e) => {
                   const chosen = Array.from(e.target.files || []);
                   if (
                     chosen.some(
                       (f) =>
                         f.size > 20 * 1024 * 1024 ||
-                        !/\.(pdf|docx|txt|json)$/i.test(f.name),
+                        !/\.(pdf|docx|xlsx|txt|json|png|jpg|jpeg)$/i.test(f.name),
                     )
                   ) {
                     setToast(
-                      "Choose PDF, DOCX, TXT or JSON files under 20 MB.",
+                      "Choose supported JSON or document files under 20 MB.",
                     );
                     return;
                   }
@@ -877,21 +922,16 @@ export default function Page() {
               </div>
             ))}
             <div className="info-note">
-              Frontend preview: files stay on your device. Extraction and inbox
-              ingestion require a connected backend.
+              The email JSON is required. Documents use local extraction first
+              and are sent to Gemma only if deterministic parsing fails.
             </div>
             <button
               className="button primary full-width"
-              disabled={!files.length}
-              onClick={() => {
-                setModal(null);
-                setToast(
-                  `${files.length} files selected. Connect the ingestion API to process documents.`,
-                );
-              }}
+              disabled={uploading || files.filter((file) => /\.json$/i.test(file.name)).length !== 1}
+              onClick={prepareVerification}
             >
               <ScanLine size={16} />
-              Prepare verification
+              {uploading ? "Preparing verification…" : "Prepare verification"}
             </button>
           </>
         ) : modal === "Escalate case" ? (

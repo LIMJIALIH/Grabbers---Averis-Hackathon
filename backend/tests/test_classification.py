@@ -18,7 +18,11 @@ def test_classification_endpoint(monkeypatch):
         },
         device="cpu",
     )
-    monkeypatch.setattr(classification_route.classifier, "predict", lambda subject, body: expected)
+    class FakeClassifier:
+        def predict(self, subject, body):
+            return expected
+
+    monkeypatch.setattr(classification_route, "get_email_classifier", lambda: FakeClassifier())
 
     with TestClient(create_app()) as client:
         response = client.post(

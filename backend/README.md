@@ -85,6 +85,8 @@ Settings load from `backend/.env` and environment variables (environment variabl
 | `DOCUVERIFY_BUNDLE_DIR` | Absolute path to `backend/resources/sdoc-hackathon-bundle` | Local participant bundle location |
 | `DOCUVERIFY_MODEL_DIR` | Absolute path to `backend/model/email_multiclass_classifier` | Saved Hugging Face classifier directory |
 | `DOCUVERIFY_MODEL_DEVICE` | `auto` | Inference device: `auto`, `cpu`, or `cuda` |
+| `DOCUVERIFY_GEMMA_API_KEY` | unset | Google AI Studio key for failed attachment extraction only |
+| `DOCUVERIFY_GEMMA_MODEL` | `gemma-4-26b-a4b-it` | Hosted Gemma fallback model |
 
 For the frontend on port 3101, for example:
 
@@ -132,6 +134,41 @@ uv run --project . --no-sync python -c "import torch; print(torch.cuda.is_availa
 Keep a single Uvicorn worker for the local demo because every worker loads its own
 copy of the roughly 438 MB model. The endpoint uses inference mode and does not
 calculate gradients or update model weights.
+
+## JSON-first verification uploads
+
+`POST /api/v1/verifications` accepts multipart form data with one required
+`email` JSON file and zero or more optional `attachments`. The JSON follows the
+organizer format: `email_id`, `from`, `subject`, `body`, and `attachments`.
+Attachment paths in the JSON are used only for basename matching and are never
+trusted as server paths.
+
+```powershell
+curl.exe -X POST http://127.0.0.1:8000/api/v1/verifications `
+  -F "email=@data_prep/inference_data/email_009.json;type=application/json" `
+  -F "attachments=@data_prep/inference_data/email_009_SI.txt;type=text/plain" `
+  -F "attachments=@data_prep/inference_data/email_009_BL.txt;type=text/plain"
+```
+
+Every email is classified locally. Non-comparison emails and emails without
+uploaded documents return a classification-only dashboard case. A
+`BL_COMPARISON` email with documents runs deterministic ingestion, extraction,
+and comparison. Uploads are held in a request-specific temporary directory and
+are not persisted after the response.
+
+When deterministic extraction yields no usable fields, the backend can use
+hosted Gemma 4 through Google AI Studio. Add the API key only to `backend/.env`:
+
+```dotenv
+DOCUVERIFY_GEMMA_API_KEY=your-google-ai-studio-key
+DOCUVERIFY_GEMMA_MODEL=gemma-4-26b-a4b-it
+```
+
+Gemma is not called for documents handled by local parsers. A fallback document
+is sent to Google's API, marked with a warning, and always requires human review.
+Without an API key, deterministic processing still works and incomplete documents
+remain review items. The current dashboard stores newly returned cases only in
+browser memory, so they disappear on refresh.
 
 ## Local resources (not committed)
 

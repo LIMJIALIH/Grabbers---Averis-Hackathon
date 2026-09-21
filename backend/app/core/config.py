@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     inbox_base_url: str = "http://localhost:8080"
     model_dir: Path = BACKEND_DIR / "model" / "email_multiclass_classifier"
     model_device: str = "auto"
+    gemma_api_key: str | None = None
+    gemma_model: str = "gemma-4-26b-a4b-it"
 
 
 settings = Settings()
