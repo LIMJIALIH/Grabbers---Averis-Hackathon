@@ -415,10 +415,10 @@ Keep HTTP handlers thin, put business logic in services, and isolate external I/
 For a local production-style process:
 
 ```powershell
-.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 1
 ```
 
-Do not combine `--workers` with `--reload`. Use `--host 0.0.0.0` only when intentionally exposing the service to other machines or a container network. This scaffold has no authentication; it is not ready for public deployment. Add appropriate authentication, HTTPS/reverse proxy configuration, secret management, and tested dependency locking before deployment.
+Do not combine `--workers` with `--reload`. Google sessions require one worker until a shared session store is implemented. Use `--host 0.0.0.0` only when intentionally exposing the service to other machines or a container network. The case and upload routes are shared demo APIs without per-user authorization; only deploy data authorized for this use. See [the Vercel and Render deployment guide](../DEPLOYMENT_VERCEL_RENDER.md).
 
 ## Troubleshooting
 

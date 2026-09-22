@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: docuverify-api
+    runtime: python
+    rootDir: backend
+    plan: 1c-2g
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1
+    healthCheckPath: /api/v1/health
+    disk:
+      name: docuverify-data
+      mountPath: /var/data/docuverify
+      sizeGB: 10
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: DOCUVERIFY_BUNDLE_DIR
+        value: /var/data/docuverify/resources/sdoc-hackathon-bundle
+      - key: DOCUVERIFY_MODEL_DIR
+        value: /var/data/docuverify/model/email_multiclass_classifier
+      - key: DOCUVERIFY_MODEL_DEVICE
+        value: cpu
+      - key: DOCUVERIFY_CORS_ORIGINS
+        sync: false
+      - key: DOCUVERIFY_APP_ORIGIN
+        sync: false
+      - key: DOCUVERIFY_GOOGLE_PROJECT_ID
+        sync: false
+      - key: DOCUVERIFY_GOOGLE_CLIENT_ID
+        sync: false
+      - key: DOCUVERIFY_GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: DOCUVERIFY_GEMINI_API_KEY
+        sync: false
+      - key: DOCUVERIFY_GEMMA_API_KEY
+        sync: false
