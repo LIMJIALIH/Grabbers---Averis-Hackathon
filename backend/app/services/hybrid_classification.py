@@ -38,6 +38,13 @@ def classify_with_fallback(
             fallback_reason="Email has no subject or body",
         )
     prediction = bert.predict(subject, body)
+    if prediction.source in {"cached_bert", "gemini"}:
+        if prediction.source == "gemini" and prediction.confidence < _threshold(prediction.category):
+            return prediction.model_copy(update={
+                "requires_human_review": True,
+                "fallback_reason": "Hosted classification confidence is below the category threshold",
+            })
+        return prediction
     ranked = sorted(prediction.scores.values(), reverse=True)
     margin = prediction.confidence - (ranked[1] if len(ranked) > 1 else 0.0)
     reasons = []

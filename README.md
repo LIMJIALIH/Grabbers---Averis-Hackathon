@@ -1,5 +1,7 @@
 # DocuVerify
 
+Deployment: [no-cost Render backend with Vercel](DEPLOYMENT_RENDER_FREE.md), or [paid Render persistent-disk setup](DEPLOYMENT_VERCEL_RENDER.md).
+
 Shipping document verification for the Averis x Monash hackathon. DocuVerify is designed to classify inbox requests, extract seven shipping fields from Shipping Instructions (SI) and draft Bills of Lading (BL), compare them, and send uncertain cases to a human reviewer.
 
 ## Project structure

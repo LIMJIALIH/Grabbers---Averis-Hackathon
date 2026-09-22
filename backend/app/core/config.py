@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     inbox_base_url: str = "http://localhost:8080"
     model_dir: Path = BACKEND_DIR / "model" / "email_multiclass_classifier"
     model_device: str = "auto"
+    classification_mode: str = "bert"
+    classification_cache_path: Path = BACKEND_DIR / "deployment" / "classifications.json"
+    classification_hosted_model: str = "gemini-2.5-flash"
+    demo_archive_key: SecretStr | None = None
     gemini_api_key: SecretStr | None = None
     extraction_primary_model: str = "gemini-3.8-flash"
     extraction_secondary_model: str = "gemini-3.7-flash"
