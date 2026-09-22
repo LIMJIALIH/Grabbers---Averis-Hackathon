@@ -4,7 +4,7 @@ This procedure describes the paid persistent-disk deployment: Next.js on Vercel,
 
 The repository includes [render.yaml](render.yaml) and [frontend/.env.example](frontend/.env.example). Credentials, private artifacts and hosting accounts must be supplied separately.
 
-Current Vercel production origin: `https://averis-x-monash.vercel.app`. The frontend was deployed from the local `frontend/` directory. The existing Vercel project has no Git connection or backend URL configured yet; set the Render URL and redeploy after provisioning the backend.
+Current Vercel production origin: `https://averis-x-monash.vercel.app`. The frontend was deployed from the local `frontend/` directory. Its two backend URL variables point to the active Render Free service at `https://docuverify-api.onrender.com`; the Vercel project has no Git connection. This paid guide is an alternative for a future persistent-disk upgrade.
 
 ## Current behavior and requirements
 

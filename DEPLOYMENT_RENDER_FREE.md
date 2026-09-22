@@ -14,13 +14,13 @@ $env:PYTHONPATH = (Get-Location).Path
 python scripts/package_free_demo.py
 ```
 
-The script classifies the inbox once with the local BERT model, then writes only `backend/deployment/demo-bundle.enc`. It packages inbox JSON, attachments, and classification results, excluding the answer key and model weights. Commit the encrypted file and code; enter `DOCUVERIFY_DEMO_ARCHIVE_KEY` only in Render's environment settings. Do not put the key in Git, Vercel, `.env.example`, or a public issue. On startup `python -m app.bootstrap_demo` authenticates and decrypts the archive into `/tmp/docuverify`. A wrong key stops startup instead of serving an empty or corrupt mailbox.
+The script classifies the inbox once with the local BERT model, then writes only `backend/deployment/demo-bundle.enc`. It packages inbox JSON, attachments, and classification results, excluding the answer key and model weights. Commit the encrypted file and code; enter `DOCUVERIFY_DEMO_ARCHIVE_KEY` only in Render's environment settings. Do not put the key in Git, Vercel, `.env.example`, or a public issue. On startup `python -m app.bootstrap_demo` authenticates and decrypts the archive into `/tmp/docuverify`. A wrong key stops startup instead of serving an empty or corrupt mailbox. The current key is also saved locally for this Windows user as a DPAPI-encrypted file at `%APPDATA%\DocuVerify\demo-archive-key.dpapi`; back it up in a password manager before moving machines.
 
 The archive is encrypted at rest in Git, but the current `/api/v1/cases` and attachment routes intentionally serve demo records without per-user authentication. Use only documents approved for public demo access. Encryption does not restrict what a visitor can read through those endpoints.
 
 ## Render Free service
 
-Create a Python Web Service using the GitHub repository and deployment branch, with root directory `backend`:
+The current service uses GitHub branch `deploy/render-free` and root directory `backend`. To recreate it, create a Python Web Service using that branch:
 
 ```text
 Region: Singapore
