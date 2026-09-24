@@ -10,6 +10,7 @@ export type ActionType =
   | "CORRECT_FIELD"
   | "REQUEST_HUMAN_REVIEW"
   | "GENERATE_REPORT"
+  | "DRAFT_REPLY"
   | "SYSTEM_NOTE";
 
 export interface UserAction {
@@ -43,6 +44,7 @@ const ACTION_DEFAULT_LABELS: Record<ActionType, string> = {
   CORRECT_FIELD: "Corrected field",
   REQUEST_HUMAN_REVIEW: "Escalated",
   GENERATE_REPORT: "Exported record",
+  DRAFT_REPLY: "Sent amendment request",
   SYSTEM_NOTE: "System note",
 };
 

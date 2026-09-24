@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Command } from "cmdk";
 import { FileText, History, Inbox, LayoutDashboard, Mail } from "lucide-react";
 import { useCases } from "@/lib/app-state";
-import { FIELDS, REASON_WORDS } from "@/lib/cases";
+import { FIELDS, REASON_WORDS, searchText } from "@/lib/cases";
 import { Modal } from "@/components/ui";
 
 const PAGES = [
@@ -26,7 +26,7 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
   const hits = useMemo(
     () =>
       needle
-        ? cases.filter((c) => `${c.id} ${c.subject} ${c.sender}`.toLowerCase().includes(needle)).slice(0, 8)
+        ? cases.filter((c) => searchText(c).includes(needle)).slice(0, 8)
         : cases.filter((c) => c.status !== "OK").slice(0, 5),
     [cases, needle],
   );
@@ -42,7 +42,7 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
   return (
     <Modal open={open} onClose={onClose} title="Search">
       <Command shouldFilter={false} label="Search" loop>
-        <Command.Input value={q} onValueChange={setQ} placeholder="Search emails, senders, fields, pages…" className="field mb-3 w-full" autoFocus />
+        <Command.Input value={q} onValueChange={setQ} placeholder="Search BL no., booking, vessel, emails, fields…" className="field mb-3 w-full" autoFocus />
         <Command.List className="max-h-80 overflow-y-auto">
           <Command.Empty className="px-3 py-6 text-center text-ink-2">Nothing matches “{q}”. Try an email id or a sender.</Command.Empty>
           {pages.length > 0 && (
@@ -57,7 +57,7 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
               {hits.map((c) => (
                 <Command.Item key={c.id} value={c.id} onSelect={() => go(`/case/${c.id}`)} className={item}>
                   <Mail size={16} aria-hidden className="shrink-0" />
-                  <span className="num shrink-0 text-[12px] text-ink-3">{c.id}</span>
+                  <span className="num shrink-0 text-[12px] text-ink-3">{c.ship.bl ?? c.id}</span>
                   <span className="truncate">{c.subject}</span>
                 </Command.Item>
               ))}

@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, Flag, Mail, Paperclip, Pencil, Printer } from "lucide-react";
+import { Check, Copy, Download, Flag, Mail, Paperclip, Pencil, Printer, Reply } from "lucide-react";
 import { useAccount, useCases } from "@/lib/app-state";
 import { recordUserAction } from "@/lib/auditTrailStore";
-import { HITL_THRESHOLD, categoryLabel, diffSpan, fieldLabel, matches, type Case, type Field } from "@/lib/cases";
+import { HITL_THRESHOLD, categoryLabel, diffSpan, fieldLabel, matches, type Case, type Field, type Shipment } from "@/lib/cases";
 import { Abbr, CategoryPill, DocumentText, FieldScore, Modal, StatusPill, hasFile } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
@@ -50,7 +50,7 @@ export function CasePane({ c }: { c: Case }) {
   const { account } = useAccount();
   const res = resolutions[c.id];
   const fixes = corrections[c.id] ?? {};
-  const [modal, setModal] = useState<null | { kind: "doc"; i: number } | { kind: "fix"; f: Field } | { kind: "escalate" } | { kind: "report" }>(null);
+  const [modal, setModal] = useState<null | { kind: "doc"; i: number } | { kind: "fix"; f: Field } | { kind: "escalate" } | { kind: "report" } | { kind: "reply" }>(null);
 
   const isBl = c.category === "BL_COMPARISON";
   const rows: Row[] = c.fields.map((f) => {
@@ -70,6 +70,8 @@ export function CasePane({ c }: { c: Case }) {
     el?.scrollIntoView({ block: "center", behavior: "smooth" });
     el?.focus({ preventScroll: true });
   };
+  // Something has to go back to the sender: a field to amend, or documents to resend.
+  const needsReply = isBl && (rows.some((r) => r.state !== "match") || c.status === "NEEDS_REVIEW");
   const tone = c.status === "NEEDS_REVIEW" ? "border-review bg-review-tint text-review-ink"
     : c.status === "MISMATCH" && isBl ? "border-defect bg-defect-tint text-defect"
     : isBl ? "border-ok bg-ok-tint text-ok" : "border-line bg-surface-2 text-ink-2";
@@ -111,6 +113,7 @@ export function CasePane({ c }: { c: Case }) {
             <summary className="cursor-pointer text-ink-2 hover:text-ink">Read the email</summary>
             <pre className="mt-2 max-h-56 overflow-auto whitespace-pre-wrap rounded-[var(--radius-control)] bg-surface-2 p-4 text-[13px] leading-[18px] [overflow-wrap:anywhere]">{c.body || "(empty body)"}</pre>
           </details>
+          <Identity s={c.ship} />
         </header>
 
         <div role="status" className={cn("rounded-[var(--radius-card)] border p-4", tone)}>
@@ -122,7 +125,11 @@ export function CasePane({ c }: { c: Case }) {
                 : <>The <Abbr t="SI" /> is the shipper’s request. The carrier drafts the <Abbr t="BL" /> from it, so the BL must match the SI.</>}
             </p>
           ) : (
-            <p className="mt-1 text-[13px]">Category comes from keyword rules until the classifier is connected.</p>
+            <p className="mt-1 text-[13px]">
+              {c.classConf != null
+                ? `Classified by the fine-tuned model at ${Math.round(c.classConf * 100)}% confidence${c.classReview ? ", under its review gate" : ""}.`
+                : "Category comes from keyword rules until the classifier is connected."}
+            </p>
           )}
         </div>
 
@@ -208,6 +215,7 @@ export function CasePane({ c }: { c: Case }) {
         <div className="grid gap-2">
           <button className="btn btn-primary" disabled={!!why} onClick={() => approve(c.id)}>Approve &amp; submit</button>
           <button className="btn btn-escalate" disabled={!!res} onClick={() => setModal({ kind: "escalate" })}><Flag size={15} aria-hidden />Escalate</button>
+          {needsReply && <button className="btn" onClick={() => setModal({ kind: "reply" })}><Reply size={15} aria-hidden />Draft reply…</button>}
         </div>
         <div className="hidden gap-2 border-t border-line pt-4 lg:grid">
           <p className="label">Submission</p>
@@ -220,6 +228,7 @@ export function CasePane({ c }: { c: Case }) {
 
       <FixModal state={modal?.kind === "fix" ? modal.f : null} c={c} onClose={() => setModal(null)} />
       <EscalateModal open={modal?.kind === "escalate"} c={c} onClose={() => setModal(null)} />
+      <ReplyModal open={modal?.kind === "reply"} c={c} rows={rows} who={account?.name || account?.email || ""} onClose={() => setModal(null)} />
       <ReportModal open={modal?.kind === "report"} c={c} rows={rows} who={account?.email ?? ""} res={res} onClose={() => setModal(null)} />
       <Modal open={modal?.kind === "doc"} onClose={() => setModal(null)} title={modal?.kind === "doc" ? c.attachments[modal.i]?.name ?? "Document" : "Document"} wide>
         {modal?.kind === "doc" && (() => {
@@ -315,6 +324,72 @@ function ReportModal({ open, c, rows, who, res, onClose }: { open: boolean; c: C
           recordUserAction({ actionType: "GENERATE_REPORT", emailId: c.id, description: `Exported verification record for ${c.id}` });
           window.print();
         }}><Printer size={15} aria-hidden />Print record</button></div>
+      </div>
+    </Modal>
+  );
+}
+
+/** The shipment as ops people know it. Only the values the documents actually carry are shown. */
+function Identity({ s }: { s: Shipment }) {
+  const items = [
+    ["BL no.", s.bl],
+    ["Booking", s.booking],
+    ["Carrier", s.carrier ? `${s.carrier} · ${s.scac}` : s.scac],
+    ["Vessel", s.vessel && (s.voyage && !s.vessel.includes(s.voyage) ? `${s.vessel} · Voy. ${s.voyage}` : s.vessel)],
+    ["Lane", s.pol && s.pod ? `${s.pol} → ${s.pod}` : null],
+    ["Cargo", s.commodity],
+    ["Freight", s.freight],
+  ].filter((x): x is [string, string] => !!x[1]);
+  if (!items.length) return null;
+  return (
+    <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-3 border-t border-line pt-4">
+      {items.map(([k, v], i) => (
+        <div key={k} className="enter min-w-0" style={{ animationDelay: `${i * 40}ms` }}>
+          <dt className="label">{k}</dt>
+          <dd className="num mt-0.5 text-[13px] [overflow-wrap:anywhere]">{v}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/** The request that closes the loop: which BL fields to amend, worded the way the SI says them. */
+function replyText(c: Case, rows: Row[], who: string) {
+  const ref = c.ship.bl ? `BL ${c.ship.bl}` : `the draft BL (${c.id})`;
+  const bad = rows.filter((r) => r.state !== "match");
+  const lines = bad.map((r) => `- ${fieldLabel(r.f.key)}: BL shows "${r.f.bl || "(blank)"}", should read "${r.fix?.value ?? (r.f.si || "(blank in SI, please confirm)")}"`);
+  const ask = bad.length
+    ? `We have checked ${ref} against the Shipping Instruction. Please amend the draft BL as below before release:\n\n${lines.join("\n")}\n\nKindly send the revised draft for our final check.`
+    : `We could not check ${ref}: ${REASON_VERDICT[c.reason ?? "unreadable"].replace(/\.$/, "").toLowerCase()}. Please resend the Shipping Instruction and the draft BL as readable attachments.`;
+  return `Hi,\n\n${ask}\n\nThank you.\n\nRegards,\n${who || "Shipping Documentation"}`;
+}
+
+function ReplyModal({ open, c, rows, who, onClose }: { open: boolean; c: Case; rows: Row[]; who: string; onClose: () => void }) {
+  const [text, setText] = useState("");
+  const [copied, setCopied] = useState(false);
+  useEffect(() => { if (open) { setText(replyText(c, rows, who)); setCopied(false); } }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  const subject = `RE: ${c.subject}`;
+  const log = (how: string) => recordUserAction({ actionType: "DRAFT_REPLY", emailId: c.id, description: `Amendment request for ${c.ship.bl ?? c.id} (${how})`, metadata: { to: c.sender, subject } });
+  return (
+    <Modal open={open} onClose={onClose} title="Draft reply" wide>
+      <div className="grid gap-4">
+        <dl className="grid gap-1 text-[13px]">
+          <div className="flex gap-2"><dt className="label w-16 pt-0.5">To</dt><dd className="num [overflow-wrap:anywhere]">{c.sender || "—"}</dd></div>
+          <div className="flex gap-2"><dt className="label w-16 pt-0.5">Subject</dt><dd className="[overflow-wrap:anywhere]">{subject}</dd></div>
+        </dl>
+        <label className="grid gap-1.5"><span className="sr-only">Message</span>
+          <textarea className="field num min-h-[260px] text-[13px] leading-5" value={text} onChange={(e) => setText(e.target.value)} />
+        </label>
+        <p className="text-[12px] text-ink-3">Nothing is sent from here. Copy it, or open it in your email client and send it yourself.</p>
+        <div className="flex flex-wrap justify-end gap-2">
+          <button className="btn" onClick={() => navigator.clipboard?.writeText(text).then(() => { setCopied(true); log("copied"); })}>
+            {copied ? <Check size={15} className="text-ok" aria-hidden /> : <Copy size={15} aria-hidden />}{copied ? "Copied" : "Copy"}
+          </button>
+          <a className="btn btn-primary" onClick={() => log("opened in email")}
+            href={`mailto:${encodeURIComponent(c.sender)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`}>
+            <Mail size={15} aria-hidden />Open in email
+          </a>
+        </div>
       </div>
     </Modal>
   );

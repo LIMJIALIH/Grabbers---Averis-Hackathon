@@ -6,7 +6,7 @@ import { Menu } from "@base-ui/react/menu";
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, MoreHorizontal, Search, X } from "lucide-react";
 import { useCases } from "@/lib/app-state";
 import { cn } from "@/lib/utils";
-import { CATEGORIES, REASON_WORDS, categoryLabel, fieldLabel, type Case } from "@/lib/cases";
+import { CATEGORIES, REASON_WORDS, categoryLabel, fieldLabel, searchText, type Case } from "@/lib/cases";
 import { CategoryPill, Dropdown, Empty, FieldScore, StatusPill } from "@/components/ui";
 
 const PAGE = 10;
@@ -35,7 +35,7 @@ export function useQueue() {
     const n = q.trim().toLowerCase();
     return cases.filter(
       (c) =>
-        (!n || `${c.id} ${c.subject} ${c.sender}`.toLowerCase().includes(n)) &&
+        (!n || searchText(c).includes(n)) &&
         (!category || c.category === category) &&
         (!status || c.status === status) &&
         (!field || c.defects.includes(field)) &&
@@ -58,7 +58,7 @@ export function Filters({ q: qs }: { q: ReturnType<typeof useQueue> }) {
       <label className="relative min-w-[200px] flex-1">
         <span className="sr-only">Search emails</span>
         <Search size={15} className="pointer-events-none absolute left-3 top-3 text-ink-3" aria-hidden />
-        <input className="field w-full pl-9" placeholder="Search id, subject, sender" value={q} onChange={(e) => set({ q: e.target.value })} />
+        <input className="field w-full pl-9" placeholder="Search BL no., booking, vessel, port, sender" value={q} onChange={(e) => set({ q: e.target.value })} />
       </label>
       <Dropdown label="Category" value={category} onChange={(v) => set({ category: v, scope: "" })}
         options={[{ value: "", label: "All categories" }, ...CATEGORIES.map((c) => ({ value: c, label: categoryLabel(c) }))]} />
@@ -150,7 +150,7 @@ export function QueueTable() {
               <tr>
                 {th("id", "Email id", "pl-5")}
                 <th scope="col" className="label">Subject</th>
-                <th scope="col" className="label hidden lg:table-cell">Sender</th>
+                <th scope="col" className="label hidden lg:table-cell">Shipment</th>
                 {th("category", "Category")}
                 {th("status", "Status")}
                 {th("confidence", "Lowest field score")}
@@ -169,8 +169,9 @@ export function QueueTable() {
                   className="h-11 cursor-pointer border-b border-line outline-none last:border-0 hover:bg-surface-2 focus-visible:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-burgundy"
                 >
                   <td className="num whitespace-nowrap pl-5 pr-3">{c.id}</td>
-                  <td className="max-w-[300px] truncate pr-4" title={c.subject}>{c.subject}</td>
-                  <td className="hidden max-w-[200px] truncate pr-4 text-ink-2 lg:table-cell" title={c.sender}>{c.sender}</td>
+                  <td className="max-w-[300px] truncate pr-4" title={`${c.subject}
+${c.sender}`}>{c.subject}</td>
+                  <td className="hidden whitespace-nowrap pr-4 lg:table-cell"><ShipmentCell c={c} /></td>
                   <td className="pr-3"><CategoryPill category={c.category} /></td>
                   <td className="pr-3">
                     <span className="inline-flex items-center gap-1.5">
@@ -213,3 +214,15 @@ function RowMenu({ id, onOpen }: { id: string; onOpen: () => void }) {
   );
 }
 
+
+/** BL no. over its lane, both mono: the two things an ops person reads a shipment by. */
+function ShipmentCell({ c }: { c: Case }) {
+  const { bl, pol, pod } = c.ship;
+  if (!bl && !pol) return <span className="text-ink-3">—</span>;
+  return (
+    <span className="grid leading-4">
+      <span className="num text-[12px]">{bl ?? "no BL no."}</span>
+      {pol && pod && <span className="num max-w-[220px] truncate text-[11px] text-ink-3" title={`${pol} → ${pod}`}>{pol} → {pod}</span>}
+    </span>
+  );
+}

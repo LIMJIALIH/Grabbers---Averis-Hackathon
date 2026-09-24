@@ -73,7 +73,51 @@ export type Case = {
   defects: string[];
   confidence: number | null; // lowest deterministic SI/BL comparison score, 0-100
   receivedAt: number | null;
+  ship: Shipment;
+  classConf: number | null; // classifier confidence, 0-1
+  classReview: boolean;
 };
+
+/* ---- Shipment identity: what ops people actually search by. Read off the attachment text,
+   BL first because it is the document being checked. */
+export type Shipment = { bl: string | null; booking: string | null; vessel: string | null; voyage: string | null;
+  commodity: string | null; freight: string | null; scac: string | null; carrier: string | null; pol: string | null; pod: string | null };
+
+const LABELS = {
+  bl: "Bill of Lading No\\.|B/L NUMBER|B/L No\\.|BL No\\.",
+  booking: "Booking Reference|Booking Ref|Booking No\\.",
+  vessel: "Export Carrier \\(vessel, voyage\\)|Vessel Name|Ocean Vessel|Vessel",
+  voyage: "Voyage No\\.|Voy\\. No|Voyage|Voy\\.",
+  commodity: "Commodity|Description of Goods|Description",
+  freight: "Freight",
+} as const;
+/** SCAC = first 4 letters of a BL number. ponytail: the major lines only; other prefixes show as the bare code. */
+const SCAC: Record<string, string> = { MEDU: "MSC", MSCU: "MSC", MAEU: "Maersk", HLCU: "Hapag-Lloyd", EGLV: "Evergreen", OOLU: "OOCL", CMDU: "CMA CGM", ONEY: "ONE", COSU: "COSCO", YMLU: "Yang Ming" };
+
+/** "PORT KLANG (WESTPORT), MALAYSIA (MYPKG)" → "MYPKG"; without a code, the place before the country ("FREMANTLE"). */
+export const portCode = (v: string) => v.match(/\(([A-Z]{2}[A-Z2-9]{3})\)/)?.[1] ?? (v.split(",")[0].trim() || null);
+
+function shipment(raw: RawCase): Shipment {
+  const text = [...raw.attachments].sort((a, b) => Number(/BL/i.test(b.name)) - Number(/BL/i.test(a.name))).map((a) => a.text ?? "").join("\n");
+  const read = (k: keyof typeof LABELS) => text.match(new RegExp(`^\\s*(?:${LABELS[k]})\\s*:\\s*(.+?)\\s*$`, "im"))?.[1] ?? null;
+  // Codes are one token and may share a line ("B/L NUMBER: SINF90600780 BOOKING NO. ONEYSINF68671").
+  const code = (k: "bl" | "booking") => text.match(new RegExp(`(?:${LABELS[k]})\\s*:?\\s*([A-Z0-9-]{6,})`, "i"))?.[1] ?? null;
+  // Subjects end "… _ MEDUUD104332", which covers a BL whose text can't be read (PDF).
+  const bl = code("bl") ?? raw.vessel.split(" _ ").pop()?.trim().match(/^[A-Z]{4}[A-Z0-9]{5,}$/)?.[0] ?? null;
+  const booking = code("booking");
+  // Some lines print the SCAC only on the booking (ONE: BL "SINF…", booking "ONEYSINF…").
+  const scac = [bl, booking].map((v) => v?.slice(0, 4).toUpperCase()).find((p) => p && SCAC[p]) ?? bl?.slice(0, 4) ?? null;
+  const port = (k: string) => {
+    const f = raw.fields.find((x) => x.key === k);
+    return f ? portCode(f.si || f.bl) : null;
+  };
+  return { bl, booking, vessel: read("vessel"), voyage: read("voyage"), commodity: read("commodity"), freight: read("freight"),
+    scac, carrier: scac ? SCAC[scac] ?? null : null, pol: port("port_of_loading"), pod: port("port_of_discharge") };
+}
+
+/** Everything a person might type to find a case. One haystack, so the queue and ⌘K agree. */
+export const searchText = (c: Case) =>
+  [c.id, c.subject, c.sender, c.ship.bl, c.ship.booking, c.ship.vessel, c.ship.carrier, c.ship.pol, c.ship.pod].filter(Boolean).join(" ").toLowerCase();
 
 /** Port code <-> name aliases, compared after normalising. ponytail: hand-kept table; upgrade to a UN/LOCODE lookup. */
 const PORT_ALIASES: Record<string, string> = { mytpp: "tanjung pelepas", mypkg: "port klang", mypen: "penang", krusn: "ulsan", pecll: "callao" };
@@ -124,6 +168,9 @@ export function derive(raw: RawCase): Case {
     fields: raw.fields,
     attachments: raw.attachments,
     receivedAt: raw.received_at ?? null,
+    ship: shipment(raw),
+    classConf: raw.classification_confidence ?? null,
+    classReview: !!raw.classification_requires_review,
     category,
     defects: [] as string[],
     confidence: raw.fields.length ? Math.min(...raw.fields.map((f) => f.confidence)) : null,
