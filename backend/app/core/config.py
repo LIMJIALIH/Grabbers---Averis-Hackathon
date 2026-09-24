@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 
@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     classification_threshold_invoice_query: float = Field(default=0.90, ge=0, le=1)
     classification_threshold_general: float = Field(default=0.75, ge=0, le=1)
     classification_threshold_spam: float = Field(default=0.60, ge=0, le=1)
+    openai_api_key: SecretStr | None = None
+    openai_verifier_model: str = "gpt-5.4-mini"
+    openai_verifier_b_model: str = "gpt-4.1-mini"
+    verification_audit_path: Path = BACKEND_DIR / "exports" / "llm_verification_audit.json"
 
 
 settings = Settings()
