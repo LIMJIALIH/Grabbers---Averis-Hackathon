@@ -1,7 +1,8 @@
 from pathlib import Path
 
-from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field, SecretStr, field_validator
+from urllib.parse import urlsplit
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 
@@ -14,11 +15,30 @@ class Settings(BaseSettings):
     )
 
     cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    google_project_id: str = ""
+    google_client_id: str = ""
+    google_client_secret: SecretStr = SecretStr("")
+    app_origin: str = "http://localhost:3000"
+
+    @field_validator("app_origin", mode="before")
+    @classmethod
+    def validate_origin(cls, value):
+        value = (value or "http://localhost:3000").rstrip("/")
+        url = urlsplit(value)
+        if not url.hostname or url.path or url.query or url.fragment or url.username or url.password:
+            raise ValueError("APP_ORIGIN must be an origin without a path")
+        if url.scheme != "https" and not (url.scheme == "http" and url.hostname in {"localhost", "127.0.0.1", "::1"}):
+            raise ValueError("APP_ORIGIN requires HTTPS outside localhost")
+        return value
     bundle_dir: Path = BACKEND_DIR / "resources" / "sdoc-hackathon-bundle"
     inference_dir: Path = BACKEND_DIR / "data_prep" / "inference_data"
     inbox_base_url: str = "http://localhost:8080"
     model_dir: Path = BACKEND_DIR / "model" / "email_multiclass_classifier"
     model_device: str = "auto"
+    classification_mode: str = "bert"
+    classification_cache_path: Path = BACKEND_DIR / "deployment" / "classifications.json"
+    classification_hosted_model: str = "gemini-2.5-flash"
+    demo_archive_key: SecretStr | None = None
     gemini_api_key: SecretStr | None = None
     extraction_primary_model: str = "gemini-3.8-flash"
     extraction_secondary_model: str = "gemini-3.7-flash"

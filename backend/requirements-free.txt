@@ -1,0 +1,13 @@
+# Lightweight Render Free runtime. BERT is precomputed locally before packaging.
+fastapi>=0.115
+python-multipart>=0.0.20,<1
+uvicorn[standard]>=0.30
+pydantic-settings>=2.5
+Authlib>=1.6,<2
+httpx>=0.27
+google-genai>=2.3,<3
+cryptography>=44
+pypdfium2>=4.30,<6
+Pillow>=11,<13
+python-docx>=1.2,<2
+openpyxl>=3.1.5,<4

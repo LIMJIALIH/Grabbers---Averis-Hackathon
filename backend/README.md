@@ -8,6 +8,8 @@ Run the backend on port 8000 and the frontend together to use the Review Queue. 
 
 ## Requirements
 
+For Google sign-in and the separate read-only Gmail inbox, follow [Google setup](GOOGLE_SETUP.md). Guest sample access does not require Google credentials.
+
 - Python 3.11 or newer, with pip and venv.
 - Docker Desktop only if running the optional SDOC scoring service.
 
@@ -413,10 +415,10 @@ Keep HTTP handlers thin, put business logic in services, and isolate external I/
 For a local production-style process:
 
 ```powershell
-.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 1
 ```
 
-Do not combine `--workers` with `--reload`. Use `--host 0.0.0.0` only when intentionally exposing the service to other machines or a container network. This scaffold has no authentication; it is not ready for public deployment. Add appropriate authentication, HTTPS/reverse proxy configuration, secret management, and tested dependency locking before deployment.
+Do not combine `--workers` with `--reload`. Google sessions require one worker until a shared session store is implemented. Use `--host 0.0.0.0` only when intentionally exposing the service to other machines or a container network. The case and upload routes are shared demo APIs without per-user authorization; only deploy data authorized for this use. See [the Vercel and Render deployment guide](../DEPLOYMENT_VERCEL_RENDER.md).
 
 ## Troubleshooting
 

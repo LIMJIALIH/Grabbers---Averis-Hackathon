@@ -13,6 +13,6 @@ pnpm dev          # http://localhost:3000, proxies /api/v1/* to BACKEND_URL (def
 | `/inbox?case=email_004` | Work screen: queue rail + SI vs BL comparison |
 | `/documents` | Attachment grid |
 | `/audit` | Session audit trail (in-memory, Export JSON) |
-| `/login` | Sample-inbox sign-in (Google OAuth not wired) |
+| `/login` | Google OAuth or demo mailbox sign-in |
 
-Every Overview number comes from one selector, `summarise()` in `lib/cases.ts`. If the backend is down the app falls back to `lib/sample.ts` and says so.
+Every Overview number comes from one selector, `summarise()` in `lib/cases.ts`. If the backend is down, the app shows an offline state. For Vercel and Render setup, see [the deployment guide](../DEPLOYMENT_VERCEL_RENDER.md). The upload and extraction actions call `NEXT_PUBLIC_BACKEND_URL` directly when it is configured; Google and Gmail requests continue through the `BACKEND_URL` rewrite.

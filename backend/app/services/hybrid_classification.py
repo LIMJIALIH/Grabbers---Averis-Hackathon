@@ -22,7 +22,29 @@ def classify_with_fallback(
     body: str,
     attachment_names: list[str] | None = None,
 ) -> ClassificationResponse:
+    if not subject.strip() and not body.strip():
+        # Inbox records may be empty when the attachment itself is the useful
+        # evidence. Keep those records visible for review; the public
+        # classification endpoint still rejects empty requests via its schema.
+        scores = {category: 0.0 for category in EmailCategory.__args__}
+        scores["GENERAL"] = 1.0
+        return ClassificationResponse(
+            category="GENERAL",
+            confidence=0.0,
+            scores=scores,
+            device="unavailable",
+            source="bert_low_confidence",
+            requires_human_review=True,
+            fallback_reason="Email has no subject or body",
+        )
     prediction = bert.predict(subject, body)
+    if prediction.source in {"cached_bert", "gemini"}:
+        if prediction.source == "gemini" and prediction.confidence < _threshold(prediction.category):
+            return prediction.model_copy(update={
+                "requires_human_review": True,
+                "fallback_reason": "Hosted classification confidence is below the category threshold",
+            })
+        return prediction
     ranked = sorted(prediction.scores.values(), reverse=True)
     margin = prediction.confidence - (ranked[1] if len(ranked) > 1 else 0.0)
     reasons = []
