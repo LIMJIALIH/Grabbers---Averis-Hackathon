@@ -16,8 +16,8 @@ FIELD_SPECS = [
 
 FIELD_ALIASES = {
     "shipper": ["Shipper", "Shipper/Exporter"],
-    "consignee": ["Consignee", "To the Order of", "To Order", "To Order Of"],
-    "notify_party": ["Notify Party", "Notify", "NOTIFY PARTY"],
+    "consignee": ["Consignee", "Consignee (Non-Negotiable)", "To the Order of", "To Order", "To Order Of"],
+    "notify_party": ["Notify Party/Intermediate Consignee", "Notify Party", "Intermediate Consignee", "Notify", "NOTIFY PARTY"],
     "port_of_loading": ["Port of Loading", "Port of Landing", "Load Port", "POL", "P/L"],
     "port_of_discharge": ["Port of Discharge", "Discharge Port", "POD", "P/D"],
     "container_count": ["Container Count", "No. of Containers", "No. of Containers or Packages", "Total Containers"],
@@ -140,8 +140,41 @@ def _extract_label_value(text: str, key: str) -> str:
     return ""
 
 
+def _extract_gross_weight_table(text: str) -> str:
+    """Read the Gross Wt column from a simple text-extracted packing table.
+
+    Some Office/PDF text extractors preserve a packing list as a header and
+    aligned rows rather than ``Gross Weight: value`` labels.  Use the header's
+    character columns first, then the whitespace-delimited cells as a fallback.
+    """
+    lines = [line.rstrip() for line in text.splitlines() if line.strip()]
+    header_pattern = re.compile(r"\bGROSS\s+WT(?:\s*\(\s*KG\s*\))?\b", re.IGNORECASE)
+    for index, header in enumerate(lines):
+        gross = header_pattern.search(header)
+        if not gross:
+            continue
+        following_headers = list(re.finditer(r"\b(?:DIMENSIONS?|MEASUREMENTS?)\b", header, re.IGNORECASE))
+        end = following_headers[0].start() if following_headers else None
+        for row in lines[index + 1 :]:
+            # A later labelled section is not a table row.
+            if ANY_LABEL_REGEX.match(row.strip()):
+                break
+            cell = row[gross.start() : end].strip() if end else row[gross.start() :].strip()
+            if re.search(r"\d", cell):
+                return cell
+            # OCR may lose fixed-width alignment; the third cell is the Gross
+            # Wt column for the common Carton / Net Wt / Gross Wt / Dimensions layout.
+            cells = [part.strip() for part in re.split(r"\s{2,}", row.strip()) if part.strip()]
+            if len(cells) >= 3 and re.search(r"\d", cells[2]):
+                return cells[2]
+    return ""
+
+
 def _value_for_key(text: str, key: str) -> str:
-    return NORMALIZERS[key](_extract_label_value(text, key))
+    value = _extract_label_value(text, key)
+    if not value and key == "gross_weight_kg":
+        value = _extract_gross_weight_table(text)
+    return NORMALIZERS[key](value)
 
 
 def _score_values(si: str, bl: str) -> int:

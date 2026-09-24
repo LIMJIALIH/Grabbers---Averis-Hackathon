@@ -3,8 +3,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
+
+# Allow the documented ``python scripts/<script>.py`` invocation from backend/.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.core.config import settings
 from app.services.attachment_text import extract_attachment_text
