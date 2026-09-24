@@ -166,15 +166,15 @@ function CasesProvider({ accountId, source, children }: { accountId?: string; so
     return () => { live = false; };
   }, [enabled, personal, tick]);
 
-  /** Gemini native-PDF extraction for one email (POST /cases/{id}/extract); replaces that case's fields. */
+  /** Parse and independently verify one local email through the case endpoint. */
   const extract = useCallback(async (id: string) => {
     if (personal) throw new Error('Shipping extraction is not enabled for Gmail.');
     const backend = process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ?? "";
     const r = await fetch(`${backend}/api/v1/cases/${encodeURIComponent(id)}/extract`, { method: "POST" });
     if (!r.ok) throw new Error(`Backend answered ${r.status}`);
-    const { fields } = (await r.json()) as { fields: RawCase["fields"] };
-    setRaw((all) => all.map((c) => (c.id === id ? { ...c, fields } : c)));
-    recordUserAction({ actionType: "SYSTEM_NOTE", emailId: id, description: `Re-extracted fields for ${id} with Gemini` });
+    const { fields, extraction_status, review_reasons } = (await r.json()) as Pick<RawCase, 'fields' | 'extraction_status' | 'review_reasons'>;
+    setRaw((all) => all.map((c) => (c.id === id ? { ...c, fields, extraction_status, review_reasons } : c)));
+    recordUserAction({ actionType: "SYSTEM_NOTE", emailId: id, description: `Parsed and independently verified fields for ${id}` });
   }, [personal]);
 
   const cases = useMemo(() => raw.map(derive), [raw]);

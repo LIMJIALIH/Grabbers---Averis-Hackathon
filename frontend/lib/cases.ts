@@ -4,8 +4,9 @@
 export const CATEGORIES = ["BL_COMPARISON", "SI_REQUEST", "INVOICE_QUERY", "GENERAL", "SPAM"] as const;
 export type Category = (typeof CATEGORIES)[number];
 export type Status = "OK" | "MISMATCH" | "NEEDS_REVIEW";
-export type Reason = "classification_uncertain" | "wrong_doc_type" | "missing_attachment" | "unreadable" | "missing_value";
+export type Reason = "classification_uncertain" | "wrong_doc_type" | "missing_attachment" | "unreadable" | "missing_value" | "verification_review";
 export const REASON_WORDS: Record<Reason, string> = {
+  verification_review: "verification needs review",
   classification_uncertain: "classification uncertain",
   wrong_doc_type: "wrong document",
   missing_attachment: "missing attachment",
@@ -47,6 +48,8 @@ export const categoryLabel = (c: Category) => CATEGORY_LABEL[c];
 export type Field = { key: string; label: string; si: string; bl: string; confidence: number };
 export type Attachment = { name: string; url: string | null; text: string | null };
 export type RawCase = {
+  extraction_status?: 'ok' | 'review_required';
+  review_reasons?: string[];
   id: string;
   vessel: string; // backend calls the subject "vessel" and the sender "company"
   company: string;
@@ -61,6 +64,7 @@ export type RawCase = {
   received_at?: number; // ms since epoch; optional until the API returns it
 };
 export type Case = {
+  reviewReasons: string[];
   id: string;
   subject: string;
   sender: string;
@@ -117,6 +121,7 @@ export function derive(raw: RawCase): Case {
   // saved fixtures readable but is no longer the live queue's primary classifier.
   const category = raw.category ?? categorise(raw);
   const base = {
+    reviewReasons: raw.review_reasons ?? [],
     id: raw.id,
     subject: raw.vessel,
     sender: raw.company,
@@ -131,6 +136,8 @@ export function derive(raw: RawCase): Case {
   const review = (reason: Reason): Case => ({ ...base, status: "NEEDS_REVIEW", reason });
   if (raw.classification_requires_review) return review("classification_uncertain");
   if (category !== "BL_COMPARISON") return { ...base, status: "OK", reason: null };
+  if (raw.extraction_status === 'review_required') return review('verification_review');
+  if (raw.extraction_status === 'ok') return { ...base, status: 'OK', reason: null };
   if (raw.attachments.length < 2 || raw.attachments.some((a) => !a.url)) return review("missing_attachment");
   // Fields with real values (e.g. from Gemini reading the PDFs) outrank the text checks: PDFs never carry attachment text.
   const extracted = raw.fields.some((f) => f.si.trim() || f.bl.trim());
@@ -160,7 +167,7 @@ export function summarise(cases: Case[], res: Record<string, Resolution>) {
   };
   const total = cases.length;
   const byCategory = count(CATEGORIES, (c) => c.category);
-  const reasons = count(["classification_uncertain", "wrong_doc_type", "missing_attachment", "unreadable", "missing_value"] as const, (c) =>
+  const reasons = count(["classification_uncertain", "wrong_doc_type", "missing_attachment", "unreadable", "missing_value", "verification_review"] as const, (c) =>
     isOpen(c, res) ? c.reason : null,
   );
   const fieldDefects = count(FIELDS.map(([k]) => k), () => null) as Record<string, number>;

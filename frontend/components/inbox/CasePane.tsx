@@ -27,6 +27,7 @@ function Diff({ a, b }: { a: string; b: string }) {
 
 const RESULT_WORD = { match: "Verified", defect: "Defect", missing: "Missing", corrected: "Corrected" } as const;
 const REASON_VERDICT = {
+  verification_review: 'Independent verification needs human review.',
   classification_uncertain: "The email category is uncertain and needs a person to review it.",
   missing_attachment: "An attachment is missing.",
   unreadable: "Couldn’t read these attachments.",
@@ -171,12 +172,16 @@ export function CasePane({ c }: { c: Case }) {
         {isBl && (
           <button className="btn btn-sm justify-self-start" disabled={extracting}
             onClick={() => { setExtracting(true); setExtractErr(false); extract(c.id).catch((e) => { console.error(e); setExtractErr(true); }).finally(() => setExtracting(false)); }}>
-            {extracting ? "Extracting…" : "Extract with Gemini"}
+            {extracting ? "Verifying…" : "Extract and verify fields"}
           </button>
         )}
         {isBl && extractErr && (
-          <p className="text-[13px] text-defect">Extraction failed. Gemini may be busy; try again in a moment.</p>
+          <p className="text-[13px] text-defect">Extraction or verification failed. Try again in a moment.</p>
         )}
+        {c.reviewReasons.length > 0 && <section className="card p-5" aria-label="Verification review reasons">
+          <h3 className="font-medium">Needs review</h3>
+          <ul className="mt-2 list-disc pl-5">{c.reviewReasons.map((reason, index) => <li key={index}>{reason}</li>)}</ul>
+        </section>}
         {isBl && rows.length === 0 && c.status !== "NEEDS_REVIEW" && (
           <p className="card p-5 text-ink-2">No fields could be extracted, so there is nothing to compare.</p>
         )}
