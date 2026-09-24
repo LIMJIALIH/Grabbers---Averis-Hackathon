@@ -148,7 +148,8 @@ function CasesProvider({ enabled, children }: { enabled: boolean; children: Reac
 
   /** Gemini native-PDF extraction for one email (POST /cases/{id}/extract); replaces that case's fields. */
   const extract = useCallback(async (id: string) => {
-    const r = await fetch(`/api/v1/cases/${encodeURIComponent(id)}/extract`, { method: "POST" });
+    const backend = process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ?? "";
+    const r = await fetch(`${backend}/api/v1/cases/${encodeURIComponent(id)}/extract`, { method: "POST" });
     if (!r.ok) throw new Error(`Backend answered ${r.status}`);
     const { fields } = (await r.json()) as { fields: RawCase["fields"] };
     setRaw((all) => all.map((c) => (c.id === id ? { ...c, fields } : c)));

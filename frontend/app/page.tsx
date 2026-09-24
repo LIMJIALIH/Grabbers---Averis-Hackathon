@@ -117,7 +117,8 @@ function NewVerificationModal({ open, onClose }: { open: boolean; onClose: () =>
       const form = new FormData();
       form.append("email", email);
       attachments.forEach((file) => form.append("attachments", file));
-      const response = await fetch("/api/v1/verifications", { method: "POST", body: form });
+      const backend = process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ?? "";
+      const response = await fetch(`${backend}/api/v1/verifications`, { method: "POST", body: form });
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
         const detail = typeof payload?.detail === "string" ? payload.detail : `Backend answered ${response.status}`;
