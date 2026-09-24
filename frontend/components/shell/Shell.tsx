@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/insights", label: "Insights", crumb: ["Work", "Insights"], Icon: LayoutDashboard },
   { href: "/", label: "Queue", crumb: ["Work", "Queue"], Icon: Inbox },
+  { href: "/gmail", label: "Gmail", crumb: ["Work", "Gmail sync"], Icon: Mail },
   { href: "/audit", label: "Audit", crumb: ["Work", "Audit"], Icon: History },
 ];
 const active = (path: string, href: string) => (href === "/" ? path === "/" || path.startsWith("/case") : path.startsWith(href));
@@ -128,6 +129,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
         <main id="main" className="@container mx-auto w-full max-w-[1440px] px-4 pb-10 pt-6 sm:px-6">
+          <nav aria-label="Email source" className="mb-6 flex flex-wrap gap-2 border-b border-line pb-3">
+            <Link href="/" aria-current={path !== '/gmail' ? 'page' : undefined}
+              className={cn('btn', path !== '/gmail' ? 'btn-primary' : 'btn-secondary')}>Local demo emails</Link>
+            <Link href="/gmail" aria-current={path === '/gmail' ? 'page' : undefined}
+              className={cn('btn', path === '/gmail' ? 'btn-primary' : 'btn-secondary')}>My Gmail · Latest 50</Link>
+          </nav>
           <ViewTransition key={path} enter="page-in" exit="page-out" default="none">{children}</ViewTransition>
         </main>
       </div>

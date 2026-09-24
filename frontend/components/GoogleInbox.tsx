@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useCases } from '@/lib/app-state';
 
 type User = { sub: string; name: string | null; email: string; picture: string | null };
 type Identity = { user: User | null; configured: boolean; expires_at: number | null };
-type Message = { id: string; sender: string; subject: string; timestamp: number; body: string; attachments: string[] };
+export type Message = { id: string; sender: string; subject: string; timestamp: number; body: string; attachments: string[]; to: string[]; cc: string[] };
 
 export function useGoogleIdentity() {
   const [identity, setIdentity] = useState<Identity>({ user: null, configured: false, expires_at: null });
@@ -100,40 +101,45 @@ export function GoogleAvatar({ user }: { user: User | null }) {
 }
 
 export function GmailInbox({ onExpired }: { onExpired: () => void }) {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { gmailMessages: messages, reload, offline, syncedAt, load } = useCases();
   const [selected, setSelected] = useState("");
   const [loading, setLoading] = useState(false);
-  const [fetched, setFetched] = useState(false);
+  const fetched = load === 'ready';
   const [notice, setNotice] = useState("");
   const pending = useRef<AbortController | null>(null);
   useEffect(() => () => pending.current?.abort(), []);
-  async function refresh() {
+  async function sync() {
     pending.current?.abort();
     const controller = new AbortController();
     pending.current = controller;
     setLoading(true);
     setNotice("");
     try {
-      const response = await fetch("/api/v1/gmail/messages", { cache: "no-store", signal: controller.signal });
+      const response = await fetch("/api/v1/gmail/sync", { method: "POST", cache: "no-store", signal: controller.signal });
       const data = await response.json();
       if (controller.signal.aborted) return;
       if (response.status === 401) { onExpired(); return; }
       if (!response.ok) throw new Error(data.detail || "Gmail could not be loaded.");
-      setMessages(data.messages);
       setSelected(data.messages[0]?.id || "");
-      setFetched(true);
-      setNotice(data.failed_count ? `${data.failed_count} messages could not be loaded. Refresh to try again.` : "");
+      reload();
+      setNotice(data.failed_count
+        ? `${data.synced_count} messages saved; ${data.failed_count} could not be loaded.`
+        : `${data.synced_count} messages saved to Supabase.`);
     } catch (error) {
       if (!controller.signal.aborted) setNotice(error instanceof Error ? error.message : "Gmail could not be loaded.");
     } finally { if (!controller.signal.aborted) setLoading(false); }
   }
-  const active = messages.find((message) => message.id === selected);
+  const active = messages.find((message) => message.id === selected) ?? messages[0];
   return <section aria-label="Gmail inbox">
-    <div className="subsection-heading"><h2>Gmail inbox</h2><button className="button primary" onClick={refresh} disabled={loading}>{loading ? "Refreshing Gmail…" : "Refresh Gmail"}</button></div>
-    <p>Latest 50 inbox messages. Messages load only when you click Refresh Gmail.</p>
+    <div className="subsection-heading"><h2>Gmail inbox</h2><button className="button primary" onClick={sync} disabled={loading}>{loading ? "Syncing Gmail…" : "Sync Gmail"}</button></div>
+    <p>Save the latest 50 inbox messages to the connected Supabase project.</p>
+    <p>{messages.length} saved emails · Unclassified · Not processed</p>
+    {syncedAt && <p>Last successful sync: {new Date(syncedAt).toLocaleString()}</p>}
+    {offline && <p role="alert">Saved inbox could not be refreshed. <button onClick={reload}>Retry loading</button></p>}
     {notice && <p role="alert" className="info-note">{notice}</p>}
-    {!fetched && <p role="status" className="empty-state">Click Refresh Gmail to load your inbox.</p>}
+    {!fetched && <p role="status" className="empty-state">Click Sync Gmail to load and save your inbox.</p>}
     {fetched && messages.length === 0 && <p role="status" className="empty-state">Your Gmail inbox is empty.</p>}
+    {active && <p>To: {active.to.join(', ') || '—'} · Cc: {active.cc.join(', ') || '—'}</p>}
     <div className="gmail-layout">
       <div className="gmail-list" aria-label="Messages">
         {messages.map((message) => <button key={message.id} className="gmail-message" aria-pressed={selected === message.id} onClick={() => setSelected(message.id)}><strong>{message.subject}</strong><span>{message.sender}</span><small>{new Date(message.timestamp).toLocaleString()}</small></button>)}

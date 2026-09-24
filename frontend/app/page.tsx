@@ -41,9 +41,9 @@ export default function QueuePage() {
     <div className="grid gap-5">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-[24px] font-semibold leading-[30px] tracking-[-0.01em]">Verification queue</h1>
+          <h1 className="text-[24px] font-semibold leading-[30px] tracking-[-0.01em]">Local demo emails</h1>
           <p className="mt-1 max-w-2xl text-[14px] text-ink-2">
-            Review classified emails, inspect document differences, and resolve exceptions.
+            Review the local sample dataset, inspect document differences, and resolve exceptions. These emails are separate from your Gmail account.
           </p>
         </div>
         <button className="btn btn-primary" onClick={() => setUploadOpen(true)}>

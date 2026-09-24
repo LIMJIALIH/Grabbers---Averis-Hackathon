@@ -13,6 +13,12 @@ from starlette.responses import JSONResponse, RedirectResponse
 
 from app.core.config import settings
 from app.services.gmail import decode_message
+from app.services.supabase_gmail import (
+    SupabaseNotConfigured,
+    SupabaseWriteError,
+    sync_messages as persist_messages,
+    read_messages,
+)
 
 router = APIRouter()
 COOKIE = "docuverify_session"
@@ -34,6 +40,7 @@ class Session:
     token: dict
     expires: float
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+    sync_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
 
 sessions: dict[str, Session] = {}
@@ -172,9 +179,7 @@ async def access_token(request, session):
         return session.token["access_token"]
 
 
-@router.get("/gmail/messages")
-async def messages(request: Request):
-    session = get_session(request)
+async def fetch_messages(request, session):
     token = await access_token(request, session)
     semaphore = asyncio.Semaphore(5)
     async with httpx.AsyncClient(base_url="https://gmail.googleapis.com/gmail/v1/users/me/", headers={"Authorization": f"Bearer {token}"}, timeout=20) as client:
@@ -203,7 +208,41 @@ async def messages(request: Request):
         raise HTTPException(502, "Messages could not be loaded. Try refreshing again.")
     items = [result for result in results if not isinstance(result, BaseException)]
     items.sort(key=lambda item: item["timestamp"], reverse=True)
-    return JSONResponse({"messages": items, "failed_count": len(errors)}, headers={"Cache-Control": "no-store"})
+    return items, len(errors), [item['id'] for item in response.json().get('messages', [])[:50]]
+
+
+@router.get("/gmail/messages")
+async def messages(request: Request):
+    session = get_session(request)
+    try:
+        result = await read_messages(session.user['sub'])
+    except SupabaseNotConfigured:
+        raise HTTPException(503, 'Gmail storage is not configured.') from None
+    except SupabaseWriteError:
+        raise HTTPException(502, 'Saved messages could not be loaded.') from None
+    get_session(request)
+    return JSONResponse(result, headers={"Cache-Control": "no-store"})
+
+
+@router.post("/gmail/sync")
+async def sync(request: Request):
+    if request.headers.get("origin") != settings.app_origin:
+        raise HTTPException(403, "Same-origin Gmail sync required.")
+    session = get_session(request)
+    try:
+        async with session.sync_lock:
+            items, failed_count, inbox_ids = await fetch_messages(request, session)
+            synced_at = await persist_messages(session.user, items, inbox_ids)
+    except SupabaseNotConfigured:
+        raise HTTPException(503, "Gmail sync storage is not configured.") from None
+    except SupabaseWriteError:
+        raise HTTPException(502, "Gmail was loaded but could not be saved. Try syncing again.") from None
+    return JSONResponse({
+        "messages": items,
+        "synced_count": len(items),
+        "failed_count": failed_count,
+        "synced_at": synced_at,
+    }, headers={"Cache-Control": "no-store"})
 
 
 def provider_error(status):

@@ -11,6 +11,7 @@ import { Modal } from "@/components/ui";
 const PAGES = [
   { href: "/", label: "Queue", Icon: Inbox },
   { href: "/insights", label: "Insights", Icon: LayoutDashboard },
+  { href: "/gmail", label: "Gmail", Icon: Mail },
   { href: "/audit", label: "Audit", Icon: History },
 ];
 const item = "flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 data-[selected=true]:bg-surface-2";
