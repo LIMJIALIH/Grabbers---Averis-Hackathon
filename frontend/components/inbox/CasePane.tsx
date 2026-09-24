@@ -92,7 +92,9 @@ export function CasePane({ c }: { c: Case }) {
               {res && <span className="pill bg-surface-2 text-ink-2">{res === "approved" ? "Approved" : "Escalated"}</span>}
             </div>
           </div>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+          {/* The shipment before the paperwork: ops people know a case by its BL no. and lane, not its filenames. */}
+          <Identity s={c.ship} />
+          <div className="mt-4 flex flex-wrap items-center gap-2">
             {c.attachments.length === 0 && <span className="text-[13px] text-ink-3">No attachments</span>}
             {c.attachments.map((a, i) => (
               <button
@@ -113,7 +115,6 @@ export function CasePane({ c }: { c: Case }) {
             <summary className="cursor-pointer text-ink-2 hover:text-ink">Read the email</summary>
             <pre className="mt-2 max-h-56 overflow-auto whitespace-pre-wrap rounded-[var(--radius-control)] bg-surface-2 p-4 text-[13px] leading-[18px] [overflow-wrap:anywhere]">{c.body || "(empty body)"}</pre>
           </details>
-          <Identity s={c.ship} />
         </header>
 
         <div role="status" className={cn("rounded-[var(--radius-card)] border p-4", tone)}>
