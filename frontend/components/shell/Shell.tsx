@@ -21,8 +21,8 @@ import { spring } from "@/components/JellyRadio";import { cn } from "@/lib/utils
 
 // Insights first: sign-in lands there (what is waiting), then the Queue to work it, then Audit to prove it.
 const NAV = [
-  { href: "/insights", label: "Insights", title: "Insights", Icon: LayoutDashboard },
   { href: "/", label: "Queue", title: "Verification queue", Icon: Inbox },
+  { href: "/insights", label: "Insights", title: "Insights", Icon: LayoutDashboard },
   { href: "/audit", label: "Audit", title: "Audit trail", Icon: History },
 ];
 const RAIL = (compact: boolean) => (compact ? 68 : 224);

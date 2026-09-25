@@ -119,6 +119,7 @@ def list_cases():
             "classification_source": classification.source,
             "classification_requires_review": classification.requires_human_review,
             "classification_reason": classification.fallback_reason,
+            "received_at": email.get("received_at"),
         })
     return cases
 

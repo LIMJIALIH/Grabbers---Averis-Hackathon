@@ -35,10 +35,15 @@
   --b-100: #ebd2d7;
   --b-050: #f7eef0;
   --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.12);
+  /* Recently opened cards invert the page: deep on the light theme, lifted on the dark one. Text is light on both. */
+  --recent-bg: #1f1a19;
+  --recent-ink: #f7f4f2;
+  --recent-ink-3: #b8afaa;
 }
 
 [data-theme="dark"] {
   color-scheme: dark;
+  --recent-bg: #2e2927;
   --paper: #0b0a0a;
   --surface: #141212;
   --surface-2: #1c1919;

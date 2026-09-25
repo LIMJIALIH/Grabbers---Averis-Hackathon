@@ -8,6 +8,7 @@ import { AlertTriangle, CheckCircle2, FileJson, FileText, Loader2, Plus, Upload,
 import { QueueStatusRow, QueueTable } from "@/components/QueueTable";
 import { Loading, Modal, OfflineNote, Skeleton } from "@/components/ui";
 import { useCases } from "@/lib/app-state";
+import { RecentlyOpened } from "@/components/RecentlyOpened";
 
 type UploadResult = {
   case: { id: string; vessel: string; company: string; body: string; fields: RawCase["fields"]; attachments: { name: string; text: string | null }[] };
@@ -56,6 +57,7 @@ export default function QueuePage() {
       </header>
 
       {offline && <OfflineNote onRetry={reload} />}
+      <RecentlyOpened />
       <QueueStatusRow />
       <QueueTable />
 

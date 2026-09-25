@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { useCases } from "@/lib/app-state";
+import { recordOpened } from "@/lib/recent";
 import { defaultOrder, useQueue } from "@/components/QueueTable";
 import { CasePane } from "@/components/inbox/CasePane";
 import { Empty, Loading, OfflineNote, Skeleton } from "@/components/ui";
@@ -17,6 +18,11 @@ function CasePage() {
   const order = defaultOrder(qs.rows);
   const at = order.findIndex((c) => c.id === id);
   const go = (to: number) => order[to] && router.replace(`/case/${order[to].id}${qs.search}`);
+
+  const known = cases.some((c) => c.id === id);
+  useEffect(() => {
+    if (known) recordOpened(id);
+  }, [id, known]);
 
   // J / K walk the filtered queue without going back to the list.
   useEffect(() => {

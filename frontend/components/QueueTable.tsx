@@ -4,17 +4,24 @@ import { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Menu } from "@base-ui/react/menu";
 import Link from "next/link";
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Copy, ExternalLink, MoreHorizontal, Search, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Copy, ExternalLink, Mail, MoreHorizontal, Search, X } from "lucide-react";
 import SwipeRow from "@/components/SwipeRow";
 import { toast } from "@/lib/toast";
 import { useCases } from "@/lib/app-state";
 import JellyRadio from "@/components/JellyRadio";
+import { DEMO_FIRST, readRecent } from "@/lib/recent";
 import { CATEGORIES, REASON_WORDS, RESOLUTION_WORD, categoryLabel, fieldLabel, isOpen, searchText, type Case } from "@/lib/cases";
 import { CategoryPill, Dropdown, Empty, FieldScore, StatusPill } from "@/components/ui";
 
 const PAGE = 10;
 const STATUS_RANK = { NEEDS_REVIEW: 0, MISMATCH: 1, OK: 2 } as const;
-type SortKey = "id" | "category" | "status" | "confidence";
+type SortKey = "id" | "category" | "status" | "confidence" | "date";
+const pad = (n: number) => String(n).padStart(2, "0");
+const ddmmyy = (ms: number | null) => {
+  if (ms == null) return "—";
+  const d = new Date(ms);
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${pad(d.getFullYear() % 100)}`;
+};
 
 /** Filters live in the URL so a donut click, a deep link and a reload all agree. */
 export function useQueue() {
@@ -59,12 +66,37 @@ export function useQueue() {
 
 export function Filters({ q: qs }: { q: ReturnType<typeof useQueue> }) {
   const { q, category, status, field, reason, set } = qs;
+  const { cases } = useCases();
+  const [focus, setFocus] = useState(false);
+  // Same Recent list as the search palette (lib/recent.ts); with nothing opened yet, the Verified showcase case.
+  const recent = useMemo(() => {
+    if (!focus) return [];
+    const opened = readRecent().flatMap((r) => { const c = cases.find((x) => x.id === r.id); return c ? [{ c, at: r.at as number | null }] : []; });
+    if (opened.length) return opened;
+    const c = cases.find((x) => x.id === DEMO_FIRST[0]);
+    return c ? [{ c, at: null as number | null }] : [];
+  }, [focus, cases]);
   return (
     <div className="flex flex-wrap items-center gap-2">
       <label className="relative min-w-[200px] flex-1">
         <span className="sr-only">Search emails</span>
         <Search size={15} className="pointer-events-none absolute left-3 top-3 text-ink-3" aria-hidden />
-        <input className="field w-full pl-9" placeholder="Search BL no., booking, vessel, port, sender" value={q} onChange={(e) => set({ q: e.target.value })} />
+        <input className="field w-full pl-9" placeholder="Search BL no., booking, vessel, port, sender" value={q} autoComplete="off" name="queue-search"
+          onChange={(e) => set({ q: e.target.value })} onFocus={() => setFocus(true)} onBlur={() => setFocus(false)} />
+        {!q && recent.length > 0 && (
+          <div className="absolute left-0 right-0 top-full z-20 mt-1.5 rounded-xl border border-line bg-surface p-1.5 shadow-lg">
+            <span className="label px-3">Recent</span>
+            {recent.map(({ c, at }) => (
+              <Link key={c.id} href={`/case/${c.id}`} onMouseDown={(e) => e.preventDefault()}
+                className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-surface-2">
+                <Mail size={16} aria-hidden className="shrink-0" />
+                <span className="num shrink-0 text-[12px] text-ink-3">{c.ship.bl ?? c.id}</span>
+                <span className="min-w-0 flex-1 truncate">{c.subject}</span>
+                {at != null && <span className="num shrink-0 text-[12px] text-ink-3">{pad(new Date(at).getDate())}/{pad(new Date(at).getMonth() + 1)}</span>}
+              </Link>
+            ))}
+          </div>
+        )}
       </label>
       <Dropdown label="Category" value={category} onChange={(v) => set({ category: v, scope: "" })}
         options={[{ value: "", label: "All categories" }, ...CATEGORIES.map((c) => ({ value: c, label: categoryLabel(c) }))]} />
@@ -82,11 +114,14 @@ export function Filters({ q: qs }: { q: ReturnType<typeof useQueue> }) {
 
 export const defaultOrder = (rows: Case[]) => sortRows(rows, null, 1);
 
+const pin = (c: Case) => { const i = DEMO_FIRST.indexOf(c.id); return i < 0 ? DEMO_FIRST.length : i; };
+
 function sortRows(rows: Case[], key: SortKey | null, dir: 1 | -1) {
   return [...rows].sort((a, b) => {
-    if (!key) return STATUS_RANK[a.status] - STATUS_RANK[b.status] || a.id.localeCompare(b.id, undefined, { numeric: true });
+    if (!key) return pin(a) - pin(b) || STATUS_RANK[a.status] - STATUS_RANK[b.status] || a.id.localeCompare(b.id, undefined, { numeric: true });
     const v = key === "status" ? STATUS_RANK[a.status] - STATUS_RANK[b.status]
       : key === "confidence" ? (a.confidence ?? 101) - (b.confidence ?? 101)
+      : key === "date" ? (a.receivedAt ?? 0) - (b.receivedAt ?? 0)
       : String(a[key]).localeCompare(String(b[key]), undefined, { numeric: true });
     return v * dir;
   });
@@ -140,7 +175,10 @@ export function QueueTable() {
   const shown = sorted.slice((p - 1) * PAGE, p * PAGE);
   const th = (key: SortKey, text: string, cls = "") => (
     <th scope="col" aria-sort={sort.key === key ? (sort.dir === 1 ? "ascending" : "descending") : "none"} className={cls}>
-      <button className="group flex h-10 items-center gap-1 label" onClick={() => setSort((s) => ({ key, dir: s.key === key && s.dir === 1 ? -1 : 1 }))}>
+      <button className="group flex h-10 items-center gap-1 label" onClick={() => setSort((s) => {
+        const first = key === "date" ? -1 : 1; // date opens latest → earliest
+        return { key, dir: s.key === key ? (s.dir === 1 ? -1 : 1) : first };
+      })}>
         {text}
         {sort.key === key ? (sort.dir === 1 ? <ArrowUp size={12} /> : <ArrowDown size={12} />) : <ArrowUpDown size={12} className="opacity-40 group-hover:opacity-100" />}
       </button>
@@ -200,6 +238,7 @@ export function QueueTable() {
                 {th("id", "Email id", "pl-5")}
                 <th scope="col" className="label">Subject</th>
                 <th scope="col" className="label hidden lg:table-cell">Shipment</th>
+                {th("date", "Date", "hidden pr-6 lg:table-cell")}
                 {th("category", "Category")}
                 {th("status", "Status")}
                 {th("confidence", "Lowest field score")}
@@ -221,6 +260,7 @@ export function QueueTable() {
                   <td className="max-w-[300px] truncate pr-4" title={`${c.subject}
 ${c.sender}`}>{c.subject}</td>
                   <td className="hidden whitespace-nowrap pr-4 lg:table-cell"><ShipmentCell c={c} /></td>
+                  <td className="num hidden whitespace-nowrap pr-6 lg:table-cell">{ddmmyy(c.receivedAt)}</td>
                   <td className="pr-3"><CategoryPill category={c.category} /></td>
                   <td className="pr-3">
                     <span className="inline-flex items-center gap-1.5">

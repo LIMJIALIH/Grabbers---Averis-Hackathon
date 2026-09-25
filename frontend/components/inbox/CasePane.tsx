@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Copy, Download, Flag, Mail, Paperclip, Pencil, Printer, Reply, Sparkles } from "lucide-react";
+import { Check, Copy, Download, Flag, Mail, Paperclip, Pencil, Printer, Reply } from "lucide-react";
 import { useAccount, useCases } from "@/lib/app-state";
 import { recordUserAction } from "@/lib/auditTrailStore";
 import { toast } from "@/lib/toast";
@@ -9,7 +9,6 @@ import { CATEGORIES, HITL_THRESHOLD, RESOLUTION_WORD, categoryLabel, diffSpan, f
 import { Abbr, CategoryPill, DocumentText, Dropdown, FieldScore, Modal, StatusPill, hasFile } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import BellRing from "@/components/BellRing";
-import ThoughtLine from "@/components/ThoughtLine";
 
 export type Row = { f: Field; state: "match" | "defect" | "missing" | "corrected"; fix?: { value: string; reason: string } };
 
@@ -28,7 +27,6 @@ export function Diff({ a, b }: { a: string; b: string }) {
   );
 }
 
-const READ_STEPS = ["Opening the SI and BL", "Scanning every page", "Pulling out the seven fields", "Lining them up to check"];
 const RESULT_WORD ={ match: "Verified", defect: "Defect", missing: "Missing", corrected: "Corrected" } as const;
 const REASON_VERDICT = {
   classification_uncertain: "The email category is uncertain and needs a person to review it.",
@@ -56,19 +54,7 @@ function verdict(c: Case) {
 }
 
 export function CasePane({ c }: { c: Case }) {
-  const { resolutions, corrections, approve, extract, requestAmendment, reclassify } = useCases();
-  const [extracting, setExtracting] = useState(false);
-  const [extractErr, setExtractErr] = useState(false);
-  const [extractRan, setExtractRan] = useState(false);
-  const [readStep, setReadStep] = useState(1);
-  // ponytail: the extract call is one request with no progress events, so the steps advance on a timer and all tick
-  // when it returns. Drive them from the backend if it ever streams stages.
-  useEffect(() => {
-    if (!extracting) return;
-    setReadStep(1);
-    const id = setInterval(() => setReadStep((n) => Math.min(n + 1, READ_STEPS.length)), 1200);
-    return () => clearInterval(id);
-  }, [extracting]);
+  const { resolutions, corrections, approve, requestAmendment, reclassify } = useCases();
   const { account } = useAccount();
   const res = resolutions[c.id];
   const fixes = corrections[c.id] ?? {};
@@ -101,25 +87,6 @@ export function CasePane({ c }: { c: Case }) {
   const needsReply = isBl && (unresolved.length > 0 || (c.status === "NEEDS_REVIEW" && c.reason !== "classification_uncertain"));
   // The next step leads: ask the carrier when something must change, approve when nothing does.
   const replyFirst = needsReply && !res;
-  // Re-reading only helps when the text is the problem; a missing file or a real difference needs a person.
-  const readFirst = isBl && review && (c.reason === "unreadable" || c.reason === "missing_value" || c.reason === "wrong_doc_type");
-  const readBlock = isBl && (
-    <div className="grid justify-items-start gap-3">
-      {readFirst && !extracting && <p className="text-[13px] text-ink-2">Try this first: a fresh read often fixes what the text layer missed.</p>}
-      {/* While Gemini reads, the reading line takes the button's place; the button comes back once it settles. */}
-      {!extracting && (
-        <button className={cn("btn btn-sm", readFirst && "btn-primary")}
-          onClick={() => { setExtracting(true); setExtractRan(true); setExtractErr(false); extract(c.id).catch((e) => { console.error(e); setExtractErr(true); setExtractRan(false); }).finally(() => setExtracting(false)); }}>
-          <Sparkles size={14} aria-hidden />Extract with Gemini
-        </button>
-      )}
-      {extractRan && (
-        <ThoughtLine working={extracting} label="Reading the documents…" doneLabel="Read in" fontSize={13} color="var(--ink-2)"
-          steps={extracting ? READ_STEPS.slice(0, readStep) : READ_STEPS} />
-      )}
-      {extractErr && <p className="text-[13px] text-defect">Extraction failed. Gemini may be busy; try again in a moment.</p>}
-    </div>
-  );
   const tone = c.status === "NEEDS_REVIEW" ? "border-review bg-review-tint text-review-ink"
     : c.status === "MISMATCH" && isBl ? "border-defect bg-defect-tint text-defect"
     : isBl ? "border-ok bg-ok-tint text-ok" : "border-line bg-surface-2 text-ink-2";
@@ -141,7 +108,7 @@ export function CasePane({ c }: { c: Case }) {
             </div>
           </div>
           {/* The shipment before the paperwork: ops people know a case by its BL no. and lane, not its filenames. */}
-          <Identity s={c.ship} />
+          <Identity s={c.ship} at={c.receivedAt} />
           <div className="mt-4 flex flex-wrap items-center gap-2">
             {c.attachments.length === 0 && <span className="text-[13px] text-ink-3">No attachments</span>}
             {c.attachments.map((a, i) => (
@@ -182,11 +149,10 @@ export function CasePane({ c }: { c: Case }) {
           )}
         </div>
 
-        {readFirst && readBlock}
         {isBl && rows.length > 0 && (
           <section className="card overflow-hidden" aria-label="SI vs BL comparison">
             <div className="overflow-x-auto">
-              <table className="w-full text-[13px]">
+              <table className="w-full text-[13px] [&_tbody_td]:border-l [&_tbody_td]:border-line-strong [&_thead_th+th]:border-l [&_thead_th+th]:border-line-strong">
                 <thead className="border-b border-line text-left"><tr>
                   <th scope="col" className="label h-10 px-4 pl-5">Field</th>
                   <th scope="col" className="label px-4"><Abbr t="SI" /> · source of truth</th>
@@ -223,7 +189,6 @@ export function CasePane({ c }: { c: Case }) {
             </p>
           </section>
         )}
-        {!readFirst && readBlock}
         {isBl && rows.length === 0 && c.status !== "NEEDS_REVIEW" && (
           <p className="card p-5 text-ink-2">No fields could be extracted, so there is nothing to compare.</p>
         )}
@@ -301,7 +266,7 @@ export function CasePane({ c }: { c: Case }) {
 function ReplyButton({ primary, awaiting, review, onClick }: { primary: boolean; awaiting: boolean; review: boolean; onClick: () => void }) {
   return (
     <button className={cn("btn", primary && "btn-primary")} onClick={onClick}>
-      <Reply size={15} aria-hidden />{awaiting ? "Chase again…" : review ? "Ask for the documents…" : "Request amendment…"}
+      <Reply size={15} aria-hidden />{awaiting ? "Draft Reply" : review ? "Draft email…" : "Request amendment…"}
     </button>
   );
 }
@@ -407,7 +372,10 @@ function ReportModal({ open, c, rows, who, res, onClose }: { open: boolean; c: C
 }
 
 /** The shipment as ops people know it. Only the values the documents actually carry are shown. */
-function Identity({ s }: { s: Shipment }) {
+function Identity({ s, at }: { s: Shipment; at: number | null }) {
+  const p2 = (n: number) => String(n).padStart(2, "0");
+  const d = at == null ? null : new Date(at);
+  const date = d && `${p2(d.getDate())}/${p2(d.getMonth() + 1)}/${p2(d.getFullYear() % 100)}`;
   const items = [
     ["BL no.", s.bl],
     ["Booking", s.booking],
@@ -417,7 +385,7 @@ function Identity({ s }: { s: Shipment }) {
     ["Cargo", s.commodity],
     ["Freight", s.freight],
   ].filter((x): x is [string, string] => !!x[1]);
-  if (!items.length) return null;
+  if (!items.length && !date) return null;
   return (
     <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-3 border-t border-line pt-4">
       {items.map(([k, v], i) => (
@@ -426,6 +394,12 @@ function Identity({ s }: { s: Shipment }) {
           <dd className="num mt-0.5 text-[13px] [overflow-wrap:anywhere]">{v}</dd>
         </div>
       ))}
+      {date && (
+        <div className="enter ml-auto min-w-0 text-right" style={{ animationDelay: `${items.length * 40}ms` }}>
+          <dt className="label">Date</dt>
+          <dd className="num mt-0.5 text-[13px]">{date}</dd>
+        </div>
+      )}
     </dl>
   );
 }
@@ -470,14 +444,14 @@ export function ReplyModal({ open, c, rows, who, onClose, mode = "amend", onDraf
         <label className="grid gap-1.5"><span className="sr-only">Message</span>
           <textarea className="field num min-h-[260px] text-[13px] leading-5" value={text} onChange={(e) => setText(e.target.value)} />
         </label>
-        <p className="text-[12px] text-ink-3">Nothing is sent from here. Copy it, or open it in your email client and send it yourself.</p>
+        <p className="text-[12px] text-ink-3">Nothing is sent from here. Copy it, or open it as a Gmail draft and send it yourself.</p>
         <div className="flex flex-wrap justify-end gap-2">
           <button className="btn" onClick={() => navigator.clipboard?.writeText(text).then(() => { setCopied(true); log("copied"); })}>
             {copied ? <Check size={15} className="text-ok" aria-hidden /> : <Copy size={15} aria-hidden />}{copied ? "Copied" : "Copy"}
           </button>
-          <a className="btn btn-primary" onClick={() => log("opened in email")}
-            href={`mailto:${encodeURIComponent(c.sender)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`}>
-            <Mail size={15} aria-hidden />Open in email
+          <a className="btn btn-primary" onClick={() => log("opened in Gmail")} target="_blank" rel="noopener noreferrer"
+            href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(c.sender)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`}>
+            <Mail size={15} aria-hidden />Open in Gmail
           </a>
         </div>
       </div>

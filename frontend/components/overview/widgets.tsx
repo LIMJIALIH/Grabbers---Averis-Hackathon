@@ -278,7 +278,9 @@ function FlowLink({ sourceX: sx, sourceY, targetX: tx, targetY, linkWidth, paylo
   // Out of the outcome column the band starts past the label ("Needs review 27" is the longest), so text stays on clear ground.
   const targetX = placeX(tx, to.col, last);
   // On a narrow card the label offset can eat the whole gap, squashing a thick band into a blob: always keep a run to curve over.
-  const sourceX = Math.min(placeX(sx - 10, from.col, last) + 10 + (from.col === 2 ? FLOW_LABEL_W : 0), targetX - FLOW_MIN_RUN);
+  // The band runs straight from the bar, behind the label text (nodes draw on top), so there's no blank gap.
+  // Start at the bar's centre (nodes draw over links), so the band's edge is tucked under the bar, never beside it.
+  const sourceX = Math.min(placeX(sx - 10, from.col, last) + 5, targetX - FLOW_MIN_RUN);
   const sourceControlX = (sourceX + targetX) / 2; // linkCurvature 0.5: both control points at the midpoint
   const targetControlX = sourceControlX;
   const delay = COUNT_DELAY + from.col * 280 + 140;
