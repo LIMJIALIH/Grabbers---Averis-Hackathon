@@ -12,6 +12,11 @@ DocuVerify aligns the solution with that workflow instead of replacing the revie
 
 The seven target fields are `shipper`, `consignee`, `notify_party`, `port_of_loading`, `port_of_discharge`, `container_count`, and `gross_weight_kg`. Supported categories are `BL_COMPARISON`, `SI_REQUEST`, `INVOICE_QUERY`, `GENERAL`, and `SPAM`.
 
+## Architecture Diagram
+<p align="center">
+  <img src="DocuVerify_v1_Architecture_Diagram.jpg" alt="DocuVerify Architecture" width="1000">
+</p>
+
 ## AI and cloud infrastructure integration
 
 The frontend is a Next.js dashboard. Vercel serves the interface and rewrites ordinary `/api/v1/*` requests to the backend. Long-running upload and extraction requests can call Render directly through `NEXT_PUBLIC_BACKEND_URL` so they do not depend on the Vercel proxy timeout.
