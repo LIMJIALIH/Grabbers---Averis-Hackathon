@@ -1,0 +1,3 @@
+# Install with the matching official constraint file; see dag/README.md.
+apache-airflow==3.3.2
+apache-airflow-providers-standard==1.19.0

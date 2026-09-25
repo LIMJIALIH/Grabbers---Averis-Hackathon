@@ -1,0 +1,12 @@
+services:
+  airflow:
+    image: apache/airflow:3.3.2
+    command: standalone
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+    volumes:
+      - ./dag:/opt/airflow/dags
