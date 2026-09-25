@@ -46,7 +46,7 @@ export default function QueuePage() {
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="max-w-2xl text-[14px] text-ink-2">
-            Review classified emails, inspect document differences, and resolve exceptions.
+            Review the local sample dataset, inspect document differences, and resolve exceptions. These emails are separate from your Gmail account.
           </p>
         </div>
         <HeaderActions>

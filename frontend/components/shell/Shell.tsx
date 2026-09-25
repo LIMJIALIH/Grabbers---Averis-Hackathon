@@ -88,7 +88,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   const compact = collapsed && !narrow;
   const toggle = () => setCollapsed((c) => !c);
-  const title = NAV.find((n) => active(path, n.href))?.title ?? "Verification queue";
+  const title = path === "/gmail" ? "My Gmail" : NAV.find((n) => active(path, n.href))?.title ?? "Verification queue";
+  const gmail = path === "/gmail";
 
   return (
     <div className={cn("min-h-dvh", !narrow && "h-dvh overflow-hidden bg-[var(--rail)]")} data-chrome>
@@ -147,6 +148,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
         <main id="main" className="@container mx-auto w-full max-w-[1440px] px-4 pb-10 pt-2 sm:px-6">
+          {(gmail || path === "/") && (
+            <nav aria-label="Email source" className="mb-4 flex flex-wrap gap-2">
+              <Link href="/" aria-current={gmail ? undefined : "page"} className={cn("btn btn-sm", gmail ? "" : "btn-primary")}>Local demo emails</Link>
+              <Link href="/gmail" aria-current={gmail ? "page" : undefined} className={cn("btn btn-sm", gmail ? "btn-primary" : "")}>My Gmail · Latest 50</Link>
+            </nav>
+          )}
           <ViewTransition key={path} enter="page-in" exit="page-out" default="none">{children}</ViewTransition>
         </main>
       </div>
