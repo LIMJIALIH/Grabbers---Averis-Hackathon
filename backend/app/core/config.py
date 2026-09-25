@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     google_client_id: str = ""
     google_client_secret: SecretStr = SecretStr("")
     app_origin: str = "http://localhost:3000"
+    supabase_url: str = ""
+    supabase_secret_key: SecretStr = SecretStr("")
 
     @field_validator("app_origin", mode="before")
     @classmethod
@@ -29,6 +31,17 @@ class Settings(BaseSettings):
             raise ValueError("APP_ORIGIN must be an origin without a path")
         if url.scheme != "https" and not (url.scheme == "http" and url.hostname in {"localhost", "127.0.0.1", "::1"}):
             raise ValueError("APP_ORIGIN requires HTTPS outside localhost")
+        return value
+
+    @field_validator("supabase_url", mode="before")
+    @classmethod
+    def validate_supabase_url(cls, value):
+        value = (value or "").rstrip("/")
+        if not value:
+            return value
+        url = urlsplit(value)
+        if url.scheme != "https" or not url.hostname or url.path or url.query or url.fragment:
+            raise ValueError("SUPABASE_URL must be an HTTPS origin without a path")
         return value
     bundle_dir: Path = BACKEND_DIR / "resources" / "sdoc-hackathon-bundle"
     inference_dir: Path = BACKEND_DIR / "data_prep" / "inference_data"
@@ -55,6 +68,10 @@ class Settings(BaseSettings):
     classification_threshold_invoice_query: float = Field(default=0.90, ge=0, le=1)
     classification_threshold_general: float = Field(default=0.75, ge=0, le=1)
     classification_threshold_spam: float = Field(default=0.60, ge=0, le=1)
+    openai_api_key: SecretStr | None = None
+    openai_verifier_model: str = "gpt-5.4-mini"
+    openai_verifier_b_model: str = "gpt-4.1-mini"
+    verification_audit_path: Path = BACKEND_DIR / "exports" / "llm_verification_audit.json"
 
 
 settings = Settings()

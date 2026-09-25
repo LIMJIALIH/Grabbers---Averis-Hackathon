@@ -2,6 +2,7 @@
 import base64
 import binascii
 from email.message import Message
+from email.utils import formataddr, getaddresses
 from html.parser import HTMLParser
 
 
@@ -67,9 +68,27 @@ def decode_message(message):
         return text.strip()
 
     payload = message.get("payload", {})
-    headers = {h["name"].lower(): h["value"] for h in payload.get("headers", [])}
+    headers = {}
+    for item in payload.get("headers", []):
+        headers.setdefault(item["name"].lower(), []).append(item["value"])
+
+    def header(name, default=""):
+        return headers.get(name, [default])[0]
+
+    def addresses(name):
+        return [formataddr(address) for address in getaddresses(headers.get(name, [])) if address != ("", "")]
+
     text = body(payload)
-    return {"id": message["id"], "sender": headers.get("from", "Unknown sender"),
-            "subject": headers.get("subject", "(No subject)"),
-            "timestamp": int(message.get("internalDate", 0)), "body": text,
-            "attachments": attachments}
+    return {
+        "id": message["id"],
+        "thread_id": message.get("threadId", ""),
+        "sender": header("from", "Unknown sender"),
+        "to": addresses("to"),
+        "cc": addresses("cc"),
+        "subject": header("subject", "(No subject)"),
+        "snippet": message.get("snippet", ""),
+        "timestamp": int(message.get("internalDate", 0)),
+        "labels": message.get("labelIds", []),
+        "body": text,
+        "attachments": attachments,
+    }

@@ -7,10 +7,9 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 
 from app.core.config import settings
-from app.schemas.ingestion import ClassifiedEmail
 from app.services.attachment_text import extract_attachment_text
 from app.services.document_fields import extract_fields_from_text
-from app.services.verification import process_email
+from app.services.case_verification import verify_case_documents
 from app.services.email_classifier import ModelUnavailableError
 from app.services.gemma_email import GemmaEmailGateway
 from app.services.hybrid_classification import classify_with_fallback
@@ -126,27 +125,16 @@ def list_cases():
 
 @router.post("/{email_id}/extract")
 def extract_case(email_id: str):
-    """Run targeted Gemini native-PDF extraction for one review-queue email."""
+    """Parse one local case and apply main's evidence-based verification rules."""
     email = find_email(email_id)
     attachments = []
     for name in email.get("attachments", []):
-        relative = Path(name)
-        if relative.parts[:1] != ("attachments",):
-            raise HTTPException(400, "Email attachment path is invalid")
-        attachments.append({"filename": relative.name, "path": str(Path(*relative.parts[1:]))})
-    tag = email.get("tag", "SI")
-    if tag not in {"SI", "DL"}:
-        tag = "SI"
-    root = (settings.bundle_dir / "attachments") if (settings.bundle_dir / "inbox").is_dir() else settings.inference_dir
-    result = process_email(ClassifiedEmail(
-        email_id=email_id, tag=tag, attachments=attachments,
-    ), root)
-    return {
-        "fields": result.fields,
-        "extraction_status": result.extraction_status,
-        "review_reasons": result.review_reasons,
-        "extraction_source": "Gemini native PDF vision",
-    }
+        try:
+            path = attachment_path(name)
+        except HTTPException:
+            path = None
+        attachments.append((name, path))
+    return verify_case_documents(attachments)
 
 
 @router.get("/{email_id}/attachments/{index}")

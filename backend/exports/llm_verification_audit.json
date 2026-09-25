@@ -1,0 +1,2264 @@
+{
+  "generated_at": "2026-09-21T08:52:55.776537+00:00",
+  "emails": [
+    {
+      "email_id": "email_197",
+      "fields": [
+        {
+          "key": "shipper",
+          "label": "Shipper",
+          "candidates": [
+            {
+              "side": "si",
+              "raw": "APRIL FAR EAST (M) SDN BHD",
+              "normalized": "april far east (m) sdn bhd",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            },
+            {
+              "side": "bl",
+              "raw": "APRIL FAR EAST (M) SDN BHD",
+              "normalized": "april far east (m) sdn bhd",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            }
+          ],
+          "route": {
+            "key": "shipper",
+            "label": "Shipper",
+            "route": "dual_side",
+            "applicable_sides": [
+              "si",
+              "bl"
+            ],
+            "reason": "Both documents contain candidates and require independent verification.",
+            "requires_source_image": false
+          },
+          "verifier_a": [
+            {
+              "model": "gpt-5.4-mini",
+              "key": "shipper",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "APRIL FAR EAST (M) SDN BHD",
+              "corrected_normalized": "april far east (m) sdn bhd",
+              "evidence": {
+                "text": "SHIPPER: APRIL FAR EAST (M) SDN BHD",
+                "location": "top section",
+                "page": null,
+                "source": "text",
+                "label_seen": "SHIPPER",
+                "value_seen": "APRIL FAR EAST (M) SDN BHD"
+              }
+            },
+            {
+              "model": "gpt-5.4-mini",
+              "key": "shipper",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "APRIL FAR EAST (M) SDN BHD",
+              "corrected_normalized": "april far east (m) sdn bhd",
+              "evidence": {
+                "text": "Shipper (Principal or Seller): APRIL FAR EAST (M) SDN BHD",
+                "location": "top section",
+                "page": null,
+                "source": "text",
+                "label_seen": "Shipper (Principal or Seller)",
+                "value_seen": "APRIL FAR EAST (M) SDN BHD"
+              }
+            }
+          ],
+          "verifier_b": [
+            {
+              "model": "gpt-4.1-mini",
+              "key": "shipper",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "APRIL FAR EAST (M) SDN BHD",
+              "corrected_normalized": "april far east (m) sdn bhd",
+              "evidence": {
+                "text": "SHIPPER: APRIL FAR EAST (M) SDN BHD",
+                "location": "[email_197_SI.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "SHIPPER",
+                "value_seen": "APRIL FAR EAST (M) SDN BHD"
+              }
+            },
+            {
+              "model": "gpt-4.1-mini",
+              "key": "shipper",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "APRIL FAR EAST (M) SDN BHD",
+              "corrected_normalized": "april far east (m) sdn bhd",
+              "evidence": {
+                "text": "Shipper (Principal or Seller): APRIL FAR EAST (M) SDN BHD",
+                "location": "[email_197_BL.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Shipper (Principal or Seller)",
+                "value_seen": "APRIL FAR EAST (M) SDN BHD"
+              }
+            }
+          ],
+          "decision": "approved",
+          "final_value": "april far east (m) sdn bhd",
+          "suggested_resolution": null,
+          "requires_human_review": false,
+          "human_resolution": null
+        },
+        {
+          "key": "consignee",
+          "label": "Consignee",
+          "candidates": [
+            {
+              "side": "si",
+              "raw": "CLIFFORD PAPER INC",
+              "normalized": "clifford paper inc",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            },
+            {
+              "side": "bl",
+              "raw": "CLIFFORD PAPER INC",
+              "normalized": "clifford paper inc",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            }
+          ],
+          "route": {
+            "key": "consignee",
+            "label": "Consignee",
+            "route": "dual_side",
+            "applicable_sides": [
+              "si",
+              "bl"
+            ],
+            "reason": "Both documents contain candidates and require independent verification.",
+            "requires_source_image": false
+          },
+          "verifier_a": [
+            {
+              "model": "gpt-5.4-mini",
+              "key": "consignee",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "CLIFFORD PAPER INC",
+              "corrected_normalized": "clifford paper inc",
+              "evidence": {
+                "text": "Consignee (Non-Negotiable): CLIFFORD PAPER INC",
+                "location": "top section",
+                "page": null,
+                "source": "text",
+                "label_seen": "Consignee (Non-Negotiable)",
+                "value_seen": "CLIFFORD PAPER INC"
+              }
+            },
+            {
+              "model": "gpt-5.4-mini",
+              "key": "consignee",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "CLIFFORD PAPER INC",
+              "corrected_normalized": "clifford paper inc",
+              "evidence": {
+                "text": "Consignee (Non-Negotiable): CLIFFORD PAPER INC",
+                "location": "top section",
+                "page": null,
+                "source": "text",
+                "label_seen": "Consignee (Non-Negotiable)",
+                "value_seen": "CLIFFORD PAPER INC"
+              }
+            }
+          ],
+          "verifier_b": [
+            {
+              "model": "gpt-4.1-mini",
+              "key": "consignee",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "CLIFFORD PAPER INC",
+              "corrected_normalized": "clifford paper inc",
+              "evidence": {
+                "text": "Consignee (Non-Negotiable): CLIFFORD PAPER INC",
+                "location": "[email_197_SI.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Consignee (Non-Negotiable)",
+                "value_seen": "CLIFFORD PAPER INC"
+              }
+            },
+            {
+              "model": "gpt-4.1-mini",
+              "key": "consignee",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "CLIFFORD PAPER INC",
+              "corrected_normalized": "clifford paper inc",
+              "evidence": {
+                "text": "Consignee (Non-Negotiable): CLIFFORD PAPER INC",
+                "location": "[email_197_BL.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Consignee (Non-Negotiable)",
+                "value_seen": "CLIFFORD PAPER INC"
+              }
+            }
+          ],
+          "decision": "approved",
+          "final_value": "clifford paper inc",
+          "suggested_resolution": null,
+          "requires_human_review": false,
+          "human_resolution": null
+        },
+        {
+          "key": "notify_party",
+          "label": "Notify Party",
+          "candidates": [
+            {
+              "side": "si",
+              "raw": "/Intermediate Consignee: CLIFFORD PAPER INC",
+              "normalized": "/intermediate consignee: clifford paper inc",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            },
+            {
+              "side": "bl",
+              "raw": "CLIFFORD PAPER INC",
+              "normalized": "clifford paper inc",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            }
+          ],
+          "route": {
+            "key": "notify_party",
+            "label": "Notify Party",
+            "route": "dual_side",
+            "applicable_sides": [
+              "si",
+              "bl"
+            ],
+            "reason": "Both documents contain candidates and require independent verification.",
+            "requires_source_image": false
+          },
+          "verifier_a": [
+            {
+              "model": "gpt-5.4-mini",
+              "key": "notify_party",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "CLIFFORD PAPER INC",
+              "corrected_normalized": "clifford paper inc",
+              "evidence": {
+                "text": "Notify Party/Intermediate Consignee: CLIFFORD PAPER INC",
+                "location": "top section",
+                "page": null,
+                "source": "text",
+                "label_seen": "Notify Party/Intermediate Consignee",
+                "value_seen": "CLIFFORD PAPER INC"
+              }
+            },
+            {
+              "model": "gpt-5.4-mini",
+              "key": "notify_party",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "CLIFFORD PAPER INC",
+              "corrected_normalized": "clifford paper inc",
+              "evidence": {
+                "text": "Notify Party: CLIFFORD PAPER INC",
+                "location": "top section",
+                "page": null,
+                "source": "text",
+                "label_seen": "Notify Party",
+                "value_seen": "CLIFFORD PAPER INC"
+              }
+            }
+          ],
+          "verifier_b": [
+            {
+              "model": "gpt-4.1-mini",
+              "key": "notify_party",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "CLIFFORD PAPER INC",
+              "corrected_normalized": "clifford paper inc",
+              "evidence": {
+                "text": "Notify Party/Intermediate Consignee: CLIFFORD PAPER INC",
+                "location": "[email_197_SI.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Notify Party/Intermediate Consignee",
+                "value_seen": "CLIFFORD PAPER INC"
+              }
+            },
+            {
+              "model": "gpt-4.1-mini",
+              "key": "notify_party",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "CLIFFORD PAPER INC",
+              "corrected_normalized": "clifford paper inc",
+              "evidence": {
+                "text": "Notify Party: CLIFFORD PAPER INC",
+                "location": "[email_197_BL.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Notify Party",
+                "value_seen": "CLIFFORD PAPER INC"
+              }
+            }
+          ],
+          "decision": "approved",
+          "final_value": "clifford paper inc",
+          "suggested_resolution": null,
+          "requires_human_review": false,
+          "human_resolution": null
+        },
+        {
+          "key": "port_of_loading",
+          "label": "Port of Loading",
+          "candidates": [
+            {
+              "side": "si",
+              "raw": "RUGAO/NANTONG/SHANGHAI, CHINA (CNSHA)",
+              "normalized": "rugao/nantong/shanghai, china (cnsha)",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            },
+            {
+              "side": "bl",
+              "raw": "RUGAO/NANTONG/SHANGHAI, CHINA (CNSHA)",
+              "normalized": "rugao/nantong/shanghai, china (cnsha)",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            }
+          ],
+          "route": {
+            "key": "port_of_loading",
+            "label": "Port of Loading",
+            "route": "dual_side",
+            "applicable_sides": [
+              "si",
+              "bl"
+            ],
+            "reason": "Both documents contain candidates and require independent verification.",
+            "requires_source_image": false
+          },
+          "verifier_a": [
+            {
+              "model": "gpt-5.4-mini",
+              "key": "port_of_loading",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "RUGAO/NANTONG/SHANGHAI, CHINA (CNSHA)",
+              "corrected_normalized": "rugao/nantong/shanghai, china (cnsha)",
+              "evidence": {
+                "text": "POL: RUGAO/NANTONG/SHANGHAI, CHINA (CNSHA)",
+                "location": "top section",
+                "page": null,
+                "source": "text",
+                "label_seen": "POL",
+                "value_seen": "RUGAO/NANTONG/SHANGHAI, CHINA (CNSHA)"
+              }
+            },
+            {
+              "model": "gpt-5.4-mini",
+              "key": "port_of_loading",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "RUGAO/NANTONG/SHANGHAI, CHINA (CNSHA)",
+              "corrected_normalized": "rugao/nantong/shanghai, china (cnsha)",
+              "evidence": {
+                "text": "PORT OF LOADING: RUGAO/NANTONG/SHANGHAI, CHINA (CNSHA)",
+                "location": "top section",
+                "page": null,
+                "source": "text",
+                "label_seen": "PORT OF LOADING",
+                "value_seen": "RUGAO/NANTONG/SHANGHAI, CHINA (CNSHA)"
+              }
+            }
+          ],
+          "verifier_b": [
+            {
+              "model": "gpt-4.1-mini",
+              "key": "port_of_loading",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "RUGAO/NANTONG/SHANGHAI, CHINA (CNSHA)",
+              "corrected_normalized": "rugao/nantong/shanghai, china (cnsha)",
+              "evidence": {
+                "text": "POL: RUGAO/NANTONG/SHANGHAI, CHINA (CNSHA)",
+                "location": "[email_197_SI.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "POL",
+                "value_seen": "RUGAO/NANTONG/SHANGHAI, CHINA (CNSHA)"
+              }
+            },
+            {
+              "model": "gpt-4.1-mini",
+              "key": "port_of_loading",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "RUGAO/NANTONG/SHANGHAI, CHINA (CNSHA)",
+              "corrected_normalized": "rugao/nantong/shanghai, china (cnsha)",
+              "evidence": {
+                "text": "PORT OF LOADING: RUGAO/NANTONG/SHANGHAI, CHINA (CNSHA)",
+                "location": "[email_197_BL.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "PORT OF LOADING",
+                "value_seen": "RUGAO/NANTONG/SHANGHAI, CHINA (CNSHA)"
+              }
+            }
+          ],
+          "decision": "approved",
+          "final_value": "rugao nantong shanghai, china (cnsha)",
+          "suggested_resolution": null,
+          "requires_human_review": false,
+          "human_resolution": null
+        },
+        {
+          "key": "port_of_discharge",
+          "label": "Port of Discharge",
+          "candidates": [
+            {
+              "side": "si",
+              "raw": "SAVANNAH, US (USSAV)",
+              "normalized": "savannah, us (ussav)",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            },
+            {
+              "side": "bl",
+              "raw": "SAVANNAH, US (USSAV)",
+              "normalized": "savannah, us (ussav)",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            }
+          ],
+          "route": {
+            "key": "port_of_discharge",
+            "label": "Port of Discharge",
+            "route": "dual_side",
+            "applicable_sides": [
+              "si",
+              "bl"
+            ],
+            "reason": "Both documents contain candidates and require independent verification.",
+            "requires_source_image": false
+          },
+          "verifier_a": [
+            {
+              "model": "gpt-5.4-mini",
+              "key": "port_of_discharge",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "SAVANNAH, US (USSAV)",
+              "corrected_normalized": "savannah, us (ussav)",
+              "evidence": {
+                "text": "Port of Discharge: SAVANNAH, US (USSAV)",
+                "location": "top section",
+                "page": null,
+                "source": "text",
+                "label_seen": "Port of Discharge",
+                "value_seen": "SAVANNAH, US (USSAV)"
+              }
+            },
+            {
+              "model": "gpt-5.4-mini",
+              "key": "port_of_discharge",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "SAVANNAH, US (USSAV)",
+              "corrected_normalized": "savannah, us (ussav)",
+              "evidence": {
+                "text": "Discharge Port: SAVANNAH, US (USSAV)",
+                "location": "top section",
+                "page": null,
+                "source": "text",
+                "label_seen": "Discharge Port",
+                "value_seen": "SAVANNAH, US (USSAV)"
+              }
+            }
+          ],
+          "verifier_b": [
+            {
+              "model": "gpt-4.1-mini",
+              "key": "port_of_discharge",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "SAVANNAH, US (USSAV)",
+              "corrected_normalized": "savannah, us (ussav)",
+              "evidence": {
+                "text": "Port of Discharge: SAVANNAH, US (USSAV)",
+                "location": "[email_197_SI.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Port of Discharge",
+                "value_seen": "SAVANNAH, US (USSAV)"
+              }
+            },
+            {
+              "model": "gpt-4.1-mini",
+              "key": "port_of_discharge",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "SAVANNAH, US (USSAV)",
+              "corrected_normalized": "savannah, us (ussav)",
+              "evidence": {
+                "text": "Discharge Port: SAVANNAH, US (USSAV)",
+                "location": "[email_197_BL.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Discharge Port",
+                "value_seen": "SAVANNAH, US (USSAV)"
+              }
+            }
+          ],
+          "decision": "approved",
+          "final_value": "savannah, us (ussav)",
+          "suggested_resolution": null,
+          "requires_human_review": false,
+          "human_resolution": null
+        },
+        {
+          "key": "container_count",
+          "label": "Container Count",
+          "candidates": [
+            {
+              "side": "si",
+              "raw": "1",
+              "normalized": "1",
+              "normalization_rules": [],
+              "extraction_status": "ok"
+            },
+            {
+              "side": "bl",
+              "raw": "1",
+              "normalized": "1",
+              "normalization_rules": [],
+              "extraction_status": "ok"
+            }
+          ],
+          "route": {
+            "key": "container_count",
+            "label": "Container Count",
+            "route": "dual_side",
+            "applicable_sides": [
+              "si",
+              "bl"
+            ],
+            "reason": "Both documents contain candidates and require independent verification.",
+            "requires_source_image": false
+          },
+          "verifier_a": [
+            {
+              "model": "gpt-5.4-mini",
+              "key": "container_count",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "1",
+              "corrected_normalized": "1",
+              "evidence": {
+                "text": "No. of Containers: 1 x 20'GP",
+                "location": "top section",
+                "page": null,
+                "source": "text",
+                "label_seen": "No. of Containers",
+                "value_seen": "1 x 20'GP"
+              }
+            },
+            {
+              "model": "gpt-5.4-mini",
+              "key": "container_count",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "1",
+              "corrected_normalized": "1",
+              "evidence": {
+                "text": "No. of Containers: 1 x 20'GP",
+                "location": "top section",
+                "page": null,
+                "source": "text",
+                "label_seen": "No. of Containers",
+                "value_seen": "1 x 20'GP"
+              }
+            }
+          ],
+          "verifier_b": [
+            {
+              "model": "gpt-4.1-mini",
+              "key": "container_count",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "1",
+              "corrected_normalized": "1",
+              "evidence": {
+                "text": "No. of Containers: 1 x 20'GP",
+                "location": "[email_197_SI.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "No. of Containers",
+                "value_seen": "1 x 20'GP"
+              }
+            },
+            {
+              "model": "gpt-4.1-mini",
+              "key": "container_count",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "1",
+              "corrected_normalized": "1",
+              "evidence": {
+                "text": "No. of Containers: 1 x 20'GP",
+                "location": "[email_197_BL.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "No. of Containers",
+                "value_seen": "1 x 20'GP"
+              }
+            }
+          ],
+          "decision": "approved",
+          "final_value": "120",
+          "suggested_resolution": null,
+          "requires_human_review": false,
+          "human_resolution": null
+        },
+        {
+          "key": "gross_weight_kg",
+          "label": "Gross Weight (kg)",
+          "candidates": [
+            {
+              "side": "si",
+              "raw": "20065",
+              "normalized": "20065",
+              "normalization_rules": [],
+              "extraction_status": "ok"
+            },
+            {
+              "side": "bl",
+              "raw": "20065",
+              "normalized": "20065",
+              "normalization_rules": [],
+              "extraction_status": "ok"
+            }
+          ],
+          "route": {
+            "key": "gross_weight_kg",
+            "label": "Gross Weight (kg)",
+            "route": "dual_side",
+            "applicable_sides": [
+              "si",
+              "bl"
+            ],
+            "reason": "Both documents contain candidates and require independent verification.",
+            "requires_source_image": false
+          },
+          "verifier_a": [
+            {
+              "model": "gpt-5.4-mini",
+              "key": "gross_weight_kg",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "20065",
+              "corrected_normalized": "20065",
+              "evidence": {
+                "text": "GROSS WEIGHT: 20,065 KG",
+                "location": "top section",
+                "page": null,
+                "source": "text",
+                "label_seen": "GROSS WEIGHT",
+                "value_seen": "20,065 KG"
+              }
+            },
+            {
+              "model": "gpt-5.4-mini",
+              "key": "gross_weight_kg",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "20065",
+              "corrected_normalized": "20065",
+              "evidence": {
+                "text": "Gross Weight\u6bdb\u91cd(KGS): 20,065 KG",
+                "location": "top section",
+                "page": null,
+                "source": "text",
+                "label_seen": "Gross Weight\u6bdb\u91cd(KGS)",
+                "value_seen": "20,065 KG"
+              }
+            }
+          ],
+          "verifier_b": [
+            {
+              "model": "gpt-4.1-mini",
+              "key": "gross_weight_kg",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "20065",
+              "corrected_normalized": "20065",
+              "evidence": {
+                "text": "GROSS WEIGHT: 20,065 KG",
+                "location": "[email_197_SI.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "GROSS WEIGHT",
+                "value_seen": "20,065 KG"
+              }
+            },
+            {
+              "model": "gpt-4.1-mini",
+              "key": "gross_weight_kg",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "20065",
+              "corrected_normalized": "20065",
+              "evidence": {
+                "text": "Gross Weight\u6bdb\u91cd(KGS): 20,065 KG",
+                "location": "[email_197_BL.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Gross Weight\u6bdb\u91cd(KGS)",
+                "value_seen": "20,065 KG"
+              }
+            }
+          ],
+          "decision": "approved",
+          "final_value": "20065",
+          "suggested_resolution": null,
+          "requires_human_review": false,
+          "human_resolution": null
+        }
+      ]
+    },
+    {
+      "email_id": "email_004",
+      "fields": [
+        {
+          "key": "shipper",
+          "label": "Shipper",
+          "candidates": [
+            {
+              "side": "si",
+              "raw": "APRIL FAR EAST (M) SDN BHD",
+              "normalized": "april far east (m) sdn bhd",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            },
+            {
+              "side": "bl",
+              "raw": "APRIL FAR EAST (M) SDN BHD",
+              "normalized": "april far east (m) sdn bhd",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            }
+          ],
+          "route": {
+            "key": "shipper",
+            "label": "Shipper",
+            "route": "dual_side",
+            "applicable_sides": [
+              "si",
+              "bl"
+            ],
+            "reason": "Both documents contain candidates and require independent verification.",
+            "requires_source_image": false
+          },
+          "verifier_a": [
+            {
+              "model": "gpt-5.4-mini",
+              "key": "shipper",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "APRIL FAR EAST (M) SDN BHD",
+              "corrected_normalized": "april far east (m) sdn bhd",
+              "evidence": {
+                "text": "Shipper: APRIL FAR EAST (M) SDN BHD",
+                "location": "email_004_SI.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "Shipper",
+                "value_seen": "APRIL FAR EAST (M) SDN BHD"
+              }
+            },
+            {
+              "model": "gpt-5.4-mini",
+              "key": "shipper",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "APRIL FAR EAST (M) SDN BHD",
+              "corrected_normalized": "april far east (m) sdn bhd",
+              "evidence": {
+                "text": "SHIPPER: APRIL FAR EAST (M) SDN BHD",
+                "location": "email_004_BL.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "SHIPPER",
+                "value_seen": "APRIL FAR EAST (M) SDN BHD"
+              }
+            }
+          ],
+          "verifier_b": [
+            {
+              "model": "gpt-4.1-mini",
+              "key": "shipper",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": null,
+              "corrected_normalized": null,
+              "evidence": {
+                "text": "Shipper: APRIL FAR EAST (M) SDN BHD",
+                "location": "[email_004_SI.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Shipper",
+                "value_seen": "APRIL FAR EAST (M) SDN BHD"
+              }
+            },
+            {
+              "model": "gpt-4.1-mini",
+              "key": "shipper",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": null,
+              "corrected_normalized": null,
+              "evidence": {
+                "text": "SHIPPER: APRIL FAR EAST (M) SDN BHD",
+                "location": "[email_004_BL.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "SHIPPER",
+                "value_seen": "APRIL FAR EAST (M) SDN BHD"
+              }
+            }
+          ],
+          "decision": "approved",
+          "final_value": "april far east (m) sdn bhd",
+          "suggested_resolution": null,
+          "requires_human_review": false,
+          "human_resolution": null
+        },
+        {
+          "key": "consignee",
+          "label": "Consignee",
+          "candidates": [
+            {
+              "side": "si",
+              "raw": "EAST BRIGHT FZ-LLC",
+              "normalized": "east bright fz-llc",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            },
+            {
+              "side": "bl",
+              "raw": "UAB NOVAKOPA",
+              "normalized": "uab novakopa",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            }
+          ],
+          "route": {
+            "key": "consignee",
+            "label": "Consignee",
+            "route": "dual_side",
+            "applicable_sides": [
+              "si",
+              "bl"
+            ],
+            "reason": "Both documents contain candidates and require independent verification.",
+            "requires_source_image": false
+          },
+          "verifier_a": [
+            {
+              "model": "gpt-5.4-mini",
+              "key": "consignee",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "EAST BRIGHT FZ-LLC",
+              "corrected_normalized": "east bright fz-llc",
+              "evidence": {
+                "text": "Consignee (Non-Negotiable): EAST BRIGHT FZ-LLC",
+                "location": "email_004_SI.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "Consignee (Non-Negotiable)",
+                "value_seen": "EAST BRIGHT FZ-LLC"
+              }
+            },
+            {
+              "model": "gpt-5.4-mini",
+              "key": "consignee",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "UAB NOVAKOPA",
+              "corrected_normalized": "uab novakopa",
+              "evidence": {
+                "text": "To the Order of: UAB NOVAKOPA",
+                "location": "email_004_BL.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "To the Order of",
+                "value_seen": "UAB NOVAKOPA"
+              }
+            }
+          ],
+          "verifier_b": [
+            {
+              "model": "gpt-4.1-mini",
+              "key": "consignee",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": null,
+              "corrected_normalized": null,
+              "evidence": {
+                "text": "Consignee (Non-Negotiable): EAST BRIGHT FZ-LLC",
+                "location": "[email_004_SI.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Consignee (Non-Negotiable)",
+                "value_seen": "EAST BRIGHT FZ-LLC"
+              }
+            },
+            {
+              "model": "gpt-4.1-mini",
+              "key": "consignee",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": null,
+              "corrected_normalized": null,
+              "evidence": {
+                "text": "To the Order of: UAB NOVAKOPA",
+                "location": "[email_004_BL.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "To the Order of",
+                "value_seen": "UAB NOVAKOPA"
+              }
+            }
+          ],
+          "decision": "document_mismatch",
+          "final_value": null,
+          "suggested_resolution": "Both document-side values are verified but differ; send to human review.",
+          "requires_human_review": true,
+          "human_resolution": null
+        },
+        {
+          "key": "notify_party",
+          "label": "Notify Party",
+          "candidates": [
+            {
+              "side": "si",
+              "raw": "EAST BRIGHT FZ-LLC",
+              "normalized": "east bright fz-llc",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            },
+            {
+              "side": "bl",
+              "raw": "UAB NOVAKOPA",
+              "normalized": "uab novakopa",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            }
+          ],
+          "route": {
+            "key": "notify_party",
+            "label": "Notify Party",
+            "route": "dual_side",
+            "applicable_sides": [
+              "si",
+              "bl"
+            ],
+            "reason": "Both documents contain candidates and require independent verification.",
+            "requires_source_image": false
+          },
+          "verifier_a": [
+            {
+              "model": "gpt-5.4-mini",
+              "key": "notify_party",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "EAST BRIGHT FZ-LLC",
+              "corrected_normalized": "east bright fz-llc",
+              "evidence": {
+                "text": "Notify: EAST BRIGHT FZ-LLC",
+                "location": "email_004_SI.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "Notify",
+                "value_seen": "EAST BRIGHT FZ-LLC"
+              }
+            },
+            {
+              "model": "gpt-5.4-mini",
+              "key": "notify_party",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "UAB NOVAKOPA",
+              "corrected_normalized": "uab novakopa",
+              "evidence": {
+                "text": "Notify Party: UAB NOVAKOPA",
+                "location": "email_004_BL.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "Notify Party",
+                "value_seen": "UAB NOVAKOPA"
+              }
+            }
+          ],
+          "verifier_b": [
+            {
+              "model": "gpt-4.1-mini",
+              "key": "notify_party",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": null,
+              "corrected_normalized": null,
+              "evidence": {
+                "text": "Notify: EAST BRIGHT FZ-LLC",
+                "location": "[email_004_SI.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Notify",
+                "value_seen": "EAST BRIGHT FZ-LLC"
+              }
+            },
+            {
+              "model": "gpt-4.1-mini",
+              "key": "notify_party",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": null,
+              "corrected_normalized": null,
+              "evidence": {
+                "text": "Notify Party: UAB NOVAKOPA",
+                "location": "[email_004_BL.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Notify Party",
+                "value_seen": "UAB NOVAKOPA"
+              }
+            }
+          ],
+          "decision": "document_mismatch",
+          "final_value": null,
+          "suggested_resolution": "Both document-side values are verified but differ; send to human review.",
+          "requires_human_review": true,
+          "human_resolution": null
+        },
+        {
+          "key": "port_of_loading",
+          "label": "Port of Loading",
+          "candidates": [
+            {
+              "side": "si",
+              "raw": "NANTONG, CHINA (CNNTG)",
+              "normalized": "nantong, china (cnntg)",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            },
+            {
+              "side": "bl",
+              "raw": "NANTONG, CHINA (CNNTG)",
+              "normalized": "nantong, china (cnntg)",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            }
+          ],
+          "route": {
+            "key": "port_of_loading",
+            "label": "Port of Loading",
+            "route": "dual_side",
+            "applicable_sides": [
+              "si",
+              "bl"
+            ],
+            "reason": "Both documents contain candidates and require independent verification.",
+            "requires_source_image": false
+          },
+          "verifier_a": [
+            {
+              "model": "gpt-5.4-mini",
+              "key": "port_of_loading",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "NANTONG, CHINA (CNNTG)",
+              "corrected_normalized": "nantong, china (cnntg)",
+              "evidence": {
+                "text": "Port of Loading (POL): NANTONG, CHINA (CNNTG)",
+                "location": "email_004_SI.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "Port of Loading (POL)",
+                "value_seen": "NANTONG, CHINA (CNNTG)"
+              }
+            },
+            {
+              "model": "gpt-5.4-mini",
+              "key": "port_of_loading",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "NANTONG, CHINA (CNNTG)",
+              "corrected_normalized": "nantong, china (cnntg)",
+              "evidence": {
+                "text": "Port of Loading (POL): NANTONG, CHINA (CNNTG)",
+                "location": "email_004_BL.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "Port of Loading (POL)",
+                "value_seen": "NANTONG, CHINA (CNNTG)"
+              }
+            }
+          ],
+          "verifier_b": [
+            {
+              "model": "gpt-4.1-mini",
+              "key": "port_of_loading",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": null,
+              "corrected_normalized": null,
+              "evidence": {
+                "text": "Port of Loading (POL): NANTONG, CHINA (CNNTG)",
+                "location": "[email_004_SI.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Port of Loading (POL)",
+                "value_seen": "NANTONG, CHINA (CNNTG)"
+              }
+            },
+            {
+              "model": "gpt-4.1-mini",
+              "key": "port_of_loading",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": null,
+              "corrected_normalized": null,
+              "evidence": {
+                "text": "Port of Loading (POL): NANTONG, CHINA (CNNTG)",
+                "location": "[email_004_BL.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Port of Loading (POL)",
+                "value_seen": "NANTONG, CHINA (CNNTG)"
+              }
+            }
+          ],
+          "decision": "approved",
+          "final_value": "nantong, china (cnntg)",
+          "suggested_resolution": null,
+          "requires_human_review": false,
+          "human_resolution": null
+        },
+        {
+          "key": "port_of_discharge",
+          "label": "Port of Discharge",
+          "candidates": [
+            {
+              "side": "si",
+              "raw": "KARACHI, PAKISTAN (PKKHI)",
+              "normalized": "karachi, pakistan (pkkhi)",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            },
+            {
+              "side": "bl",
+              "raw": "KARACHI, PAKISTAN (PKKHI)",
+              "normalized": "karachi, pakistan (pkkhi)",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            }
+          ],
+          "route": {
+            "key": "port_of_discharge",
+            "label": "Port of Discharge",
+            "route": "dual_side",
+            "applicable_sides": [
+              "si",
+              "bl"
+            ],
+            "reason": "Both documents contain candidates and require independent verification.",
+            "requires_source_image": false
+          },
+          "verifier_a": [
+            {
+              "model": "gpt-5.4-mini",
+              "key": "port_of_discharge",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "KARACHI, PAKISTAN (PKKHI)",
+              "corrected_normalized": "karachi, pakistan (pkkhi)",
+              "evidence": {
+                "text": "POD: KARACHI, PAKISTAN (PKKHI)",
+                "location": "email_004_SI.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "POD",
+                "value_seen": "KARACHI, PAKISTAN (PKKHI)"
+              }
+            },
+            {
+              "model": "gpt-5.4-mini",
+              "key": "port_of_discharge",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "KARACHI, PAKISTAN (PKKHI)",
+              "corrected_normalized": "karachi, pakistan (pkkhi)",
+              "evidence": {
+                "text": "POD: KARACHI, PAKISTAN (PKKHI)",
+                "location": "email_004_BL.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "POD",
+                "value_seen": "KARACHI, PAKISTAN (PKKHI)"
+              }
+            }
+          ],
+          "verifier_b": [
+            {
+              "model": "gpt-4.1-mini",
+              "key": "port_of_discharge",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": null,
+              "corrected_normalized": null,
+              "evidence": {
+                "text": "POD: KARACHI, PAKISTAN (PKKHI)",
+                "location": "[email_004_SI.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "POD",
+                "value_seen": "KARACHI, PAKISTAN (PKKHI)"
+              }
+            },
+            {
+              "model": "gpt-4.1-mini",
+              "key": "port_of_discharge",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": null,
+              "corrected_normalized": null,
+              "evidence": {
+                "text": "POD: KARACHI, PAKISTAN (PKKHI)",
+                "location": "[email_004_BL.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "POD",
+                "value_seen": "KARACHI, PAKISTAN (PKKHI)"
+              }
+            }
+          ],
+          "decision": "approved",
+          "final_value": "karachi, pakistan (pkkhi)",
+          "suggested_resolution": null,
+          "requires_human_review": false,
+          "human_resolution": null
+        },
+        {
+          "key": "container_count",
+          "label": "Container Count",
+          "candidates": [
+            {
+              "side": "si",
+              "raw": "6",
+              "normalized": "6",
+              "normalization_rules": [],
+              "extraction_status": "ok"
+            },
+            {
+              "side": "bl",
+              "raw": "6",
+              "normalized": "6",
+              "normalization_rules": [],
+              "extraction_status": "ok"
+            }
+          ],
+          "route": {
+            "key": "container_count",
+            "label": "Container Count",
+            "route": "dual_side",
+            "applicable_sides": [
+              "si",
+              "bl"
+            ],
+            "reason": "Both documents contain candidates and require independent verification.",
+            "requires_source_image": false
+          },
+          "verifier_a": [
+            {
+              "model": "gpt-5.4-mini",
+              "key": "container_count",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "6",
+              "corrected_normalized": "6",
+              "evidence": {
+                "text": "Total Containers: 6 x 40'HC",
+                "location": "email_004_SI.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "Total Containers",
+                "value_seen": "6 x 40'HC"
+              }
+            },
+            {
+              "model": "gpt-5.4-mini",
+              "key": "container_count",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "6",
+              "corrected_normalized": "6",
+              "evidence": {
+                "text": "Container Count: 6 x 40'HC",
+                "location": "email_004_BL.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "Container Count",
+                "value_seen": "6 x 40'HC"
+              }
+            }
+          ],
+          "verifier_b": [
+            {
+              "model": "gpt-4.1-mini",
+              "key": "container_count",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": null,
+              "corrected_normalized": null,
+              "evidence": {
+                "text": "Total Containers: 6 x 40'HC",
+                "location": "[email_004_SI.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Total Containers",
+                "value_seen": "6 x 40'HC"
+              }
+            },
+            {
+              "model": "gpt-4.1-mini",
+              "key": "container_count",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": null,
+              "corrected_normalized": null,
+              "evidence": {
+                "text": "Container Count: 6 x 40'HC",
+                "location": "[email_004_BL.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Container Count",
+                "value_seen": "6 x 40'HC"
+              }
+            }
+          ],
+          "decision": "approved",
+          "final_value": "640",
+          "suggested_resolution": null,
+          "requires_human_review": false,
+          "human_resolution": null
+        },
+        {
+          "key": "gross_weight_kg",
+          "label": "Gross Weight (kg)",
+          "candidates": [
+            {
+              "side": "si",
+              "raw": "131058",
+              "normalized": "131058",
+              "normalization_rules": [],
+              "extraction_status": "ok"
+            },
+            {
+              "side": "bl",
+              "raw": "131058",
+              "normalized": "131058",
+              "normalization_rules": [],
+              "extraction_status": "ok"
+            }
+          ],
+          "route": {
+            "key": "gross_weight_kg",
+            "label": "Gross Weight (kg)",
+            "route": "dual_side",
+            "applicable_sides": [
+              "si",
+              "bl"
+            ],
+            "reason": "Both documents contain candidates and require independent verification.",
+            "requires_source_image": false
+          },
+          "verifier_a": [
+            {
+              "model": "gpt-5.4-mini",
+              "key": "gross_weight_kg",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "131058",
+              "corrected_normalized": "131058",
+              "evidence": {
+                "text": "Gross Wt (kgs): 131,058 KG",
+                "location": "email_004_SI.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "Gross Wt (kgs)",
+                "value_seen": "131,058 KG"
+              }
+            },
+            {
+              "model": "gpt-5.4-mini",
+              "key": "gross_weight_kg",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "131058",
+              "corrected_normalized": "131058",
+              "evidence": {
+                "text": "Gross Weight (KG): 131,058 KG",
+                "location": "email_004_BL.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "Gross Weight (KG)",
+                "value_seen": "131,058 KG"
+              }
+            }
+          ],
+          "verifier_b": [
+            {
+              "model": "gpt-4.1-mini",
+              "key": "gross_weight_kg",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "131,058",
+              "corrected_normalized": "131058",
+              "evidence": {
+                "text": "Gross Wt (kgs): 131,058 KG",
+                "location": "[email_004_SI.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Gross Wt (kgs)",
+                "value_seen": "131,058 KG"
+              }
+            },
+            {
+              "model": "gpt-4.1-mini",
+              "key": "gross_weight_kg",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "131,058",
+              "corrected_normalized": "131058",
+              "evidence": {
+                "text": "Gross Weight (KG): 131,058 KG",
+                "location": "[email_004_BL.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Gross Weight (KG)",
+                "value_seen": "131,058 KG"
+              }
+            }
+          ],
+          "decision": "approved",
+          "final_value": "131058",
+          "suggested_resolution": null,
+          "requires_human_review": false,
+          "human_resolution": null
+        }
+      ]
+    },
+    {
+      "email_id": "email_119",
+      "fields": [
+        {
+          "key": "shipper",
+          "label": "Shipper",
+          "candidates": [
+            {
+              "side": "si",
+              "raw": "APRIL FINE PAPER TRADING",
+              "normalized": "april fine paper trading",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            },
+            {
+              "side": "bl",
+              "raw": "APRIL FINE PAPER TRADING",
+              "normalized": "april fine paper trading",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            }
+          ],
+          "route": {
+            "key": "shipper",
+            "label": "Shipper",
+            "route": "dual_side",
+            "applicable_sides": [
+              "si",
+              "bl"
+            ],
+            "reason": "Both documents contain candidates and require independent verification.",
+            "requires_source_image": false
+          },
+          "verifier_a": [
+            {
+              "model": "gpt-5.4-mini",
+              "key": "shipper",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "APRIL FINE PAPER TRADING",
+              "corrected_normalized": "april fine paper trading",
+              "evidence": {
+                "text": "Shipper (Principal or Seller): APRIL FINE PAPER TRADING",
+                "location": "email_119_SI.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "Shipper (Principal or Seller)",
+                "value_seen": "APRIL FINE PAPER TRADING"
+              }
+            },
+            {
+              "model": "gpt-5.4-mini",
+              "key": "shipper",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "APRIL FINE PAPER TRADING",
+              "corrected_normalized": "april fine paper trading",
+              "evidence": {
+                "text": "Shipper (Principal or Seller): APRIL FINE PAPER TRADING",
+                "location": "email_119_BL.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "Shipper (Principal or Seller)",
+                "value_seen": "APRIL FINE PAPER TRADING"
+              }
+            }
+          ],
+          "verifier_b": [
+            {
+              "model": "gpt-4.1-mini",
+              "key": "shipper",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "APRIL FINE PAPER TRADING",
+              "corrected_normalized": "april fine paper trading",
+              "evidence": {
+                "text": "Shipper (Principal or Seller): APRIL FINE PAPER TRADING",
+                "location": "[email_119_SI.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Shipper (Principal or Seller)",
+                "value_seen": "APRIL FINE PAPER TRADING"
+              }
+            },
+            {
+              "model": "gpt-4.1-mini",
+              "key": "shipper",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "APRIL FINE PAPER TRADING",
+              "corrected_normalized": "april fine paper trading",
+              "evidence": {
+                "text": "Shipper (Principal or Seller): APRIL FINE PAPER TRADING",
+                "location": "[email_119_BL.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Shipper (Principal or Seller)",
+                "value_seen": "APRIL FINE PAPER TRADING"
+              }
+            }
+          ],
+          "decision": "approved",
+          "final_value": "april fine paper trading",
+          "suggested_resolution": null,
+          "requires_human_review": false,
+          "human_resolution": null
+        },
+        {
+          "key": "consignee",
+          "label": "Consignee",
+          "candidates": [
+            {
+              "side": "si",
+              "raw": "CLIFFORD PAPER INC",
+              "normalized": "clifford paper inc",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            },
+            {
+              "side": "bl",
+              "raw": "CLIFFORD PAPER INC",
+              "normalized": "clifford paper inc",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            }
+          ],
+          "route": {
+            "key": "consignee",
+            "label": "Consignee",
+            "route": "dual_side",
+            "applicable_sides": [
+              "si",
+              "bl"
+            ],
+            "reason": "Both documents contain candidates and require independent verification.",
+            "requires_source_image": false
+          },
+          "verifier_a": [
+            {
+              "model": "gpt-5.4-mini",
+              "key": "consignee",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "CLIFFORD PAPER INC",
+              "corrected_normalized": "clifford paper inc",
+              "evidence": {
+                "text": "Consignee (Non-Negotiable): CLIFFORD PAPER INC",
+                "location": "email_119_SI.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "Consignee (Non-Negotiable)",
+                "value_seen": "CLIFFORD PAPER INC"
+              }
+            },
+            {
+              "model": "gpt-5.4-mini",
+              "key": "consignee",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "CLIFFORD PAPER INC",
+              "corrected_normalized": "clifford paper inc",
+              "evidence": {
+                "text": "Consignee: CLIFFORD PAPER INC",
+                "location": "email_119_BL.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "Consignee",
+                "value_seen": "CLIFFORD PAPER INC"
+              }
+            }
+          ],
+          "verifier_b": [
+            {
+              "model": "gpt-4.1-mini",
+              "key": "consignee",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "CLIFFORD PAPER INC",
+              "corrected_normalized": "clifford paper inc",
+              "evidence": {
+                "text": "Consignee (Non-Negotiable): CLIFFORD PAPER INC",
+                "location": "[email_119_SI.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Consignee (Non-Negotiable)",
+                "value_seen": "CLIFFORD PAPER INC"
+              }
+            },
+            {
+              "model": "gpt-4.1-mini",
+              "key": "consignee",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "CLIFFORD PAPER INC",
+              "corrected_normalized": "clifford paper inc",
+              "evidence": {
+                "text": "Consignee: CLIFFORD PAPER INC",
+                "location": "[email_119_BL.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Consignee",
+                "value_seen": "CLIFFORD PAPER INC"
+              }
+            }
+          ],
+          "decision": "approved",
+          "final_value": "clifford paper inc",
+          "suggested_resolution": null,
+          "requires_human_review": false,
+          "human_resolution": null
+        },
+        {
+          "key": "notify_party",
+          "label": "Notify Party",
+          "candidates": [
+            {
+              "side": "si",
+              "raw": "CLIFFORD PAPER INC",
+              "normalized": "clifford paper inc",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            },
+            {
+              "side": "bl",
+              "raw": "/Intermediate Consignee: CLIFFORD PAPER INC",
+              "normalized": "/intermediate consignee: clifford paper inc",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            }
+          ],
+          "route": {
+            "key": "notify_party",
+            "label": "Notify Party",
+            "route": "dual_side",
+            "applicable_sides": [
+              "si",
+              "bl"
+            ],
+            "reason": "Both documents contain candidates and require independent verification.",
+            "requires_source_image": false
+          },
+          "verifier_a": [
+            {
+              "model": "gpt-5.4-mini",
+              "key": "notify_party",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "CLIFFORD PAPER INC",
+              "corrected_normalized": "clifford paper inc",
+              "evidence": {
+                "text": "Notify: CLIFFORD PAPER INC",
+                "location": "email_119_SI.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "Notify",
+                "value_seen": "CLIFFORD PAPER INC"
+              }
+            },
+            {
+              "model": "gpt-5.4-mini",
+              "key": "notify_party",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "CLIFFORD PAPER INC",
+              "corrected_normalized": "clifford paper inc",
+              "evidence": {
+                "text": "Notify Party/Intermediate Consignee: CLIFFORD PAPER INC",
+                "location": "email_119_BL.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "Notify Party/Intermediate Consignee",
+                "value_seen": "CLIFFORD PAPER INC"
+              }
+            }
+          ],
+          "verifier_b": [
+            {
+              "model": "gpt-4.1-mini",
+              "key": "notify_party",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "CLIFFORD PAPER INC",
+              "corrected_normalized": "clifford paper inc",
+              "evidence": {
+                "text": "Notify: CLIFFORD PAPER INC",
+                "location": "[email_119_SI.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Notify",
+                "value_seen": "CLIFFORD PAPER INC"
+              }
+            },
+            {
+              "model": "gpt-4.1-mini",
+              "key": "notify_party",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "CLIFFORD PAPER INC",
+              "corrected_normalized": "clifford paper inc",
+              "evidence": {
+                "text": "Notify Party/Intermediate Consignee: CLIFFORD PAPER INC",
+                "location": "[email_119_BL.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Notify Party/Intermediate Consignee",
+                "value_seen": "CLIFFORD PAPER INC"
+              }
+            }
+          ],
+          "decision": "approved",
+          "final_value": "clifford paper inc",
+          "suggested_resolution": null,
+          "requires_human_review": false,
+          "human_resolution": null
+        },
+        {
+          "key": "port_of_loading",
+          "label": "Port of Loading",
+          "candidates": [
+            {
+              "side": "si",
+              "raw": "PORT KLANG (WESTPORT), MALAYSIA (MYPKG)",
+              "normalized": "port klang (westport), malaysia (mypkg)",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            },
+            {
+              "side": "bl",
+              "raw": "SINGAPORE, SINGAPORE (MYPKG)",
+              "normalized": "singapore, singapore (mypkg)",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            }
+          ],
+          "route": {
+            "key": "port_of_loading",
+            "label": "Port of Loading",
+            "route": "dual_side",
+            "applicable_sides": [
+              "si",
+              "bl"
+            ],
+            "reason": "Both documents contain candidates and require independent verification.",
+            "requires_source_image": false
+          },
+          "verifier_a": [
+            {
+              "model": "gpt-5.4-mini",
+              "key": "port_of_loading",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "PORT KLANG (WESTPORT), MALAYSIA (MYPKG)",
+              "corrected_normalized": "port klang (westport), malaysia (mypkg)",
+              "evidence": {
+                "text": "PORT OF LOADING: PORT KLANG (WESTPORT), MALAYSIA (MYPKG)",
+                "location": "email_119_SI.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "PORT OF LOADING",
+                "value_seen": "PORT KLANG (WESTPORT), MALAYSIA (MYPKG)"
+              }
+            },
+            {
+              "model": "gpt-5.4-mini",
+              "key": "port_of_loading",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "SINGAPORE, SINGAPORE (MYPKG)",
+              "corrected_normalized": "singapore, singapore (mypkg)",
+              "evidence": {
+                "text": "POL: SINGAPORE, SINGAPORE (MYPKG)",
+                "location": "email_119_BL.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "POL",
+                "value_seen": "SINGAPORE, SINGAPORE (MYPKG)"
+              }
+            }
+          ],
+          "verifier_b": [
+            {
+              "model": "gpt-4.1-mini",
+              "key": "port_of_loading",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "PORT KLANG (WESTPORT), MALAYSIA (MYPKG)",
+              "corrected_normalized": "port klang (westport), malaysia (mypkg)",
+              "evidence": {
+                "text": "PORT OF LOADING: PORT KLANG (WESTPORT), MALAYSIA (MYPKG)",
+                "location": "[email_119_SI.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "PORT OF LOADING",
+                "value_seen": "PORT KLANG (WESTPORT), MALAYSIA (MYPKG)"
+              }
+            },
+            {
+              "model": "gpt-4.1-mini",
+              "key": "port_of_loading",
+              "side": "bl",
+              "status": "incorrect",
+              "corrected_raw": null,
+              "corrected_normalized": null,
+              "evidence": {
+                "text": "POL: SINGAPORE, SINGAPORE (MYPKG)",
+                "location": "[email_119_BL.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "POL",
+                "value_seen": "SINGAPORE, SINGAPORE (MYPKG)"
+              }
+            }
+          ],
+          "decision": "needs_review",
+          "final_value": null,
+          "suggested_resolution": "The independent verifier evidence conflicts; send this field to human review.",
+          "requires_human_review": true,
+          "human_resolution": null
+        },
+        {
+          "key": "port_of_discharge",
+          "label": "Port of Discharge",
+          "candidates": [
+            {
+              "side": "si",
+              "raw": "SAVANNAH, US (USSAV)",
+              "normalized": "savannah, us (ussav)",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            },
+            {
+              "side": "bl",
+              "raw": "SAVANNAH, US (USSAV)",
+              "normalized": "savannah, us (ussav)",
+              "normalization_rules": [
+                "casefold"
+              ],
+              "extraction_status": "ok"
+            }
+          ],
+          "route": {
+            "key": "port_of_discharge",
+            "label": "Port of Discharge",
+            "route": "dual_side",
+            "applicable_sides": [
+              "si",
+              "bl"
+            ],
+            "reason": "Both documents contain candidates and require independent verification.",
+            "requires_source_image": false
+          },
+          "verifier_a": [
+            {
+              "model": "gpt-5.4-mini",
+              "key": "port_of_discharge",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "SAVANNAH, US (USSAV)",
+              "corrected_normalized": "savannah, us (ussav)",
+              "evidence": {
+                "text": "Discharge Port: SAVANNAH, US (USSAV)",
+                "location": "email_119_SI.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "Discharge Port",
+                "value_seen": "SAVANNAH, US (USSAV)"
+              }
+            },
+            {
+              "model": "gpt-5.4-mini",
+              "key": "port_of_discharge",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "SAVANNAH, US (USSAV)",
+              "corrected_normalized": "savannah, us (ussav)",
+              "evidence": {
+                "text": "PORT OF DISCHARGE: SAVANNAH, US (USSAV)",
+                "location": "email_119_BL.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "PORT OF DISCHARGE",
+                "value_seen": "SAVANNAH, US (USSAV)"
+              }
+            }
+          ],
+          "verifier_b": [
+            {
+              "model": "gpt-4.1-mini",
+              "key": "port_of_discharge",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "SAVANNAH, US (USSAV)",
+              "corrected_normalized": "savannah, us (ussav)",
+              "evidence": {
+                "text": "Discharge Port: SAVANNAH, US (USSAV)",
+                "location": "[email_119_SI.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Discharge Port",
+                "value_seen": "SAVANNAH, US (USSAV)"
+              }
+            },
+            {
+              "model": "gpt-4.1-mini",
+              "key": "port_of_discharge",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "SAVANNAH, US (USSAV)",
+              "corrected_normalized": "savannah, us (ussav)",
+              "evidence": {
+                "text": "PORT OF DISCHARGE: SAVANNAH, US (USSAV)",
+                "location": "[email_119_BL.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "PORT OF DISCHARGE",
+                "value_seen": "SAVANNAH, US (USSAV)"
+              }
+            }
+          ],
+          "decision": "approved",
+          "final_value": "savannah, us (ussav)",
+          "suggested_resolution": null,
+          "requires_human_review": false,
+          "human_resolution": null
+        },
+        {
+          "key": "container_count",
+          "label": "Container Count",
+          "candidates": [
+            {
+              "side": "si",
+              "raw": "15",
+              "normalized": "15",
+              "normalization_rules": [],
+              "extraction_status": "ok"
+            },
+            {
+              "side": "bl",
+              "raw": "15",
+              "normalized": "15",
+              "normalization_rules": [],
+              "extraction_status": "ok"
+            }
+          ],
+          "route": {
+            "key": "container_count",
+            "label": "Container Count",
+            "route": "dual_side",
+            "applicable_sides": [
+              "si",
+              "bl"
+            ],
+            "reason": "Both documents contain candidates and require independent verification.",
+            "requires_source_image": false
+          },
+          "verifier_a": [
+            {
+              "model": "gpt-5.4-mini",
+              "key": "container_count",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "15",
+              "corrected_normalized": "15",
+              "evidence": {
+                "text": "No. of Containers: 15 x 40'HC",
+                "location": "email_119_SI.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "No. of Containers",
+                "value_seen": "15"
+              }
+            },
+            {
+              "model": "gpt-5.4-mini",
+              "key": "container_count",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "15",
+              "corrected_normalized": "15",
+              "evidence": {
+                "text": "No. of Containers or Packages: 15 x 40'HC",
+                "location": "email_119_BL.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "No. of Containers or Packages",
+                "value_seen": "15"
+              }
+            }
+          ],
+          "verifier_b": [
+            {
+              "model": "gpt-4.1-mini",
+              "key": "container_count",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "15",
+              "corrected_normalized": "15",
+              "evidence": {
+                "text": "No. of Containers: 15 x 40'HC",
+                "location": "[email_119_SI.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "No. of Containers",
+                "value_seen": "15 x 40'HC"
+              }
+            },
+            {
+              "model": "gpt-4.1-mini",
+              "key": "container_count",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "15",
+              "corrected_normalized": "15",
+              "evidence": {
+                "text": "No. of Containers or Packages: 15 x 40'HC",
+                "location": "[email_119_BL.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "No. of Containers or Packages",
+                "value_seen": "15 x 40'HC"
+              }
+            }
+          ],
+          "decision": "approved",
+          "final_value": "15",
+          "suggested_resolution": null,
+          "requires_human_review": false,
+          "human_resolution": null
+        },
+        {
+          "key": "gross_weight_kg",
+          "label": "Gross Weight (kg)",
+          "candidates": [
+            {
+              "side": "si",
+              "raw": "322590",
+              "normalized": "322590",
+              "normalization_rules": [],
+              "extraction_status": "ok"
+            },
+            {
+              "side": "bl",
+              "raw": "322590",
+              "normalized": "322590",
+              "normalization_rules": [],
+              "extraction_status": "ok"
+            }
+          ],
+          "route": {
+            "key": "gross_weight_kg",
+            "label": "Gross Weight (kg)",
+            "route": "dual_side",
+            "applicable_sides": [
+              "si",
+              "bl"
+            ],
+            "reason": "Both documents contain candidates and require independent verification.",
+            "requires_source_image": false
+          },
+          "verifier_a": [
+            {
+              "model": "gpt-5.4-mini",
+              "key": "gross_weight_kg",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "322590",
+              "corrected_normalized": "322590",
+              "evidence": {
+                "text": "Gross Weight\u6bdb\u91cd(KGS): 322,590 KG",
+                "location": "email_119_SI.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "Gross Weight\u6bdb\u91cd(KGS)",
+                "value_seen": "322,590 KG"
+              }
+            },
+            {
+              "model": "gpt-5.4-mini",
+              "key": "gross_weight_kg",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "322590",
+              "corrected_normalized": "322590",
+              "evidence": {
+                "text": "Gross Weight (KG): 322,590 KG",
+                "location": "email_119_BL.txt",
+                "page": null,
+                "source": "text",
+                "label_seen": "Gross Weight (KG)",
+                "value_seen": "322,590 KG"
+              }
+            }
+          ],
+          "verifier_b": [
+            {
+              "model": "gpt-4.1-mini",
+              "key": "gross_weight_kg",
+              "side": "si",
+              "status": "verified",
+              "corrected_raw": "322590",
+              "corrected_normalized": "322590",
+              "evidence": {
+                "text": "Gross Weight\u6bdb\u91cd(KGS): 322,590 KG",
+                "location": "[email_119_SI.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Gross Weight\u6bdb\u91cd(KGS)",
+                "value_seen": "322,590 KG"
+              }
+            },
+            {
+              "model": "gpt-4.1-mini",
+              "key": "gross_weight_kg",
+              "side": "bl",
+              "status": "verified",
+              "corrected_raw": "322590",
+              "corrected_normalized": "322590",
+              "evidence": {
+                "text": "Gross Weight (KG): 322,590 KG",
+                "location": "[email_119_BL.txt]",
+                "page": null,
+                "source": "text",
+                "label_seen": "Gross Weight (KG)",
+                "value_seen": "322,590 KG"
+              }
+            }
+          ],
+          "decision": "approved",
+          "final_value": "322590",
+          "suggested_resolution": null,
+          "requires_human_review": false,
+          "human_resolution": null
+        }
+      ]
+    }
+  ]
+}

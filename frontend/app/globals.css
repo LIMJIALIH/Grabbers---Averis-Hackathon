@@ -167,6 +167,128 @@ table {
   border-bottom: 1px solid var(--line);
 }
 
+/* Gmail sync workspace */
+.subsection-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.subsection-heading h2 {
+  font-size: 18px;
+  font-weight: 600;
+}
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  font-weight: 500;
+}
+.button.primary {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.info-note,
+.empty-state {
+  margin-top: 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 13px;
+}
+.empty-state {
+  display: grid;
+  min-height: 120px;
+  place-items: center;
+  text-align: center;
+}
+.gmail-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  min-height: 520px;
+  margin-top: 16px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+.gmail-list {
+  max-height: 620px;
+  overflow-y: auto;
+  border-right: 1px solid var(--line);
+}
+.gmail-message {
+  display: grid;
+  width: 100%;
+  gap: 3px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+.gmail-message:hover,
+.gmail-message[aria-pressed="true"] {
+  background: var(--surface-2);
+}
+.gmail-message strong,
+.gmail-message span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gmail-message span,
+.gmail-message small {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+.source-panel {
+  min-width: 0;
+  padding: 24px;
+}
+.gmail-body h3 {
+  font-size: 20px;
+  font-weight: 600;
+}
+.gmail-body > p,
+.gmail-body > time {
+  color: var(--ink-2);
+  font-size: 13px;
+}
+.gmail-body pre {
+  max-height: 320px;
+  margin: 20px 0;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+  padding: 16px;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.gmail-body h4 {
+  margin-top: 16px;
+  font-weight: 600;
+}
+.gmail-body ul {
+  margin: 8px 0 0 20px;
+  list-style: disc;
+}
+@media (max-width: 900px) {
+  .gmail-layout { grid-template-columns: 1fr; }
+  .gmail-list { max-height: 320px; border-right: 0; border-bottom: 1px solid var(--line); }
+}
+
 /* Buttons §5 */
 /* Buttons live in the components layer so Tailwind utilities (has-[:checked]:bg-*, h-10, ...) can override them. */
 @layer components {

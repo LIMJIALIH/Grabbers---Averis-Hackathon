@@ -5,7 +5,8 @@ import { CircleCheck, Clock, Flag, Pencil, Sparkles, Tag, Undo2 } from "lucide-r
 import { categoryLabel, derive, fieldLabel, isOpen, summarise, type Case, type Category, type Corrections, type RawCase, type Resolution, type Summary } from "./cases";
 import { clearAuditTrail, getAuditTrail, recordUserAction, setActor } from "./auditTrailStore";
 import { toast } from "./toast";
-import { useGoogleIdentity } from "@/components/GoogleInbox";
+import { useGoogleIdentity, type Message } from "@/components/GoogleInbox";
+import { usePathname } from "next/navigation";
 
 /* ---- Account: server-verified Google identity or an explicit demo session. */
 export type Account = { id: string; email: string; name: string; given_name: string; picture: string | null };
@@ -48,6 +49,7 @@ function fetchCases(force: boolean) {
 /* ---- Cases ----------------------------------------------------------------- */
 type Load = "loading" | "ready" | "error";
 type CasesState = {
+  gmailMessages: Message[];
   cases: Case[];
   summary: Summary;
   load: Load;
@@ -68,6 +70,8 @@ const CasesCtx = createContext<CasesState | null>(null);
 export const useCases = () => useContext(CasesCtx)!;
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
+  const path = usePathname();
+  const source = path === '/gmail' ? 'gmail' : 'local';
   const google = useGoogleIdentity();
   const [demo, setDemo] = useState(false);
   const [demoReady, setDemoReady] = useState(false);
@@ -111,12 +115,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   return (
     <SessionCtx.Provider value={session}>
       {/* key = account id: switching accounts remounts and drops every cached number (checklist §0.3). */}
-      <CasesProvider key={account?.id ?? "none"} enabled={!!account}>{children}</CasesProvider>
+      <CasesProvider key={`${account?.id ?? 'none'}:${source}`} accountId={account?.id} source={source}>{children}</CasesProvider>
     </SessionCtx.Provider>
   );
 }
 
-function CasesProvider({ enabled, children }: { enabled: boolean; children: React.ReactNode }) {
+function CasesProvider({ accountId, source, children }: { accountId?: string; source: 'gmail' | 'local'; children: React.ReactNode }) {
+  const enabled = !!accountId && (source === 'local' || accountId !== 'sample');
+  const personal = source === 'gmail';
+  const [gmailMessages, setGmailMessages] = useState<Message[]>([]);
   const [raw, setRaw] = useState<RawCase[]>([]);
   const [load, setLoad] = useState<Load>("loading");
   const [offline, setOffline] = useState(false);
@@ -129,6 +136,19 @@ function CasesProvider({ enabled, children }: { enabled: boolean; children: Reac
     if (!enabled) return;
     let live = true;
     setLoad("loading");
+    if (personal) {
+      const controller = new AbortController();
+      fetch('/api/v1/gmail/messages', { cache: 'no-store', signal: controller.signal })
+        .then(async r => { if (!r.ok) throw new Error('Saved inbox unavailable'); return r.json(); })
+        .then(data => {
+          if (!live) return;
+          setGmailMessages(data.messages);
+          setSyncedAt(data.synced_at ? Date.parse(data.synced_at) : null);
+          setOffline(false); setLoad('ready');
+        })
+        .catch(() => { if (live) { setOffline(true); setLoad('ready'); } });
+      return () => { live = false; controller.abort(); };
+    }
     fetchCases(tick > 0)
       .then((data) => {
         if (!live) return;
@@ -149,23 +169,24 @@ function CasesProvider({ enabled, children }: { enabled: boolean; children: Reac
         setSyncedAt(Date.now());
       });
     return () => { live = false; };
-  }, [enabled, tick]);
+  }, [enabled, personal, tick]);
 
-  /** Gemini native-PDF extraction for one email (POST /cases/{id}/extract); replaces that case's fields. */
+  /** Parse and independently verify one local email through the case endpoint. */
   const extract = useCallback(async (id: string) => {
+    if (personal) throw new Error('Shipping extraction is not enabled for Gmail.');
     const backend = process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") ?? "";
     const r = await fetch(`${backend}/api/v1/cases/${encodeURIComponent(id)}/extract`, { method: "POST" });
     if (!r.ok) throw new Error(`Backend answered ${r.status}`);
-    const { fields } = (await r.json()) as { fields: RawCase["fields"] };
-    setRaw((all) => all.map((c) => (c.id === id ? { ...c, fields } : c)));
+    const { fields, extraction_status, review_reasons } = (await r.json()) as Pick<RawCase, "fields" | "extraction_status" | "review_reasons">;
+    setRaw((all) => all.map((c) => (c.id === id ? { ...c, fields, extraction_status, review_reasons } : c)));
     // Fixes made against the old reading would hide the new one, so a fresh read starts from a clean slate.
     setCorrections((c) => { const n = { ...c }; delete n[id]; return n; });
-    recordUserAction({ actionType: "SYSTEM_NOTE", emailId: id, description: `Re-extracted fields for ${id} with Gemini; earlier fixes cleared` });
-    toast({ title: "Fields re-extracted", description: `${id} · read again with Gemini`, icon: <Sparkles />, tone: "info" });
-  }, []);
+    recordUserAction({ actionType: "SYSTEM_NOTE", emailId: id, description: `Parsed and independently verified fields for ${id}; earlier fixes cleared` });
+    toast({ title: "Fields re-extracted", description: `${id} · read again`, icon: <Sparkles />, tone: "info" });
+  }, [personal]);
 
   const cases = useMemo(() => raw.map(derive), [raw]);
-  const summary = useMemo(() => summarise(cases, resolutions), [cases, resolutions]);
+  const summary = useMemo(() => ({ ...summarise(cases, resolutions), ...(personal ? { total: gmailMessages.length } : {}) }), [cases, resolutions, personal, gmailMessages]);
   // Toasts name the shipment the way ops read it (BL no.), falling back to the email id.
   const casesRef = useRef(cases);
   casesRef.current = cases;
@@ -234,10 +255,10 @@ function CasesProvider({ enabled, children }: { enabled: boolean; children: Reac
 
   const value = useMemo<CasesState>(
     () => ({
-      cases, summary, load, offline, syncedAt, resolutions, corrections, approve, escalate, correct, extract, requestAmendment, reclassify, addCase,
+      cases, gmailMessages, summary, load, offline, syncedAt, resolutions, corrections, approve, escalate, correct, extract, requestAmendment, reclassify, addCase,
       reload: () => setTick((t) => t + 1),
     }),
-    [cases, summary, load, offline, syncedAt, resolutions, corrections, approve, escalate, correct, extract, requestAmendment, reclassify, addCase],
+    [cases, gmailMessages, summary, load, offline, syncedAt, resolutions, corrections, approve, escalate, correct, extract, requestAmendment, reclassify, addCase],
   );
   return <CasesCtx.Provider value={value}>{children}</CasesCtx.Provider>;
 }

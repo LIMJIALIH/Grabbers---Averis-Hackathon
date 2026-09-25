@@ -12,6 +12,7 @@ import { Modal } from "@/components/ui";
 const PAGES = [
   { href: "/", label: "Queue", Icon: Inbox },
   { href: "/insights", label: "Insights", Icon: LayoutDashboard },
+  { href: "/gmail", label: "Gmail", Icon: Mail },
   { href: "/audit", label: "Audit", Icon: History },
 ];
 const p2 = (n: number) => String(n).padStart(2, "0");

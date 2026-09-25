@@ -9,6 +9,7 @@ pydantic-settings>=2.5
 Authlib>=1.6,<2
 
 # LLM orchestration and provider integrations
+openai>=1.66,<3
 langchain>=1.0
 langchain-community>=0.3
 

@@ -34,6 +34,7 @@ const REASON_VERDICT = {
   unreadable: "Couldn’t read these attachments.",
   missing_value: "A value is missing from the SI or the BL.",
   wrong_doc_type: "An attachment isn’t an SI or a BL.",
+  verification_review: "The automatic check couldn’t settle this one; a person needs to look.",
 } as const;
 /** Why a review case can't be approved, finishing "Can't approve yet: …". */
 const REASON_WHY = {
@@ -42,6 +43,7 @@ const REASON_WHY = {
   unreadable: "the attachments couldn’t be read.",
   missing_value: "a value is missing, so the check isn’t complete.",
   wrong_doc_type: "an attachment isn’t an SI or a BL.",
+  verification_review: "the automatic check flagged it for a person.",
 } as const;
 
 /** The answer to the operator's only question, in a sentence. */
