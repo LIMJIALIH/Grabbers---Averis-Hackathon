@@ -72,7 +72,6 @@ with DAG(
         tooltip="Fine-tuned BERT/Jev inference and classification output",
     ) as classification_inference:
         load_finetuned_bert = EmptyOperator(task_id="load_finetuned_bert")
-        load_jev_model_future = EmptyOperator(task_id="load_jev_model_future")
         infer_email_classification = EmptyOperator(
             task_id="infer_email_classification"
         )
@@ -82,7 +81,7 @@ with DAG(
         )
 
         (
-            [load_finetuned_bert, load_jev_model_future]
+            [load_finetuned_bert]
             >> infer_email_classification
             >> generate_classification
             >> detect_classification_conflicts
