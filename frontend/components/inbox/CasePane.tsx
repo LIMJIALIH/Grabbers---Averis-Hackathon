@@ -1,17 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Copy, Download, Flag, Mail, Paperclip, Pencil, Printer, Reply } from "lucide-react";
+import { Check, Copy, Download, Flag, Mail, Paperclip, Pencil, Printer, Reply, Sparkles } from "lucide-react";
 import { useAccount, useCases } from "@/lib/app-state";
 import { recordUserAction } from "@/lib/auditTrailStore";
-import { HITL_THRESHOLD, categoryLabel, diffSpan, fieldLabel, matches, type Case, type Field, type Shipment } from "@/lib/cases";
-import { Abbr, CategoryPill, DocumentText, FieldScore, Modal, StatusPill, hasFile } from "@/components/ui";
+import { toast } from "@/lib/toast";
+import { CATEGORIES, HITL_THRESHOLD, RESOLUTION_WORD, categoryLabel, diffSpan, fieldLabel, matches, type Case, type Category, type Field, type Shipment } from "@/lib/cases";
+import { Abbr, CategoryPill, DocumentText, Dropdown, FieldScore, Modal, StatusPill, hasFile } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import BellRing from "@/components/BellRing";
+import ThoughtLine from "@/components/ThoughtLine";
 
-type Row = { f: Field; state: "match" | "defect" | "missing" | "corrected"; fix?: { value: string; reason: string } };
+export type Row = { f: Field; state: "match" | "defect" | "missing" | "corrected"; fix?: { value: string; reason: string } };
 
 /** BL value with the differing characters marked: one wrong digit in MEDUUD104S32 has to be visible. */
-function Diff({ a, b }: { a: string; b: string }) {
+export function Diff({ a, b }: { a: string; b: string }) {
   const span = diffSpan(a, b);
   if (!b) return <span className="text-ink-3">— missing</span>;
   if (!span) return <>{b}</>;
@@ -25,13 +28,22 @@ function Diff({ a, b }: { a: string; b: string }) {
   );
 }
 
-const RESULT_WORD = { match: "Verified", defect: "Defect", missing: "Missing", corrected: "Corrected" } as const;
+const READ_STEPS = ["Opening the SI and BL", "Scanning every page", "Pulling out the seven fields", "Lining them up to check"];
+const RESULT_WORD ={ match: "Verified", defect: "Defect", missing: "Missing", corrected: "Corrected" } as const;
 const REASON_VERDICT = {
   classification_uncertain: "The email category is uncertain and needs a person to review it.",
   missing_attachment: "An attachment is missing.",
   unreadable: "Couldn’t read these attachments.",
   missing_value: "A value is missing from the SI or the BL.",
   wrong_doc_type: "An attachment isn’t an SI or a BL.",
+} as const;
+/** Why a review case can't be approved, finishing "Can't approve yet: …". */
+const REASON_WHY = {
+  classification_uncertain: "the category is uncertain.",
+  missing_attachment: "an attachment is missing.",
+  unreadable: "the attachments couldn’t be read.",
+  missing_value: "a value is missing, so the check isn’t complete.",
+  wrong_doc_type: "an attachment isn’t an SI or a BL.",
 } as const;
 
 /** The answer to the operator's only question, in a sentence. */
@@ -44,13 +56,23 @@ function verdict(c: Case) {
 }
 
 export function CasePane({ c }: { c: Case }) {
-  const { resolutions, corrections, approve, extract } = useCases();
+  const { resolutions, corrections, approve, extract, requestAmendment, reclassify } = useCases();
   const [extracting, setExtracting] = useState(false);
   const [extractErr, setExtractErr] = useState(false);
+  const [extractRan, setExtractRan] = useState(false);
+  const [readStep, setReadStep] = useState(1);
+  // ponytail: the extract call is one request with no progress events, so the steps advance on a timer and all tick
+  // when it returns. Drive them from the backend if it ever streams stages.
+  useEffect(() => {
+    if (!extracting) return;
+    setReadStep(1);
+    const id = setInterval(() => setReadStep((n) => Math.min(n + 1, READ_STEPS.length)), 1200);
+    return () => clearInterval(id);
+  }, [extracting]);
   const { account } = useAccount();
   const res = resolutions[c.id];
   const fixes = corrections[c.id] ?? {};
-  const [modal, setModal] = useState<null | { kind: "doc"; i: number } | { kind: "fix"; f: Field } | { kind: "escalate" } | { kind: "report" } | { kind: "reply" }>(null);
+  const [modal, setModal] = useState<null | { kind: "doc"; i: number } | { kind: "fix"; f: Field } | { kind: "escalate" } | { kind: "report" } | { kind: "reply" } | { kind: "approval" }>(null);
 
   const isBl = c.category === "BL_COMPARISON";
   const rows: Row[] = c.fields.map((f) => {
@@ -59,19 +81,45 @@ export function CasePane({ c }: { c: Case }) {
     return { f, fix, state: fix ? "corrected" : empty ? "missing" : matches(f) ? "match" : "defect" };
   });
   const blocking = (r: Row) => r.state === "defect" || r.state === "missing";
-  const shown = [...rows].sort((a, b) => Number(blocking(b)) - Number(blocking(a))); // defects first
+  // What stops the case first: the missing value, then differences, then matches.
+  const rank = (r: Row) => (r.state === "missing" ? 2 : r.state === "defect" ? 1 : 0);
+  const shown = [...rows].sort((a, b) => rank(b) - rank(a));
+  // In review the check never finished, so a difference is not a confirmed defect (the submission lists none).
+  const review = c.status === "NEEDS_REVIEW";
   const unresolved = rows.filter(blocking);
   const blocked = !isBl || c.status === "NEEDS_REVIEW";
-  const why = res ? `Already ${res}.` : blocked
-    ? c.status === "NEEDS_REVIEW" ? "Nothing to approve yet: the documents can’t be compared. Escalate instead." : "This email has no SI/BL to approve."
+  const awaiting = res === "awaiting";
+  const why = awaiting ? "Waiting for the carrier’s revised draft. It arrives as a new email: check that one, not this." : res ? `Already ${res}.` : blocked
+    ? c.status === "NEEDS_REVIEW" ? `Can’t approve yet: ${REASON_WHY[c.reason ?? "unreadable"]} Escalate, or ask the sender.` : "This email has no SI/BL to approve."
     : unresolved.length > 0 ? `${unresolved.length} ${unresolved.length === 1 ? "field blocks" : "fields block"} approval` : "";
   const toBlocker = () => {
     const el = document.getElementById(`row-${unresolved[0].f.key}`);
     el?.scrollIntoView({ block: "center", behavior: "smooth" });
     el?.focus({ preventScroll: true });
   };
-  // Something has to go back to the sender: a field to amend, or documents to resend.
-  const needsReply = isBl && (rows.some((r) => r.state !== "match") || c.status === "NEEDS_REVIEW");
+  // Something has to go back to the sender: a field to amend, or documents to resend. An uncertain category is ours to settle, not theirs.
+  const needsReply = isBl && (unresolved.length > 0 || (c.status === "NEEDS_REVIEW" && c.reason !== "classification_uncertain"));
+  // The next step leads: ask the carrier when something must change, approve when nothing does.
+  const replyFirst = needsReply && !res;
+  // Re-reading only helps when the text is the problem; a missing file or a real difference needs a person.
+  const readFirst = isBl && review && (c.reason === "unreadable" || c.reason === "missing_value" || c.reason === "wrong_doc_type");
+  const readBlock = isBl && (
+    <div className="grid justify-items-start gap-3">
+      {readFirst && !extracting && <p className="text-[13px] text-ink-2">Try this first: a fresh read often fixes what the text layer missed.</p>}
+      {/* While Gemini reads, the reading line takes the button's place; the button comes back once it settles. */}
+      {!extracting && (
+        <button className={cn("btn btn-sm", readFirst && "btn-primary")}
+          onClick={() => { setExtracting(true); setExtractRan(true); setExtractErr(false); extract(c.id).catch((e) => { console.error(e); setExtractErr(true); setExtractRan(false); }).finally(() => setExtracting(false)); }}>
+          <Sparkles size={14} aria-hidden />Extract with Gemini
+        </button>
+      )}
+      {extractRan && (
+        <ThoughtLine working={extracting} label="Reading the documents…" doneLabel="Read in" fontSize={13} color="var(--ink-2)"
+          steps={extracting ? READ_STEPS.slice(0, readStep) : READ_STEPS} />
+      )}
+      {extractErr && <p className="text-[13px] text-defect">Extraction failed. Gemini may be busy; try again in a moment.</p>}
+    </div>
+  );
   const tone = c.status === "NEEDS_REVIEW" ? "border-review bg-review-tint text-review-ink"
     : c.status === "MISMATCH" && isBl ? "border-defect bg-defect-tint text-defect"
     : isBl ? "border-ok bg-ok-tint text-ok" : "border-line bg-surface-2 text-ink-2";
@@ -89,7 +137,7 @@ export function CasePane({ c }: { c: Case }) {
             <div className="flex shrink-0 flex-wrap items-center gap-2">
               <CategoryPill category={c.category} />
               <StatusPill c={c} />
-              {res && <span className="pill bg-surface-2 text-ink-2">{res === "approved" ? "Approved" : "Escalated"}</span>}
+              {res && <span className="pill bg-surface-2 text-ink-2">{RESOLUTION_WORD[res]}</span>}
             </div>
           </div>
           {/* The shipment before the paperwork: ops people know a case by its BL no. and lane, not its filenames. */}
@@ -134,6 +182,7 @@ export function CasePane({ c }: { c: Case }) {
           )}
         </div>
 
+        {readFirst && readBlock}
         {isBl && rows.length > 0 && (
           <section className="card overflow-hidden" aria-label="SI vs BL comparison">
             <div className="overflow-x-auto">
@@ -148,7 +197,7 @@ export function CasePane({ c }: { c: Case }) {
                   {shown.map((r) => {
                     const { f, state, fix } = r;
                     return (
-                      <tr id={`row-${f.key}`} tabIndex={-1} key={f.key} className={cn("border-b border-line align-top outline-none last:border-0 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-burgundy", blocking(r) && "bg-defect-tint/60")}>
+                      <tr id={`row-${f.key}`} tabIndex={-1} key={f.key} className={cn("border-b border-line align-top outline-none last:border-0 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-burgundy", blocking(r) && (review ? "bg-review-tint/60" : "bg-defect-tint/60"))}>
                         <th scope="row" className="px-4 py-3 pl-5 text-left font-medium" title={f.key}>{fieldLabel(f.key)}</th>
                         <td className="num px-4 py-3 [overflow-wrap:anywhere]">{f.si || <span className="text-ink-3">— missing</span>}</td>
                         <td className="num px-4 py-3 [overflow-wrap:anywhere]">
@@ -156,13 +205,11 @@ export function CasePane({ c }: { c: Case }) {
                         </td>
                         <td className="px-4 py-3 pr-5">
                           <div className="grid justify-items-start gap-1.5">
-                            <span className={cn("pill", state === "match" || state === "corrected" ? "bg-ok-tint text-ok" : "bg-defect-tint text-defect")}>
-                              {{ match: "● Match", corrected: "● Corrected", defect: "▲ Defect", missing: "▲ Missing" }[state]}
+                            <span className={cn("pill", state === "match" || state === "corrected" ? "bg-ok-tint text-ok" : review ? "bg-review-tint text-review-ink" : "bg-defect-tint text-defect")}>
+                              {{ match: "● Match", corrected: "● Corrected", defect: review ? "▲ Differs" : "▲ Defect", missing: "▲ Missing" }[state]}
                             </span>
-                            {blocking(r) && <span className="text-[11px] font-medium text-defect">Blocks approval</span>}
                             <FieldScore value={f.confidence} />
-                            {f.confidence < HITL_THRESHOLD && <span className="text-[11px] text-review-ink">Below {HITL_THRESHOLD}: could be wrong</span>}
-                            {state !== "match" && !res && <button className="btn btn-sm" onClick={() => setModal({ kind: "fix", f })}><Pencil size={13} aria-hidden />{state === "corrected" ? "Edit…" : "Correct…"}</button>}
+                            {state !== "match" && !res && <button className="btn btn-sm" onClick={() => setModal({ kind: "fix", f })}><Pencil size={13} aria-hidden />{state === "corrected" ? "Edit fix…" : "Fix misread…"}</button>}
                           </div>
                         </td>
                       </tr>
@@ -176,15 +223,7 @@ export function CasePane({ c }: { c: Case }) {
             </p>
           </section>
         )}
-        {isBl && (
-          <button className="btn btn-sm justify-self-start" disabled={extracting}
-            onClick={() => { setExtracting(true); setExtractErr(false); extract(c.id).catch((e) => { console.error(e); setExtractErr(true); }).finally(() => setExtracting(false)); }}>
-            {extracting ? "Extracting…" : "Extract with Gemini"}
-          </button>
-        )}
-        {isBl && extractErr && (
-          <p className="text-[13px] text-defect">Extraction failed. Gemini may be busy; try again in a moment.</p>
-        )}
+        {!readFirst && readBlock}
         {isBl && rows.length === 0 && c.status !== "NEEDS_REVIEW" && (
           <p className="card p-5 text-ink-2">No fields could be extracted, so there is nothing to compare.</p>
         )}
@@ -213,10 +252,21 @@ export function CasePane({ c }: { c: Case }) {
         ) : (
           <p className="text-[13px] text-ink-2" aria-live="polite">{why || "Every field is resolved. Ready to approve."}</p>
         )}
+        {/* An uncertain category is settled here, by the person who can see the attachments, before any other step. */}
+        {c.reason === "classification_uncertain" && !res && (
+          <div className="grid gap-1.5">
+            <span className="label">This email is a…</span>
+            <Dropdown label="Reclassify" value="" onChange={(v) => v && reclassify(c.id, v as Category)}
+              options={[{ value: "", label: "Choose category" }, ...CATEGORIES.map((k) => ({ value: k, label: categoryLabel(k) }))]} />
+          </div>
+        )}
         <div className="grid gap-2">
-          <button className="btn btn-primary" disabled={!!why} onClick={() => approve(c.id)}>Approve &amp; submit</button>
-          <button className="btn btn-escalate" disabled={!!res} onClick={() => setModal({ kind: "escalate" })}><Flag size={15} aria-hidden />Escalate</button>
-          {needsReply && <button className="btn" onClick={() => setModal({ kind: "reply" })}><Reply size={15} aria-hidden />Draft reply…</button>}
+          {replyFirst && <ReplyButton primary awaiting={false} review={review} onClick={() => setModal({ kind: "reply" })} />}
+          {!replyFirst && !awaiting && <button className="btn btn-primary" disabled={!!why} onClick={() => approve(c.id)}>Approve &amp; submit</button>}
+          {res === "approved" && isBl && <button className="btn" onClick={() => setModal({ kind: "approval" })}><Reply size={15} aria-hidden />Tell the carrier to release…</button>}
+          {awaiting && <ReplyButton primary={false} awaiting review={review} onClick={() => setModal({ kind: "reply" })} />}
+          <button className="btn btn-escalate" disabled={!!res} onClick={() => setModal({ kind: "escalate" })}><BellRing ring={res === "escalated"}><Flag size={15} /></BellRing>{res === "escalated" ? "Escalated" : "Escalate"}</button>
+          {(replyFirst || awaiting) && <button className="btn" disabled={!!why} onClick={() => approve(c.id)}>Approve &amp; submit</button>}
         </div>
         <div className="hidden gap-2 border-t border-line pt-4 lg:grid">
           <p className="label">Submission</p>
@@ -229,7 +279,9 @@ export function CasePane({ c }: { c: Case }) {
 
       <FixModal state={modal?.kind === "fix" ? modal.f : null} c={c} onClose={() => setModal(null)} />
       <EscalateModal open={modal?.kind === "escalate"} c={c} onClose={() => setModal(null)} />
-      <ReplyModal open={modal?.kind === "reply"} c={c} rows={rows} who={account?.name || account?.email || ""} onClose={() => setModal(null)} />
+      <ReplyModal open={modal?.kind === "reply"} c={c} rows={rows} who={account?.name || account?.email || ""} onClose={() => setModal(null)}
+        onDraft={(how) => requestAmendment(c.id, how)} />
+      <ReplyModal open={modal?.kind === "approval"} mode="approve" c={c} rows={rows} who={account?.name || account?.email || ""} onClose={() => setModal(null)} />
       <ReportModal open={modal?.kind === "report"} c={c} rows={rows} who={account?.email ?? ""} res={res} onClose={() => setModal(null)} />
       <Modal open={modal?.kind === "doc"} onClose={() => setModal(null)} title={modal?.kind === "doc" ? c.attachments[modal.i]?.name ?? "Document" : "Document"} wide>
         {modal?.kind === "doc" && (() => {
@@ -246,27 +298,45 @@ export function CasePane({ c }: { c: Case }) {
   );
 }
 
+function ReplyButton({ primary, awaiting, review, onClick }: { primary: boolean; awaiting: boolean; review: boolean; onClick: () => void }) {
+  return (
+    <button className={cn("btn", primary && "btn-primary")} onClick={onClick}>
+      <Reply size={15} aria-hidden />{awaiting ? "Chase again…" : review ? "Ask for the documents…" : "Request amendment…"}
+    </button>
+  );
+}
+
+/** For extraction misreads only. A real difference in the carrier's draft is never fixed here: it goes back as an amendment. */
 function FixModal({ state, c, onClose }: { state: Field | null; c: Case; onClose: () => void }) {
   const { correct } = useCases();
   const [value, setValue] = useState("");
   const [reason, setReason] = useState("");
-  useEffect(() => { if (state) { setValue(state.si); setReason(""); } }, [state]);
+  // Empty on purpose: pre-filling the SI value made "make it match" the one-click path.
+  useEffect(() => { if (state) { setValue(""); setReason(""); } }, [state]);
   return (
-    <Modal open={!!state} onClose={onClose} title={state ? `Correct ${fieldLabel(state.key).toLowerCase()}` : "Correct field"}>
+    <Modal open={!!state} onClose={onClose} title={state ? `Fix misread ${fieldLabel(state.key).toLowerCase()}` : "Fix misread"}>
       {state && (
         <form className="grid gap-4" onSubmit={(e) => { e.preventDefault(); correct(c.id, state.key, value.trim(), reason.trim()); onClose(); }}>
+          <p className="rounded-[var(--radius-control)] bg-surface-2 p-3 text-[13px] text-ink-2">
+            Only when the tool read the document wrong. If the carrier’s <Abbr t="BL" /> really says this, close this and use <strong className="text-ink">Request amendment</strong>: approving a fix here would pass a BL the carrier never changed.
+          </p>
+          <p className="label">What does the original BL actually say?</p>
           <div className="flex flex-wrap gap-2">
             {[["SI", state.si], ["BL", state.bl]].map(([l, v]) => v && (
               <button type="button" key={l} aria-pressed={value === v} className={cn("btn btn-sm num", value === v && "btn-primary")} onClick={() => setValue(v)}>Use {l}: {v.length > 28 ? `${v.slice(0, 27)}…` : v}</button>
             ))}
           </div>
-          <label className="grid gap-1.5"><span className="label">Corrected value</span>
+          <label className="grid gap-1.5"><span className="label">Value on the original</span>
             <input className="field num" value={value} onChange={(e) => setValue(e.target.value)} required autoFocus />
           </label>
-          <label className="grid gap-1.5"><span className="label">Why</span>
-            <textarea className="field" rows={3} value={reason} onChange={(e) => setReason(e.target.value)} required placeholder="e.g. Confirmed with shipper by phone" />
+          <label className="grid gap-1.5"><span className="label">Where you checked it</span>
+            <textarea className="field" rows={3} value={reason} onChange={(e) => setReason(e.target.value)} required placeholder="e.g. Original BL PDF, page 1: text layer dropped the second line" />
           </label>
-          <div className="flex justify-end gap-2"><button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary">Save correction</button></div>
+          <label className="flex items-start gap-2 text-[13px]">
+            <input type="checkbox" required className="mt-0.5" />
+            I opened the original BL and it shows this value.
+          </label>
+          <div className="flex justify-end gap-2"><button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary">Save fix</button></div>
         </form>
       )}
     </Modal>
@@ -277,10 +347,11 @@ function EscalateModal({ open, c, onClose }: { open: boolean; c: Case; onClose: 
   const { escalate } = useCases();
   const [priority, setPriority] = useState("medium");
   const [note, setNote] = useState("");
-  useEffect(() => { if (open) setNote(""); }, [open]);
+  const [assignee, setAssignee] = useState("");
+  useEffect(() => { if (open) { setNote(""); setAssignee(""); } }, [open]);
   return (
     <Modal open={open} onClose={onClose} title="Escalate">
-      <form className="grid gap-4" onSubmit={(e) => { e.preventDefault(); escalate(c.id, priority, note.trim()); onClose(); }}>
+      <form className="grid gap-4" onSubmit={(e) => { e.preventDefault(); escalate(c.id, priority, note.trim(), assignee.trim()); onClose(); }}>
         <fieldset className="grid gap-1.5"><legend className="label mb-1.5">Priority</legend>
           <div className="flex gap-2">
             {["low", "medium", "high"].map((p) => (
@@ -290,6 +361,10 @@ function EscalateModal({ open, c, onClose }: { open: boolean; c: Case; onClose: 
             ))}
           </div>
         </fieldset>
+        {/* An escalation nobody owns stalls; the name goes into the audit trail with it. */}
+        <label className="grid gap-1.5"><span className="label">Assign to <span className="normal-case text-ink-3">(optional)</span></span>
+          <input className="field" value={assignee} onChange={(e) => setAssignee(e.target.value)} placeholder="e.g. senior.docs@company.com" />
+        </label>
         <label className="grid gap-1.5"><span className="label">What should the reviewer look at?</span>
           <textarea className="field" rows={4} value={note} onChange={(e) => setNote(e.target.value)} required autoFocus />
         </label>
@@ -299,7 +374,7 @@ function EscalateModal({ open, c, onClose }: { open: boolean; c: Case; onClose: 
   );
 }
 
-function ReportModal({ open, c, rows, who, res, onClose }: { open: boolean; c: Case; rows: Row[]; who: string; res?: string; onClose: () => void }) {
+function ReportModal({ open, c, rows, who, res, onClose }: { open: boolean; c: Case; rows: Row[]; who: string; res?: keyof typeof RESOLUTION_WORD; onClose: () => void }) {
   return (
     <Modal open={open} onClose={onClose} title="Verification record" wide>
       <div className="grid gap-4">
@@ -308,7 +383,7 @@ function ReportModal({ open, c, rows, who, res, onClose }: { open: boolean; c: C
           <p className="font-semibold [overflow-wrap:anywhere]">{c.subject}</p>
           <p className="mt-2 text-ink-2">
             {verdict(c)}
-            {res && ` ${res === "approved" ? "Approved" : "Escalated"} by ${who || "operator"}.`}
+            {res && ` ${res === "awaiting" ? "Amendment requested" : RESOLUTION_WORD[res]} by ${who || "operator"}.`}
           </p>
         </div>
         {rows.length > 0 && (
@@ -323,7 +398,8 @@ function ReportModal({ open, c, rows, who, res, onClose }: { open: boolean; c: C
         )}
         <div className="no-print flex justify-end"><button className="btn btn-primary" onClick={() => {
           recordUserAction({ actionType: "GENERATE_REPORT", emailId: c.id, description: `Exported verification record for ${c.id}` });
-          window.print();
+          window.print(); // blocks until the print dialog closes; the toast then confirms it was logged
+          toast({ title: "Verification record exported", description: `${c.ship.bl ?? c.id} · logged to the audit trail`, icon: <Printer />, tone: "info" });
         }}><Printer size={15} aria-hidden />Print record</button></div>
       </div>
     </Modal>
@@ -355,24 +431,37 @@ function Identity({ s }: { s: Shipment }) {
 }
 
 /** The request that closes the loop: which BL fields to amend, worded the way the SI says them. */
-function replyText(c: Case, rows: Row[], who: string) {
+function replyText(c: Case, rows: Row[], who: string, mode: "amend" | "approve" = "amend") {
   const ref = c.ship.bl ? `BL ${c.ship.bl}` : `the draft BL (${c.id})`;
-  const bad = rows.filter((r) => r.state !== "match");
-  const lines = bad.map((r) => `- ${fieldLabel(r.f.key)}: BL shows "${r.f.bl || "(blank)"}", should read "${r.fix?.value ?? (r.f.si || "(blank in SI, please confirm)")}"`);
+  const sign = `\n\nThank you.\n\nRegards,\n${who || "Shipping Documentation"}`;
+  if (mode === "approve")
+    return `Hi,\n\nWe have checked ${ref} against the Shipping Instruction and found no discrepancies. The draft is approved: please proceed with release.${sign}`;
+  // A fixed misread is not the carrier's error, so only real defects and gaps go in the request.
+  const bad = rows.filter((r) => r.state === "defect" || r.state === "missing");
+  const lines = bad.map((r) => `- ${fieldLabel(r.f.key)}: BL shows "${r.f.bl || "(blank)"}", should read "${r.f.si || "(blank in SI, please confirm)"}"`);
   const ask = bad.length
     ? `We have checked ${ref} against the Shipping Instruction. Please amend the draft BL as below before release:\n\n${lines.join("\n")}\n\nKindly send the revised draft for our final check.`
     : `We could not check ${ref}: ${REASON_VERDICT[c.reason ?? "unreadable"].replace(/\.$/, "").toLowerCase()}. Please resend the Shipping Instruction and the draft BL as readable attachments.`;
-  return `Hi,\n\n${ask}\n\nThank you.\n\nRegards,\n${who || "Shipping Documentation"}`;
+  return `Hi,\n\n${ask}${sign}`;
 }
 
-function ReplyModal({ open, c, rows, who, onClose }: { open: boolean; c: Case; rows: Row[]; who: string; onClose: () => void }) {
+/** onDraft fires once per opening, on the first copy or mail-open; without it the draft is only logged. */
+export function ReplyModal({ open, c, rows, who, onClose, mode = "amend", onDraft }: {
+  open: boolean; c: Case; rows: Row[]; who: string; onClose: () => void; mode?: "amend" | "approve"; onDraft?: (how: string) => void;
+}) {
   const [text, setText] = useState("");
   const [copied, setCopied] = useState(false);
-  useEffect(() => { if (open) { setText(replyText(c, rows, who)); setCopied(false); } }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [drafted, setDrafted] = useState(false);
+  useEffect(() => { if (open) { setText(replyText(c, rows, who, mode)); setCopied(false); setDrafted(false); } }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
   const subject = `RE: ${c.subject}`;
-  const log = (how: string) => recordUserAction({ actionType: "DRAFT_REPLY", emailId: c.id, description: `Amendment request for ${c.ship.bl ?? c.id} (${how})`, metadata: { to: c.sender, subject } });
+  const what = mode === "approve" ? "Release approval" : "Amendment request";
+  const log = (how: string) => {
+    if (onDraft) { if (!drafted) onDraft(how); setDrafted(true); return; }
+    recordUserAction({ actionType: "DRAFT_REPLY", actionLabel: mode === "approve" ? "Drafted release approval" : undefined, emailId: c.id,
+      description: `${what} for ${c.ship.bl ?? c.id} drafted (${how})`, metadata: { to: c.sender, subject } });
+  };
   return (
-    <Modal open={open} onClose={onClose} title="Draft reply" wide>
+    <Modal open={open} onClose={onClose} title={mode === "approve" ? "Tell the carrier to release" : "Draft reply"} wide>
       <div className="grid gap-4">
         <dl className="grid gap-1 text-[13px]">
           <div className="flex gap-2"><dt className="label w-16 pt-0.5">To</dt><dd className="num [overflow-wrap:anywhere]">{c.sender || "—"}</dd></div>

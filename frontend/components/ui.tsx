@@ -57,7 +57,7 @@ export function FieldScore({ value }: { value: number | null }) {
 }
 
 /** Honesty label: says on the card when a number is not model output (rule 3). */
-export const DemoChip = ({ text = "Demo data", title = "Illustrative: emails carry no received time yet" }: { text?: string; title?: string }) => (
+export const DemoChip = ({ text, title }: { text: string; title: string }) => (
   <span className="pill h-5 bg-surface-2 px-2 text-[11px] text-ink-3-on-2" title={title}>
     {text}
   </span>
@@ -230,13 +230,18 @@ export function useNow(ms = 60_000) {
   return now;
 }
 
+/** The mark: a shipping container with a tick breaking out of its top-right corner, one orange-to-plum gradient
+    across both. The tick's dark outline cuts it out of the container lines, as in the full logo. Flat so it reads at 24–40px. */
+/** The DocuVerify mark (checklist + tick), cropped from the brand artwork without its wordmark: public/logo-mark.png. */
+export function LogoMark({ size = 40, className }: { size?: number; className?: string }) {
+  // eslint-disable-next-line @next/next/no-img-element -- a fixed 256px asset; next/image adds nothing at these sizes
+  return <img src="/logo-mark.png" width={size} height={size} alt="" aria-hidden className={cn("shrink-0 rounded-[25%]", className)} />;
+}
+
 export function Logo({ size = 24, stacked = false }: { size?: number; stacked?: boolean }) {
   return (
     <span className={cn("inline-flex items-center", stacked ? "flex-col gap-0.5" : "gap-2")} aria-label="DocuVerify">
-      <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden>
-        <rect width="32" height="32" rx="9" fill="var(--burgundy)" />
-        <path d="M12.5 16.5l2.5 2.5 5-5.5" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+      <LogoMark size={size} />
       <span className={cn("font-semibold tracking-[-0.01em]", stacked ? "text-[10px] leading-3" : "text-[14px]")}>DocuVerify</span>
     </span>
   );

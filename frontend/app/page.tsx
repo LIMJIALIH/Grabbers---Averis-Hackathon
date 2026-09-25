@@ -1,13 +1,16 @@
 "use client";
 
+import { HeaderActions } from "@/components/shell/Shell";
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import type { Category, RawCase } from "@/lib/cases";
 import { AlertTriangle, CheckCircle2, FileJson, FileText, Loader2, Plus, Upload, X } from "lucide-react";
 import { QueueStatusRow, QueueTable } from "@/components/QueueTable";
 import { Loading, Modal, OfflineNote, Skeleton } from "@/components/ui";
 import { useCases } from "@/lib/app-state";
 
 type UploadResult = {
-  case: { id: string; vessel: string; company: string };
+  case: { id: string; vessel: string; company: string; body: string; fields: RawCase["fields"]; attachments: { name: string; text: string | null }[] };
   classification: {
     category: string;
     confidence: number;
@@ -41,14 +44,15 @@ export default function QueuePage() {
     <div className="grid gap-5">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-[24px] font-semibold leading-[30px] tracking-[-0.01em]">Verification queue</h1>
-          <p className="mt-1 max-w-2xl text-[14px] text-ink-2">
+          <p className="max-w-2xl text-[14px] text-ink-2">
             Review classified emails, inspect document differences, and resolve exceptions.
           </p>
         </div>
-        <button className="btn btn-primary" onClick={() => setUploadOpen(true)}>
-          <Plus size={16} aria-hidden /> New verification
-        </button>
+        <HeaderActions>
+          <button className="btn btn-primary" onClick={() => setUploadOpen(true)}>
+            <Plus size={16} aria-hidden /> New verification
+          </button>
+        </HeaderActions>
       </header>
 
       {offline && <OfflineNote onRetry={reload} />}
@@ -68,6 +72,25 @@ function NewVerificationModal({ open, onClose }: { open: boolean; onClose: () =>
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<UploadResult | null>(null);
+  const { addCase } = useCases();
+  const router = useRouter();
+
+  /** Put the upload in the queue and go straight to it: the next step after "prepared" is deciding it. */
+  function openCase() {
+    if (!result) return;
+    const { case: c, classification: k } = result;
+    // The backend returns no file URLs for uploads; the operator's own files stand in, so "Original" still opens.
+    const file = (name: string) => attachments.find((f) => f.name === name);
+    addCase({
+      id: c.id, vessel: c.vessel, company: c.company, body: c.body, fields: c.fields,
+      attachments: c.attachments.map((a) => ({ name: a.name, text: a.text, url: file(a.name) ? URL.createObjectURL(file(a.name)!) : null })),
+      category: k.category as Category, classification_confidence: k.confidence, classification_source: k.source,
+      classification_requires_review: k.requires_human_review, received_at: Date.now(),
+    });
+    reset();
+    onClose();
+    router.push(`/case/${encodeURIComponent(c.id)}`);
+  }
 
   const reset = () => {
     setEmail(null);
@@ -160,7 +183,7 @@ function NewVerificationModal({ open, onClose }: { open: boolean; onClose: () =>
           )}
           <div className="flex justify-end gap-2">
             <button className="btn" onClick={reset}>Prepare another</button>
-            <button className="btn btn-primary" onClick={close}>Done</button>
+            <button className="btn btn-primary" onClick={openCase}>Open case</button>
           </div>
         </div>
       ) : (

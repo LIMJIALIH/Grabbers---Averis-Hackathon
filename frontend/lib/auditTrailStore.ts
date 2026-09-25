@@ -24,6 +24,8 @@ export interface UserAction {
   description: string;
   documentType?: "SI" | "BL" | "SI_VS_BL";
   metadata?: Record<string, unknown>;
+  /** Signed-in email of whoever did it; an audit entry without a name proves nothing. */
+  actor?: string;
 }
 
 export interface RecordActionParams {
@@ -44,13 +46,16 @@ const ACTION_DEFAULT_LABELS: Record<ActionType, string> = {
   CORRECT_FIELD: "Corrected field",
   REQUEST_HUMAN_REVIEW: "Escalated",
   GENERATE_REPORT: "Exported record",
-  DRAFT_REPLY: "Sent amendment request",
+  DRAFT_REPLY: "Drafted reply", // the app copies or opens the mail; it can't know the mail was sent
   SYSTEM_NOTE: "System note",
 };
 
 // In-memory only: it disappears on refresh. The UI exposes no way to clear it.
 let trail: readonly UserAction[] = [];
 const listeners = new Set<() => void>();
+let actor = "";
+/** Set by the session when the account changes; every later entry carries it. */
+export const setActor = (email: string) => { actor = email; };
 
 const stamp = new Intl.DateTimeFormat("en-US", {
   month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
@@ -69,6 +74,7 @@ export function recordUserAction(p: RecordActionParams): UserAction {
     description: p.description,
     documentType: p.documentType,
     metadata: p.metadata,
+    actor: actor || undefined,
   };
   trail = [...trail, action]; // new identity per write, which is what useSyncExternalStore needs
   listeners.forEach((l) => l());

@@ -7,6 +7,7 @@
   --paper: #faf8f6;
   --surface: #ffffff;
   --surface-2: #f3efec;
+  --search-bg: #ebe6e2; /* header search bar */
   --line: #e7e1dc;
   --line-strong: #d6cec7;
   --ink: #0a0a0a;
@@ -23,6 +24,7 @@
   --ok-tint: #e6f2ec;
   --defect: #6d001a;
   --defect-tint: #f4e6e9;
+  --flow-defect: #b0123c; /* pipeline chart only: brighter than text burgundy so the Defect node reads as red */
   --spam: #7c736e;
   --spam-tint: #f1edea;
   --focus: #6d001a;
@@ -40,6 +42,7 @@
   --paper: #0b0a0a;
   --surface: #141212;
   --surface-2: #1c1919;
+  --search-bg: #262424;
   --line: #2a2624;
   --line-strong: #3a3431;
   --ink: #f7f4f2;
@@ -56,6 +59,7 @@
   --ok-tint: #0e2119;
   --defect: #d8607a; /* burgundy lifts further as *text* on dark */
   --defect-tint: #24090e;
+  --flow-defect: var(--defect);
   --spam: #9a918c;
   --spam-tint: #221f1e;
   --focus: #f2a24e;
@@ -226,6 +230,28 @@ table {
 .icon-btn:hover {
   background: var(--surface-2);
 }
+/* React Bits SpecularButton: a WebGL rim light over the button's own styling. The canvas bleeds 20px past the edge. */
+.specular-button {
+  position: relative;
+}
+.specular-button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.specular-button__fx {
+  position: absolute;
+  inset: -20px;
+  pointer-events: none;
+  z-index: 1;
+}
+.specular-button__fx canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.specular-button__label {
+  position: relative;
+  z-index: 2;
+}
 }
 /* In the components layer so utilities (pl-9 for an icon, w-full) can override it. */
 @layer components {
@@ -305,6 +331,629 @@ dialog.drawer[open] { transform: none; }
   dialog.drawer[open] { transform: translateX(-24px); opacity: 0; }
 }
 
+/* Sidebar rail: light gray in light mode, black with a gray outline in dark mode. */
+:root {
+  --rail: #e9e5e2; --rail-line: #d6cec7; --rail-ink: #0a0a0a; --rail-ink-2: #4a4441; --rail-nav: #4a4441;
+  --rail-fill: rgba(0, 0, 0, 0.05); --rail-hover: rgba(0, 0, 0, 0.08); --rail-focus: #6d001a;
+}
+[data-theme="dark"] {
+  --rail: #0a0a0a; --rail-line: #3d3d3d; --rail-ink: #ffffff; --rail-ink-2: rgba(255, 255, 255, 0.7); --rail-nav: rgba(255, 255, 255, 0.8);
+  --rail-fill: rgba(255, 255, 255, 0.1); --rail-hover: rgba(255, 255, 255, 0.15); --rail-focus: #ffffff;
+}
+/* Expanded sidebar: the active tab runs into the page; these two concave corners curve the rail (and its outline) into it. */
+.rail-tab::before,
+.rail-tab::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+}
+.rail-tab::before { bottom: 100%; background: radial-gradient(circle at 0 0, transparent 11px, var(--rail-line) 11.5px, var(--rail-line) 12px, var(--paper) 12.5px); }
+/* JellyRadio (React Bits): components/JellyRadio.tsx. Colours come in as --jr-* from props (theme tokens). */
+.jelly-radio {
+  --jr-chip: #27272a;
+  --jr-active: #f5f5f5;
+  --jr-text: #f5f5f5;
+  --jr-active-text: #18181b;
+  --jr-gap: 8px;
+  --jr-radius: 18px;
+  --jr-h: 36px;
+  --jr-font: 13px;
+  --jr-px: 16px;
+  --jr-pad-x: 16px;
+  --jr-pad-y: 6px;
+  --jr-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--jr-gap);
+  padding: var(--jr-pad-y) var(--jr-pad-x);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.jelly-radio[data-disabled] { opacity: 0.5; pointer-events: none; }
+.jelly-radio__chip {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  outline: none;
+  transform-origin: 50% 50%;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.jelly-radio__chip[data-on="true"] { cursor: default; }
+.jelly-radio:not([data-disabled]) .jelly-radio__chip:disabled { cursor: default; opacity: 0.4; }
+.jelly-radio__skin {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  height: var(--jr-h);
+  padding: 0 var(--jr-px);
+  border-radius: var(--jr-radius);
+  overflow: hidden;
+  background: var(--jr-chip);
+  box-shadow: var(--jr-ring, none); /* optional outline for chips on a same-colour page */
+  color: var(--jr-text);
+  font-size: var(--jr-font);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  transition: transform 160ms var(--jr-ease-out), background-color 200ms ease, color 200ms ease;
+}
+.jelly-radio__skin::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--jr-text);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .jelly-radio__chip[data-on="false"]:not(:disabled):hover .jelly-radio__skin::before { opacity: 0.11; }
+}
+.jelly-radio__chip:active .jelly-radio__skin { transform: scale(0.97); }
+.jelly-radio__chip[data-on="true"] .jelly-radio__skin { background: var(--jr-active); color: var(--jr-active-text); box-shadow: none; }
+/* The original hides focus entirely; keyboard users need to see it. Same orange ring as the app's other controls. */
+.jelly-radio__chip:focus-visible .jelly-radio__skin { outline: 2px solid #e78823; outline-offset: 2px; }
+.jelly-radio__icon { display: inline-flex; }
+@media (prefers-reduced-motion: reduce) {
+  .jelly-radio__chip:active .jelly-radio__skin { transform: none; }
+}
+
+/* BellRing (the ring of React Bits' BellToggle): components/BellRing.tsx. Waves take the button's ink. */
+.bell-ring { position: relative; display: inline-grid; flex: none; }
+.bell-ring__glyph { display: inline-grid; place-items: center; transform-origin: 50% var(--br-pivot, 16%); }
+.bell-ring__wave {
+  position: absolute;
+  top: -3px;
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  opacity: 0;
+  pointer-events: none;
+}
+.bell-ring__wave--left { right: calc(100% - 2px); transform-origin: 100% 100%; }
+.bell-ring__wave--right { left: calc(100% - 2px); transform-origin: 0% 100%; }
+
+/* ThoughtLine (React Bits): components/ThoughtLine.tsx. */
+.thought-line {
+  --tl-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --tl-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --tl-done: 0.75;
+  --tl-timer: 0.55;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  color: var(--tl-color, currentColor);
+  font-family: inherit;
+  font-size: var(--tl-font, 16px);
+  font-weight: 500;
+  line-height: 1.2;
+}
+.thought-line__head {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  cursor: default;
+}
+.thought-line__head[data-toggle] { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+/* The original drops the outline; keyboard users need it. Same orange ring as the app's other controls. */
+.thought-line__head:focus-visible { outline: 2px solid #e78823; outline-offset: 2px; border-radius: 4px; }
+.thought-line__glyph { display: inline-flex; flex: none; width: 1.1em; height: 1.1em; margin-right: 0.2em; color: var(--tl-glyph, currentColor); }
+.thought-line__glyph svg { display: block; width: 100%; height: 100%; }
+.thought-line__dot { width: 0.5em; height: 0.5em; margin: auto; border-radius: 50%; background: currentColor; }
+.thought-line__label { display: inline-grid; }
+.thought-line__text {
+  grid-area: 1 / 1;
+  width: max-content;
+  opacity: 0;
+  filter: blur(var(--tl-blur, 2px));
+  transition: opacity var(--tl-settle, 350ms) var(--tl-ease-out), filter var(--tl-settle, 350ms) var(--tl-ease-out);
+}
+.thought-line__text[data-active] { opacity: 1; filter: blur(0); }
+.thought-line__text--done[data-active] { opacity: var(--tl-done); }
+.thought-line__breath { display: inline-block; }
+.thought-line[data-working] .thought-line__breath[data-shimmer] {
+  background: linear-gradient(100deg, color-mix(in srgb, var(--tl-color) 50%, transparent) 30%, var(--tl-color) 50%,
+    color-mix(in srgb, var(--tl-color) 50%, transparent) 70%);
+  background-size: 250% 100%;
+  background-position: 125% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: thought-line-shimmer var(--tl-shimmer, 1.8s) linear infinite;
+}
+@keyframes thought-line-shimmer { to { background-position: -125% 0; } }
+.thought-line__timer {
+  font-variant-numeric: tabular-nums;
+  opacity: var(--tl-timer);
+  transition: opacity var(--tl-settle, 350ms) ease, transform var(--tl-settle, 350ms) var(--tl-ease-in-out);
+}
+.thought-line__timer[data-done] { opacity: var(--tl-done); }
+.thought-line__chevron { display: inline-flex; margin-left: 0.1em; opacity: 0; transition: opacity 200ms ease, transform 200ms var(--tl-ease-out); }
+.thought-line__chevron[data-on] { opacity: 0.55; }
+.thought-line[data-open] .thought-line__chevron { transform: rotate(180deg); }
+.thought-line__sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.thought-line__trace { display: grid; grid-template-rows: 0fr; width: 0; min-width: 100%; transition: grid-template-rows var(--tl-settle, 350ms) var(--tl-ease-out); }
+.thought-line__trace[data-open] { grid-template-rows: 1fr; }
+.thought-line__fold { min-height: 0; overflow-x: visible; overflow-y: clip; }
+.thought-line__steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45em;
+  width: max-content;
+  padding: 0.6em 0 0.2em 1.6em;
+  font-size: 0.875em;
+  font-weight: 400;
+  white-space: nowrap;
+}
+.thought-line__step {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 200ms var(--tl-ease-out), transform 200ms var(--tl-ease-out);
+}
+@starting-style { .thought-line__step { opacity: 0; transform: translateY(-4px); } }
+.thought-line__mark { display: inline-grid; flex: none; place-items: center; width: 1em; height: 1em; opacity: 0.55; }
+.thought-line__pulse { display: block; width: 0.4em; height: 0.4em; border-radius: 50%; background: currentColor; animation: thought-line-pulse 1.6s var(--tl-ease-in-out) infinite; }
+@keyframes thought-line-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+.thought-line__step-text { transition: opacity var(--tl-settle, 350ms) ease; }
+.thought-line__step[data-done] .thought-line__step-text { opacity: 0.55; }
+@media (prefers-reduced-motion: reduce) {
+  .thought-line__text { filter: none !important; transition: opacity var(--tl-settle, 350ms) ease; }
+  .thought-line__timer { transition: opacity var(--tl-settle, 350ms) ease; }
+  .thought-line__step { transform: none !important; transition: opacity 200ms ease; }
+  .thought-line__pulse { animation-duration: 2.4s; }
+}
+
+/* BorderGlow (React Bits): components/BorderGlow.tsx. Themed: fill and border are tokens, and the original's
+   light-surface blend is the default, with its dark blend (plus-lighter / soft-light) under [data-theme="dark"]. */
+.border-glow-card {
+  --edge-proximity: 0;
+  --cursor-angle: 45deg;
+  --edge-sensitivity: 30;
+  --color-sensitivity: calc(var(--edge-sensitivity) + 20);
+  --border-radius: 28px;
+  --glow-padding: 40px;
+  --cone-spread: 25;
+  position: relative;
+  border-radius: var(--border-radius);
+  isolation: isolate;
+  transform: translate3d(0, 0, 0.01px);
+  display: grid;
+  border: 1px solid var(--line-strong);
+  background: var(--card-bg, var(--surface));
+  overflow: visible;
+}
+.border-glow-card::before,
+.border-glow-card::after,
+.border-glow-card > .edge-light {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  transition: opacity 0.25s ease-out;
+  z-index: -1;
+}
+.border-glow-card:not(:hover):not(.sweep-active)::before,
+.border-glow-card:not(:hover):not(.sweep-active)::after,
+.border-glow-card:not(:hover):not(.sweep-active) > .edge-light {
+  opacity: 0;
+  transition: opacity 0.75s ease-in-out;
+}
+/* coloured mesh-gradient border */
+.border-glow-card::before {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--card-bg) 0 100%) padding-box,
+    linear-gradient(rgb(255 255 255 / 0%) 0% 100%) border-box,
+    var(--gradient-one) border-box, var(--gradient-two) border-box, var(--gradient-three) border-box,
+    var(--gradient-four) border-box, var(--gradient-five) border-box, var(--gradient-six) border-box,
+    var(--gradient-seven) border-box, var(--gradient-base) border-box;
+  opacity: calc((var(--edge-proximity) - var(--color-sensitivity)) / (100 - var(--color-sensitivity)));
+  mask-image: conic-gradient(from var(--cursor-angle) at center,
+    black calc(var(--cone-spread) * 1%), transparent calc((var(--cone-spread) + 15) * 1%),
+    transparent calc((100 - var(--cone-spread) - 15) * 1%), black calc((100 - var(--cone-spread)) * 1%));
+}
+/* coloured mesh-gradient fill near the edges */
+.border-glow-card::after {
+  border: 1px solid transparent;
+  background:
+    var(--gradient-one) padding-box, var(--gradient-two) padding-box, var(--gradient-three) padding-box,
+    var(--gradient-four) padding-box, var(--gradient-five) padding-box, var(--gradient-six) padding-box,
+    var(--gradient-seven) padding-box, var(--gradient-base) padding-box;
+  mask-image:
+    linear-gradient(to bottom, black, black),
+    radial-gradient(ellipse at 50% 50%, black 40%, transparent 65%),
+    radial-gradient(ellipse at 66% 66%, black 5%, transparent 40%),
+    radial-gradient(ellipse at 33% 33%, black 5%, transparent 40%),
+    radial-gradient(ellipse at 66% 33%, black 5%, transparent 40%),
+    radial-gradient(ellipse at 33% 66%, black 5%, transparent 40%),
+    conic-gradient(from var(--cursor-angle) at center, transparent 5%, black 15%, black 85%, transparent 95%);
+  mask-composite: subtract, add, add, add, add, add;
+  opacity: calc(var(--fill-opacity, 0.5) * (var(--edge-proximity) - var(--color-sensitivity)) / (100 - var(--color-sensitivity)));
+  mix-blend-mode: normal;
+}
+/* outer glow */
+.border-glow-card > .edge-light {
+  inset: calc(var(--glow-padding) * -1);
+  pointer-events: none;
+  z-index: 1;
+  mask-image: conic-gradient(from var(--cursor-angle) at center, black 2.5%, transparent 10%, transparent 90%, black 97.5%);
+  opacity: calc((var(--edge-proximity) - var(--edge-sensitivity)) / (100 - var(--edge-sensitivity)));
+  mix-blend-mode: normal;
+}
+[data-theme="dark"] .border-glow-card::after { mix-blend-mode: soft-light; }
+[data-theme="dark"] .border-glow-card > .edge-light { mix-blend-mode: plus-lighter; }
+.border-glow-card > .edge-light::before {
+  content: "";
+  position: absolute;
+  inset: var(--glow-padding);
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 1px var(--glow-color), inset 0 0 1px 0 var(--glow-color-60), inset 0 0 3px 0 var(--glow-color-50),
+    inset 0 0 6px 0 var(--glow-color-40), inset 0 0 15px 0 var(--glow-color-30), inset 0 0 25px 2px var(--glow-color-20),
+    inset 0 0 50px 2px var(--glow-color-10), 0 0 1px 0 var(--glow-color-60), 0 0 3px 0 var(--glow-color-50),
+    0 0 6px 0 var(--glow-color-40), 0 0 15px 0 var(--glow-color-30), 0 0 25px 2px var(--glow-color-20),
+    0 0 50px 2px var(--glow-color-10);
+}
+.border-glow-inner { display: flex; flex-direction: column; position: relative; overflow: auto; z-index: 1; }
+
+/* SwipeRow (React Bits): components/SwipeRow.tsx. --sr-h may be "auto" for wrapping rows. */
+.swipe-row {
+  --sr-h: 64px;
+  --sr-r: 16px;
+  --sr-a: 80px;
+  --sr-row: #27272a;
+  --sr-text: #f5f5f5;
+  --sr-drawer: #3f3f46;
+  --sr-on-drawer: #ffffff;
+  --sr-action: #e5484d;
+  --sr-on-action: #ffffff;
+  --sr-collapse: 200ms;
+  --sr-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  position: relative;
+  height: var(--sr-h);
+  overflow: hidden;
+  opacity: 1;
+  transition: height var(--sr-collapse) var(--sr-ease-out), margin-bottom var(--sr-collapse) var(--sr-ease-out), opacity var(--sr-collapse) var(--sr-ease-out);
+}
+.swipe-row[data-phase="collapsing"] { height: 0 !important; margin-bottom: 0 !important; opacity: 0; }
+.swipe-row[data-disabled] { opacity: 0.55; pointer-events: none; }
+.swipe-row__clip { position: relative; height: var(--sr-h); border-radius: var(--sr-r); overflow: hidden; background: var(--sr-row); }
+.swipe-row__rail { position: absolute; inset: 0; background: var(--sr-drawer); }
+.swipe-row__action {
+  position: absolute;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: var(--sr-a);
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--sr-drawer);
+  color: var(--sr-on-drawer);
+  font: inherit;
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+/* The original hides focus on the drawer buttons; keyboard users need it. */
+.swipe-row__action:focus-visible { outline: 2px solid #e78823; outline-offset: -3px; }
+.swipe-row__action::after { content: ""; position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+@media (hover: hover) and (pointer: fine) {
+  .swipe-row__action::after { transition: opacity 150ms ease; }
+  .swipe-row__action:hover::after { opacity: 0.08; }
+}
+.swipe-row__glyph { display: grid; justify-items: center; gap: 4px; font-size: 11px; font-weight: 500; letter-spacing: 0.01em; line-height: 1; transition: transform 160ms var(--sr-ease-out); }
+.swipe-row__icon { display: inline-flex; }
+.swipe-row__action:active .swipe-row__glyph { transform: scale(0.97); }
+.swipe-row__block { position: absolute; top: 0; width: 100%; height: 100%; background: var(--sr-action); }
+.swipe-row[data-direction="left"] .swipe-row__block { left: calc(100% - var(--sr-a)); }
+.swipe-row[data-direction="right"] .swipe-row__block { right: calc(100% - var(--sr-a)); }
+.swipe-row__action--commit { background: transparent; color: var(--sr-on-action); }
+.swipe-row[data-direction="left"] .swipe-row__action--commit { left: 0; }
+.swipe-row[data-direction="right"] .swipe-row__action--commit { right: 0; }
+.swipe-row__surface {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 100%;
+  padding: 0 16px;
+  background: var(--sr-row);
+  color: var(--sr-text);
+  touch-action: pan-y;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (hover: hover) and (pointer: fine) {
+  .swipe-row__surface { cursor: grab; }
+  .swipe-row[data-dragging] .swipe-row__surface { cursor: grabbing; }
+}
+@media (pointer: coarse) {
+  .swipe-row__surface { user-select: none; -webkit-user-select: none; }
+}
+.swipe-row[data-dragging] .swipe-row__surface,
+.swipe-row[data-dragging] .swipe-row__surface * { user-select: none; -webkit-user-select: none; }
+.swipe-row__toggle {
+  position: absolute;
+  top: 50%;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  background: transparent;
+  color: var(--sr-text);
+  font: inherit;
+  outline: none;
+}
+.swipe-row[data-direction="left"] .swipe-row__toggle { right: 12px; }
+.swipe-row[data-direction="right"] .swipe-row__toggle { left: 12px; }
+.swipe-row__toggle:focus-visible {
+  width: auto;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 12px;
+  overflow: visible;
+  clip-path: none;
+  background: color-mix(in srgb, var(--sr-text) 12%, transparent);
+  font-size: 12px;
+  white-space: nowrap;
+  transform: translateY(-50%);
+  outline: 2px solid #e78823;
+}
+.swipe-row__sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+@media (prefers-reduced-motion: reduce) {
+  .swipe-row__action:active .swipe-row__glyph { transform: none; }
+}
+
+/* Cubes (React Bits): components/Cubes.tsx. The :root vars of the original are set by the component instead. */
+.default-animation { position: relative; width: 50%; aspect-ratio: 1 / 1; height: auto; }
+.default-animation--scene {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  perspective: 99999999px;
+  grid-auto-rows: 1fr;
+}
+.cube { position: relative; width: 100%; height: 100%; aspect-ratio: 1 / 1; transform-style: preserve-3d; }
+.cube::before { content: ""; position: absolute; inset: -36px; }
+.default-animation .cube-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cube-face-bg);
+  border: var(--cube-face-border);
+  box-shadow: var(--cube-face-shadow, none);
+  opacity: 1;
+}
+.default-animation .cube-face--top { transform: translateY(-50%) rotateX(90deg); }
+.default-animation .cube-face--bottom { transform: translateY(50%) rotateX(-90deg); }
+.default-animation .cube-face--left { transform: translateX(-50%) rotateY(-90deg); }
+.default-animation .cube-face--right { transform: translateX(50%) rotateY(90deg); }
+.default-animation .cube-face--back,
+.default-animation .cube-face--front { transform: rotateY(-90deg) translateX(50%) rotateY(90deg); }
+@media (max-width: 768px) {
+  .default-animation { width: 90%; }
+}
+/* Login parcels: each cube is a sealed box. Orange packing tape runs down the front and over the top; the front
+   carries a small shipping label. background-image only, so the click ripple (background-color) still shows. */
+/* Front and back share one transform in the original and back paints last, so a resting box shows its back: tape both. */
+.parcels .cube-face--front,
+.parcels .cube-face--back,
+.parcels .cube-face--top {
+  background-image: linear-gradient(90deg, transparent 43%, rgba(231, 136, 35, 0.85) 43%, rgba(231, 136, 35, 0.85) 57%, transparent 57%);
+}
+.parcels .cube-face--front::after,
+.parcels .cube-face--back::after {
+  content: "";
+  position: absolute;
+  right: 9%;
+  bottom: 11%;
+  width: 26%;
+  height: 16%;
+  border-radius: 1px;
+  background: rgba(245, 240, 232, 0.24);
+  box-shadow: inset 0 -2px 0 rgba(245, 240, 232, 0.16);
+}
+
+/* SwipeToast (React Bits): components/SwipeToast.tsx, stacked by components/shell/Toaster.tsx. */
+.swipe-toast {
+  --st-bg: #27272a;
+  --st-ink: #f5f5f5;
+  --st-fuse: #f5a524;
+  --st-fuse-h: 2px;
+  --st-w: 356px;
+  --st-radius: 12px;
+  --st-slide: 400ms;
+  --st-gap: 10px;
+  --st-offset: 32px;
+  --st-z: 999999999;
+  --st-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  display: grid;
+  grid-template-rows: 1fr;
+  width: min(var(--st-w), 100%);
+  color: var(--st-ink);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.swipe-toast[data-inline="false"] {
+  position: fixed;
+  right: var(--st-offset);
+  bottom: calc(var(--st-offset) + env(safe-area-inset-bottom, 0px));
+  z-index: var(--st-z);
+  width: min(var(--st-w), calc(100vw - 2 * var(--st-offset)));
+}
+@media (max-width: 600px) {
+  .swipe-toast[data-inline="false"] { --st-offset: 16px; }
+}
+.swipe-toast[data-inline="true"] { transition: grid-template-rows var(--st-slide) var(--st-ease-out); }
+.swipe-toast[data-inline="true"][data-mounted="false"] { grid-template-rows: 0fr; }
+.swipe-toast[data-inline="true"][data-phase="closing"],
+.swipe-toast[data-inline="true"][data-phase="gone"] { grid-template-rows: 0fr; }
+.swipe-toast[data-inline="true"][data-phase="closing"] { transition-duration: calc(var(--st-slide) * 0.7); }
+.swipe-toast[data-inline="true"][data-phase="gone"] { transition-duration: 200ms; }
+.swipe-toast__gate { min-height: 0; }
+.swipe-toast[data-inline="true"] .swipe-toast__lift { margin-top: var(--st-gap); }
+.swipe-toast__lift {
+  opacity: 1;
+  transform: translateY(0);
+  transition: transform var(--st-slide) var(--st-ease-out), opacity calc(var(--st-slide) * 0.6) ease;
+}
+@starting-style {
+  .swipe-toast[data-inline="true"] { grid-template-rows: 0fr; }
+  .swipe-toast__lift { opacity: 0; transform: translateY(100%); }
+}
+.swipe-toast[data-mounted="false"] .swipe-toast__lift { opacity: 0; transform: translateY(100%); }
+.swipe-toast[data-phase="closing"] .swipe-toast__lift {
+  opacity: 0;
+  transform: translateY(100%);
+  transition: transform calc(var(--st-slide) * 0.7) var(--st-ease-out), opacity calc(var(--st-slide) * 0.5) ease;
+}
+.swipe-toast[data-phase="gone"] .swipe-toast__lift { opacity: 0; visibility: hidden; transform: translateY(100%); }
+.swipe-toast[data-instant] .swipe-toast__lift { transition-duration: 0s; }
+.swipe-toast__card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  border-radius: var(--st-radius);
+  overflow: hidden;
+  background: var(--st-bg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(0, 0, 0, 0.1);
+  cursor: grab;
+  outline: none;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.swipe-toast__card[data-swiping] { cursor: grabbing; }
+.swipe-toast[data-dismissible="false"] .swipe-toast__card { cursor: default; touch-action: auto; }
+.swipe-toast__icon { display: inline-flex; flex: none; width: 18px; height: 18px; }
+.swipe-toast__icon svg { width: 100%; height: 100%; }
+.swipe-toast__body { display: flex; flex: 1 1 auto; flex-direction: column; gap: 1px; min-width: 0; }
+.swipe-toast__title { font-weight: 500; line-height: 1.5; }
+.swipe-toast__desc { color: color-mix(in srgb, var(--st-ink) 66%, transparent); font-weight: 400; line-height: 1.4; }
+.swipe-toast__action,
+.swipe-toast__close {
+  flex: none;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+  outline: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 160ms var(--st-ease-out), background-color 160ms ease, opacity 160ms ease;
+}
+.swipe-toast__action { height: 24px; padding: 0 8px; border-radius: 5px; background: var(--st-ink); color: var(--st-bg); font-size: 12px; font-weight: 500; }
+.swipe-toast__close { position: relative; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 5px; background: transparent; color: inherit; }
+.swipe-toast__close::before { content: ""; position: absolute; inset: -8px; }
+.swipe-toast__action:active,
+.swipe-toast__close:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) {
+  .swipe-toast__action:hover { opacity: 0.88; }
+  .swipe-toast__close:hover { background: color-mix(in srgb, var(--st-ink) 10%, transparent); }
+}
+/* The original hides focus; keyboard users tab into toasts to reach Undo. Same orange ring as the app. */
+.swipe-toast__card:focus-visible,
+.swipe-toast__action:focus-visible,
+.swipe-toast__close:focus-visible { outline: 2px solid #e78823; outline-offset: 2px; }
+.swipe-toast__fuse {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: var(--st-fuse-h);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--st-fuse) 18%, transparent) 9%,
+    color-mix(in srgb, var(--st-fuse) 50%, transparent) 18%,
+    color-mix(in srgb, var(--st-fuse) 84%, transparent) 28%,
+    var(--st-fuse) 38%,
+    var(--st-fuse) 62%,
+    color-mix(in srgb, var(--st-fuse) 84%, transparent) 72%,
+    color-mix(in srgb, var(--st-fuse) 50%, transparent) 82%,
+    color-mix(in srgb, var(--st-fuse) 18%, transparent) 91%,
+    transparent 100%
+  );
+  transform-origin: left center;
+  pointer-events: none;
+}
+.swipe-toast[data-fuse="top"] .swipe-toast__fuse { top: 0; bottom: auto; }
+.swipe-toast[data-fuse="none"] .swipe-toast__fuse { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .swipe-toast__lift { transform: none !important; transition: opacity 200ms ease; }
+  .swipe-toast__action:active,
+  .swipe-toast__close:active { transform: none; }
+}
+/* App toasts sit on the black rail colour: a gray outline keeps them distinct on the dark theme's near-black page. */
+.toaster .swipe-toast__card { box-shadow: 0 0 0 1px #3d3d3d, 0 8px 24px rgba(0, 0, 0, 0.28); }
+
+.rail-tab::after { top: 100%; background: radial-gradient(circle at 0 100%, transparent 11px, var(--rail-line) 11.5px, var(--rail-line) 12px, var(--paper) 12.5px); }
+
 /* Motion: everything eases out, exits are shorter than entrances. */
 :root { --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1); }
 /* Base UI popups (menus, dropdowns) set data-starting-style on open and data-ending-style on close. */
@@ -325,7 +974,7 @@ dialog.drawer[open] { transform: none; }
 /* Insights charts: flow bands brighten under the pointer. */
 .flow-link { opacity: 0.28; }
 .flow-link:hover { opacity: 0.55; }
-.flow-node:focus-visible rect { stroke: var(--focus); stroke-width: 2px; }
+.flow-node:focus-visible .flow-bar { stroke: var(--focus); stroke-width: 2px; }
 /* Motion §6 — mostly absent. */
 @keyframes rise {
   from { opacity: 0; transform: translateY(8px); }

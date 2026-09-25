@@ -87,6 +87,13 @@ def parse_xlsx(path: Path, result: IngestedDocument) -> None:
 
 
 def infer_type(filename: str, text: str) -> str:
+    # A _SI/_BL/_DL filename suffix is the bundle's own label, so it wins. Without it, the text decides; an SI is
+    # often titled "BL instruction" or "Bill of Lading instruction", which counts as SI rather than as both.
+    suffix = re.search(r"_(SI|BL|DL)$", Path(filename).stem, re.I)
+    if suffix:
+        return suffix.group(1).upper()
+    if re.search(r"\b(?:bill\s+of\s+lading|b/?l)\s+instructions?\b", text[:4000], re.I):
+        return "SI"
     evidence = filename + "\n" + text[:4000]
     si = bool(re.search(r"\bshipping\s+instructions?\b|(?<![a-z])si(?![a-z])", evidence, re.I))
     bl = bool(re.search(r"\bbill\s+of\s+lading\b|(?<![a-z])b/?l(?![a-z])", evidence, re.I))

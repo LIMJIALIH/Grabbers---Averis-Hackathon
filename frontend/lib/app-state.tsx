@@ -1,8 +1,10 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { derive, isOpen, summarise, type Case, type Corrections, type RawCase, type Resolution, type Summary } from "./cases";
-import { clearAuditTrail, getAuditTrail, recordUserAction } from "./auditTrailStore";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { CircleCheck, Clock, Flag, Pencil, Sparkles, Tag, Undo2 } from "lucide-react";
+import { categoryLabel, derive, fieldLabel, isOpen, summarise, type Case, type Category, type Corrections, type RawCase, type Resolution, type Summary } from "./cases";
+import { clearAuditTrail, getAuditTrail, recordUserAction, setActor } from "./auditTrailStore";
+import { toast } from "./toast";
 import { useGoogleIdentity } from "@/components/GoogleInbox";
 
 /* ---- Account: server-verified Google identity or an explicit demo session. */
@@ -56,8 +58,11 @@ type CasesState = {
   resolutions: Record<string, Resolution>;
   corrections: Corrections;
   approve: (id: string) => void;
-  escalate: (id: string, priority: string, note: string) => void;
+  escalate: (id: string, priority: string, note: string, assignee?: string) => void;
   correct: (id: string, key: string, value: string, reason: string) => void;
+  requestAmendment: (id: string, how: string) => void;
+  reclassify: (id: string, category: Category) => void;
+  addCase: (raw: RawCase) => void;
 };
 const CasesCtx = createContext<CasesState | null>(null);
 export const useCases = () => useContext(CasesCtx)!;
@@ -83,7 +88,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     id: google.user.sub, email: google.user.email, name: google.user.name || google.user.email,
     given_name: google.user.name?.split(" ")[0] || "", picture: google.user.picture,
   } : demo ? SAMPLE_ACCOUNT : null;
-  useEffect(() => { inflight = null; clearAuditTrail(); }, [account?.id]);
+  useEffect(() => { inflight = null; clearAuditTrail(); setActor(account?.email ?? ""); }, [account?.id, account?.email]);
   const session: Session = {
       account,
       ready: demoReady && !google.loading,
@@ -153,41 +158,86 @@ function CasesProvider({ enabled, children }: { enabled: boolean; children: Reac
     if (!r.ok) throw new Error(`Backend answered ${r.status}`);
     const { fields } = (await r.json()) as { fields: RawCase["fields"] };
     setRaw((all) => all.map((c) => (c.id === id ? { ...c, fields } : c)));
-    recordUserAction({ actionType: "SYSTEM_NOTE", emailId: id, description: `Re-extracted fields for ${id} with Gemini` });
+    // Fixes made against the old reading would hide the new one, so a fresh read starts from a clean slate.
+    setCorrections((c) => { const n = { ...c }; delete n[id]; return n; });
+    recordUserAction({ actionType: "SYSTEM_NOTE", emailId: id, description: `Re-extracted fields for ${id} with Gemini; earlier fixes cleared` });
+    toast({ title: "Fields re-extracted", description: `${id} · read again with Gemini`, icon: <Sparkles />, tone: "info" });
   }, []);
 
   const cases = useMemo(() => raw.map(derive), [raw]);
   const summary = useMemo(() => summarise(cases, resolutions), [cases, resolutions]);
+  // Toasts name the shipment the way ops read it (BL no.), falling back to the email id.
+  const casesRef = useRef(cases);
+  casesRef.current = cases;
+  const shipName = (id: string) => casesRef.current.find((c) => c.id === id)?.ship.bl ?? id;
 
+  /** Reverses an approve/escalate; logged, so the audit trail shows both the decision and its undo. */
+  const undo = useCallback((id: string, what: string) => {
+    setResolutions((r) => { const n = { ...r }; delete n[id]; return n; });
+    recordUserAction({ actionType: "SYSTEM_NOTE", emailId: id, description: `Undid ${what} for ${id}` });
+    toast({ title: "Undone", description: `${shipName(id)} is back in the queue`, icon: <Undo2 />, tone: "info", duration: 2500 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- shipName reads a ref
+  }, []);
   const approve = useCallback((id: string) => {
     setResolutions((r) => ({ ...r, [id]: "approved" }));
     recordUserAction({ actionType: "APPROVE_RESULT", emailId: id, description: `Approved verification result for ${id}` });
-  }, []);
-  const escalate = useCallback((id: string, priority: string, note: string) => {
+    toast({ title: "BL approved", description: `${shipName(id)} · logged to the audit trail`, icon: <CircleCheck />, tone: "ok",
+      actionLabel: "Undo", onAction: () => undo(id, "approval") });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- shipName reads a ref
+  }, [undo]);
+  const escalate = useCallback((id: string, priority: string, note: string, assignee = "") => {
     setResolutions((r) => ({ ...r, [id]: "escalated" }));
     recordUserAction({
       actionType: "REQUEST_HUMAN_REVIEW",
       emailId: id,
-      description: `Escalated ${id} for human review (${priority} priority)`,
-      metadata: { priority, note },
+      description: `Escalated ${id} for human review (${priority} priority${assignee ? `, to ${assignee}` : ""})`,
+      metadata: { priority, note, ...(assignee && { assignee }) },
     });
-  }, []);
+    toast({ title: "Escalated for review", description: `${shipName(id)} · ${assignee || `${priority} priority`}`, icon: <Flag />, tone: "review",
+      actionLabel: "Undo", onAction: () => undo(id, "escalation") });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- shipName reads a ref
+  }, [undo]);
+  /** An extraction misread only: the documents agree, the reading didn't. A carrier defect goes to requestAmendment. */
   const correct = useCallback((id: string, key: string, value: string, reason: string) => {
     setCorrections((c) => ({ ...c, [id]: { ...c[id], [key]: { value, reason } } }));
     recordUserAction({
       actionType: "CORRECT_FIELD",
+      actionLabel: "Fixed misread",
       emailId: id,
-      description: `Corrected ${key} on ${id} to "${value}"`,
-      metadata: { field: key, value, reason },
+      description: `Fixed misread ${key} on ${id} to "${value}" (checked against the original)`,
+      metadata: { field: key, value, reason, kind: "extraction_misread" },
     });
+    toast({ title: `${fieldLabel(key)} misread fixed`, description: `${shipName(id)} · now "${value}"`, icon: <Pencil />, tone: "info" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- shipName reads a ref
+  }, []);
+  /** Amendment or resend asked for: the case leaves the open queue and waits on the carrier's revised draft. */
+  const requestAmendment = useCallback((id: string, how: string) => {
+    setResolutions((r) => ({ ...r, [id]: "awaiting" }));
+    recordUserAction({ actionType: "DRAFT_REPLY", actionLabel: "Requested amendment", emailId: id,
+      description: `Amendment request for ${shipName(id)} drafted (${how}); waiting for the revised draft` });
+    toast({ title: "Waiting for the carrier", description: `${shipName(id)} · check the revised draft when it arrives`, icon: <Clock />, tone: "info",
+      actionLabel: "Undo", onAction: () => undo(id, "amendment request") });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- shipName reads a ref
+  }, [undo]);
+  /** An operator settles an uncertain category; derive() then runs the case through the normal checks. */
+  const reclassify = useCallback((id: string, category: Category) => {
+    setRaw((all) => all.map((c) => (c.id === id ? { ...c, category, classification_requires_review: false } : c)));
+    recordUserAction({ actionType: "CORRECT_FIELD", actionLabel: "Reclassified", emailId: id,
+      description: `Reclassified ${id} as ${category}`, metadata: { field: "category", value: category } });
+    toast({ title: "Reclassified", description: `${id} · ${categoryLabel(category)}`, icon: <Tag />, tone: "info" });
+  }, []);
+  /** A case from the upload form. ponytail: held client-side only, the backend doesn't list uploads; a sync drops it. */
+  const addCase = useCallback((c: RawCase) => {
+    setRaw((all) => [c, ...all.filter((x) => x.id !== c.id)]);
+    recordUserAction({ actionType: "SYSTEM_NOTE", emailId: c.id, description: `Uploaded ${c.id} for verification` });
   }, []);
 
   const value = useMemo<CasesState>(
     () => ({
-      cases, summary, load, offline, syncedAt, resolutions, corrections, approve, escalate, correct, extract,
+      cases, summary, load, offline, syncedAt, resolutions, corrections, approve, escalate, correct, extract, requestAmendment, reclassify, addCase,
       reload: () => setTick((t) => t + 1),
     }),
-    [cases, summary, load, offline, syncedAt, resolutions, corrections, approve, escalate, correct, extract],
+    [cases, summary, load, offline, syncedAt, resolutions, corrections, approve, escalate, correct, extract, requestAmendment, reclassify, addCase],
   );
   return <CasesCtx.Provider value={value}>{children}</CasesCtx.Provider>;
 }

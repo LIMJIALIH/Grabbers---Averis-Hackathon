@@ -190,10 +190,12 @@ export function derive(raw: RawCase): Case {
   return { ...base, status: defects.length ? "MISMATCH" : "OK", reason: null, defects };
 }
 
-export type Resolution = "approved" | "escalated";
+/** awaiting = amendment (or resend) requested; the case waits on the carrier, not on us. */
+export type Resolution = "approved" | "escalated" | "awaiting";
+export const RESOLUTION_WORD: Record<Resolution, string> = { approved: "Approved", escalated: "Escalated", awaiting: "Awaiting carrier" };
 export type Corrections = Record<string, Record<string, { value: string; reason: string }>>;
 
-/** A case still needs the operator if it is flagged and neither approved nor escalated. */
+/** A case still needs the operator if it is flagged and nobody has acted on it yet. */
 export const isOpen = (c: Case, res: Record<string, Resolution>) => c.status !== "OK" && !res[c.id];
 
 export function summarise(cases: Case[], res: Record<string, Resolution>) {
@@ -217,7 +219,10 @@ export function summarise(cases: Case[], res: Record<string, Resolution>) {
   const ok = cases.filter((c) => c.status === "OK").length;
   const bl = cases.filter((c) => c.category === "BL_COMPARISON");
   const blOk = bl.filter((c) => c.status === "OK").length;
-  const resolved = cases.filter((c) => c.status !== "OK" && res[c.id]).length;
+  // Only an approval closes a case; escalated and awaiting are still someone's work, so they get their own counts.
+  const resolved = cases.filter((c) => c.status !== "OK" && res[c.id] === "approved").length;
+  const escalated = cases.filter((c) => res[c.id] === "escalated").length;
+  const awaiting = cases.filter((c) => res[c.id] === "awaiting").length;
   const defectsOpen = mismatched.filter((c) => !res[c.id]).length;
   return {
     total,
@@ -229,6 +234,8 @@ export function summarise(cases: Case[], res: Record<string, Resolution>) {
     open: cases.filter((c) => isOpen(c, res)).length,
     ok,
     resolved,
+    escalated,
+    awaiting,
     defectsOpen,
     blTotal: bl.length,
     blOk,

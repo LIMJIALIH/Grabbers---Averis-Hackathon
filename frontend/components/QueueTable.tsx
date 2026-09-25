@@ -3,10 +3,13 @@
 import { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Menu } from "@base-ui/react/menu";
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, MoreHorizontal, Search, X } from "lucide-react";
+import Link from "next/link";
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Copy, ExternalLink, MoreHorizontal, Search, X } from "lucide-react";
+import SwipeRow from "@/components/SwipeRow";
+import { toast } from "@/lib/toast";
 import { useCases } from "@/lib/app-state";
-import { cn } from "@/lib/utils";
-import { CATEGORIES, REASON_WORDS, categoryLabel, fieldLabel, searchText, type Case } from "@/lib/cases";
+import JellyRadio from "@/components/JellyRadio";
+import { CATEGORIES, REASON_WORDS, RESOLUTION_WORD, categoryLabel, fieldLabel, isOpen, searchText, type Case } from "@/lib/cases";
 import { CategoryPill, Dropdown, Empty, FieldScore, StatusPill } from "@/components/ui";
 
 const PAGE = 10;
@@ -40,8 +43,11 @@ export function useQueue() {
         (!status || c.status === status) &&
         (!field || c.defects.includes(field)) &&
         (!reason || c.reason === reason) &&
-        (scope !== "open" || !resolutions[c.id]) &&
-        (scope !== "resolved" || (c.status !== "OK" && !!resolutions[c.id])) &&
+        // Same rule as every "open" count, so a link that says 12 waiting opens 12.
+        (scope !== "open" || isOpen(c, resolutions)) &&
+        (scope !== "resolved" || (c.status !== "OK" && resolutions[c.id] === "approved")) &&
+        (scope !== "escalated" || resolutions[c.id] === "escalated") &&
+        (scope !== "awaiting" || resolutions[c.id] === "awaiting") &&
         (scope !== "other" || c.category !== "BL_COMPARISON"),
     );
   }, [cases, resolutions, q, category, status, field, reason, scope]);
@@ -93,21 +99,33 @@ export function QueueStatusRow() {
   // These partition the inbox: open review + open defects + verified + resolved + not compared = all emails.
   const chips = [
     { label: "All emails", n: s.total, on: !qs.status && !qs.category && !qs.scope, patch: { status: "", category: "", scope: "" }, cls: "" },
-    { label: "Needs review", n: s.needsOpen, on: qs.status === "NEEDS_REVIEW" && qs.scope === "open", patch: { status: "NEEDS_REVIEW", category: "", scope: "open" }, cls: "border-review bg-review-tint text-review-ink" },
+    // Chip colours go in as --jr-* vars (the jelly skin reads them); orange stays reserved for Needs review.
+    { label: "Needs review", n: s.needsOpen, on: qs.status === "NEEDS_REVIEW" && qs.scope === "open", patch: { status: "NEEDS_REVIEW", category: "", scope: "open" }, cls: "[--jr-chip:var(--review-tint)] [--jr-text:var(--review-ink)] [--jr-ring:inset_0_0_0_1px_var(--review)]" },
     { label: "Defect", n: s.defectsOpen, on: qs.status === "MISMATCH" && qs.scope === "open", patch: { status: "MISMATCH", category: "", scope: "open" }, cls: "" },
     { label: "Verified", n: s.blOk, on: qs.status === "OK" && qs.category === "BL_COMPARISON", patch: { status: "OK", category: "BL_COMPARISON", scope: "" }, cls: "" },
+    // Waiting on someone else is not done: these two sit apart from Resolved so the backlog stays honest.
+    { label: "Awaiting carrier", n: s.awaiting, on: qs.scope === "awaiting", patch: { status: "", category: "", scope: "awaiting" }, cls: "" },
+    { label: "Escalated", n: s.escalated, on: qs.scope === "escalated", patch: { status: "", category: "", scope: "escalated" }, cls: "" },
     { label: "Resolved", n: s.resolved, on: qs.scope === "resolved", patch: { status: "", category: "", scope: "resolved" }, cls: "" },
     { label: "Other", n: s.total - s.blTotal, on: qs.scope === "other", patch: { status: "", category: "", scope: "other" }, cls: "" },
   ];
   return (
-    <div role="group" aria-label="Queue summary" className="flex flex-wrap items-center gap-2">
-      {chips.map((c) => (
-        <button key={c.label} aria-pressed={c.on} onClick={() => qs.set(c.patch)}
-          className={cn("btn h-10 gap-2", c.cls, c.on && "outline outline-2 outline-offset-1 outline-burgundy")}>
-          <span className="num text-[16px] font-semibold">{c.n}</span>{c.label}
-        </button>
-      ))}
-    </div>
+    <JellyRadio
+      ariaLabel="Queue summary"
+      className="-mx-[var(--jr-pad-x)] flex-wrap [--jr-ring:inset_0_0_0_1px_var(--line-strong)]"
+      items={chips.map((c) => ({
+        value: c.label,
+        className: c.cls,
+        label: <span className="flex items-center gap-1.5"><span className="num text-[15px] font-semibold">{c.n}</span>{c.label}</span>,
+      }))}
+      value={chips.find((c) => c.on)?.label ?? ""}
+      onChange={(v) => qs.set(chips.find((c) => c.label === v)!.patch)}
+      chipColor="var(--surface)"
+      activeColor="var(--ink)"
+      textColor="var(--ink-2)"
+      activeTextColor="var(--paper)"
+      swell={0.12}
+    />
   );
 }
 
@@ -144,7 +162,38 @@ export function QueueTable() {
           action={qs.active ? <button className="btn btn-sm" onClick={qs.clear}>Clear filters</button> : undefined}
         />
       ) : (
-        <div className="overflow-x-auto">
+        <>
+        {/* Below 900px (the shell's narrow breakpoint) the queue is swipe cards: tap opens, swipe left for Open / Copy id.
+            Desktop keeps the sortable table. CSS picks one, so only one is ever in the tab order. */}
+        <ol className="grid gap-2 p-3 min-[900px]:hidden" aria-label="Emails to verify">
+          {shown.map((c) => (
+            <li key={c.id} className="min-w-0">{/* grid items default to min-width:auto, which defeats truncate */}
+              <SwipeRow
+                label={`${c.id}: ${c.subject}`}
+                fullSwipe={false}
+                height="auto"
+                actionWidth={76}
+                rowColor="var(--surface-2)"
+                textColor="var(--ink)"
+                actionColor="#a81233"
+                drawerColor="#4a4441"
+                actions={[
+                  { id: "open", label: "Open", icon: <ExternalLink size={18} />, onSelect: () => open(c.id) },
+                  { id: "copy", label: "Copy id", icon: <Copy size={18} />, onSelect: () => copyId(c.id) },
+                ]}
+              >
+                <Link href={`/case/${c.id}${qs.search}`} className="flex min-w-0 flex-1 items-center gap-3 py-3 outline-none focus-visible:underline">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-semibold">{c.subject}</span>
+                    <span className="num block truncate text-[12px] text-ink-3">{c.id}{c.ship.bl ? ` · ${c.ship.bl}` : ""}{c.ship.pol && c.ship.pod ? ` · ${c.ship.pol} → ${c.ship.pod}` : ""}</span>
+                  </span>
+                  <StatusPill c={c} />
+                </Link>
+              </SwipeRow>
+            </li>
+          ))}
+        </ol>
+        <div className="hidden overflow-x-auto min-[900px]:block">
           <table className="w-full text-[13px]">
             <thead className="border-b border-line text-left">
               <tr>
@@ -176,7 +225,7 @@ ${c.sender}`}>{c.subject}</td>
                   <td className="pr-3">
                     <span className="inline-flex items-center gap-1.5">
                       <StatusPill c={c} />
-                      {qs.resolutions[c.id] && <span className="text-[12px] text-ink-3">{qs.resolutions[c.id]}</span>}
+                      {qs.resolutions[c.id] && <span className="text-[12px] text-ink-3">{RESOLUTION_WORD[qs.resolutions[c.id]]}</span>}
                     </span>
                   </td>
                   <td className="pr-3"><FieldScore value={c.confidence} /></td>
@@ -186,6 +235,7 @@ ${c.sender}`}>{c.subject}</td>
             </tbody>
           </table>
         </div>
+        </>
       )}
       <div className="flex items-center justify-between border-t border-line px-5 py-3 text-[13px] text-ink-3">
         <span className="num">{sorted.length ? `${(p - 1) * PAGE + 1}–${Math.min(p * PAGE, sorted.length)} of ${sorted.length}` : "0 of 0"}</span>
@@ -198,6 +248,10 @@ ${c.sender}`}>{c.subject}</td>
   );
 }
 
+/** Copy an email id and confirm it; only toasts once the clipboard write has actually succeeded. */
+const copyId = (id: string) =>
+  navigator.clipboard?.writeText(id).then(() => toast({ title: "Email id copied", description: id, icon: <Copy />, tone: "info", duration: 2000 }));
+
 function RowMenu({ id, onOpen }: { id: string; onOpen: () => void }) {
   return (
     <Menu.Root>
@@ -206,7 +260,7 @@ function RowMenu({ id, onOpen }: { id: string; onOpen: () => void }) {
         <Menu.Positioner sideOffset={4} align="end" className="z-50">
           <Menu.Popup className="pop w-44 rounded-[var(--radius-control)] border border-line bg-surface p-1 shadow-[var(--shadow-pop)] outline-none">
             <Menu.Item onClick={onOpen} className="cursor-pointer rounded-lg px-3 py-2 outline-none data-[highlighted]:bg-surface-2">Open email</Menu.Item>
-            <Menu.Item onClick={() => navigator.clipboard?.writeText(id)} className="cursor-pointer rounded-lg px-3 py-2 outline-none data-[highlighted]:bg-surface-2">Copy email id</Menu.Item>
+            <Menu.Item onClick={() => copyId(id)} className="cursor-pointer rounded-lg px-3 py-2 outline-none data-[highlighted]:bg-surface-2">Copy email id</Menu.Item>
           </Menu.Popup>
         </Menu.Positioner>
       </Menu.Portal>

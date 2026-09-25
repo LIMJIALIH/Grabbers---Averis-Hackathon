@@ -8,6 +8,7 @@ import { useCases } from "@/lib/app-state";
 import { CATEGORIES, CATEGORY_SHADE, FIELDS, categoryLabel, fieldLabel, summarise, type Summary } from "@/lib/cases";
 import { Abbr, COUNT_DELAY, CountUp, DemoChip, Dropdown, Empty } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import JellyRadio from "@/components/JellyRadio";
 
 /** True once `threshold` of the element has been on screen. Stays true, so scrolling away never resets a chart. */
 function useInView<T extends HTMLElement>(threshold: number) {
@@ -47,10 +48,10 @@ export function StraightThrough() {
   return (
     <section className="card enter p-6" aria-label="Straight-through rate">
       <div className="flex items-start justify-between gap-3">
-        <span className="label">Straight-through</span>
+        <span className="text-[14px] font-bold uppercase leading-[18px] tracking-[0.06em] text-ink-2">Straight-through</span>
         {timed && <Dropdown label="Period" value={days} onChange={setDays} options={PERIODS} />}
       </div>
-      <div className="mt-3 text-[72px] font-semibold leading-[76px] tracking-[-0.04em]" aria-live="polite">
+      <div className="mt-3 text-[40px] font-semibold leading-[44px] tracking-[-0.03em]" aria-live="polite">
         <CountUp to={s.straightThrough} suffix="%" />
       </div>
       <p className="mt-2 text-[13px] text-ink-2">
@@ -147,11 +148,11 @@ export function AmendmentsAvoided({ s }: { s: Summary }) {
   return (
     <section className="card enter flex flex-col p-6" aria-label="Amendment cost avoided">
       <div className="flex items-start justify-between gap-3">
-        <span className="label">Amendment cost avoided</span>
+        <span className="text-[14px] font-bold uppercase leading-[18px] tracking-[0.06em] text-ink-2">Amendment cost avoided</span>
         <DemoChip text="Estimate" title="A range from published Malaysian carrier tariffs, not a measured saving." />
       </div>
-      <div className="mt-3 flex flex-wrap items-baseline gap-x-2 text-[44px] font-semibold leading-[52px] tracking-[-0.04em]" aria-live="polite">
-        <span className="text-[24px] tracking-[-0.02em] text-ink-3">RM</span>
+      <div className="mt-3 flex flex-wrap items-baseline gap-x-2 text-[30px] font-semibold leading-[36px] tracking-[-0.03em]" aria-live="polite">
+        <span className="text-[18px] tracking-[-0.02em] text-ink-3">RM</span>
         <CountUp to={n * FEE_RM[0]} /><span className="text-ink-3">–</span><CountUp to={n * FEE_RM[1]} />
       </div>
       <p className="mt-2 text-[13px] text-ink-2">
@@ -183,10 +184,11 @@ export function PipelineFlow() {
       // Invoice, SI request, general and spam need no SI/BL check; the donut beside this card splits them.
       none: { name: "No check needed", color: "var(--line-strong)", col: 1, href: "/?scope=other" },
       OK: { name: "Verified", color: "var(--ok)", col: 2, href: "/?status=OK&category=BL_COMPARISON" },
-      MISMATCH: { name: "Defect", color: "var(--defect)", col: 2, href: "/?status=MISMATCH" },
+      MISMATCH: { name: "Defect", color: "var(--flow-defect)", col: 2, href: "/?status=MISMATCH" },
       NEEDS_REVIEW: { name: "Needs review", color: "var(--review)", col: 2, href: "/?status=NEEDS_REVIEW" },
       approved: { name: "Approved", color: "var(--ok)", col: 3, href: "/?scope=resolved" },
-      escalated: { name: "Escalated", color: "var(--ink-2)", col: 3, href: "/?scope=resolved" },
+      escalated: { name: "Escalated", color: "var(--ink-2)", col: 3, href: "/?scope=escalated" },
+      awaiting: { name: "Awaiting carrier", color: "var(--ink-2)", col: 3, href: "/?scope=awaiting" },
       open: { name: "Still open", color: "var(--ink-3)", col: 3, href: "/?scope=open" },
     };
     const flows = new Map<string, number>();
@@ -208,47 +210,60 @@ export function PipelineFlow() {
       const [a, b] = k.split("|");
       return { source: node(a), target: node(b), value };
     });
-    const blCases = cases.filter((c) => c.category === "BL_COMPARISON");
-    return { nodes, links, blTotal: blCases.length, blOpen: blCases.filter((c) => c.status !== "OK" && !resolutions[c.id]).length };
+    return { nodes, links };
   }, [cases, resolutions]);
+  const last = Math.max(0, ...data.nodes.map((n) => n.col));
 
   return (
     <section ref={ref} className="card enter">
-      <CardHead title={data.blTotal ? `${data.blOpen} of ${data.blTotal} BL drafts still need a person` : "Where every email went"}
-        right={<span className="text-[12px] text-ink-3">Where all {cases.length} emails went · click a stage to open it</span>} />
+      {/* The "still need a person" headline lives in the Welcome card beside this; stating it twice made readers reconcile. */}
+      <CardHead title={`Where all ${cases.length} emails went`} right={<span className="text-[12px] text-ink-3">Click a stage to open it</span>} />
       {data.links.length === 0 ? (
         <Empty title="Nothing has come in yet" hint="Once the inbox is read, each email’s path through the pipeline shows here." />
       ) : (
         <div className="p-4 pr-2">
-          <ResponsiveContainer width="100%" height={260}>
+          <ResponsiveContainer width="100%" height={180}>
             <Sankey data={data} nodeWidth={10} nodePadding={16} linkCurvature={0.5} iterations={64} sort={false} align="left"
-              margin={{ top: 8, bottom: 8, left: 4, right: 132 }}
-              node={(p: SankeyNodeProps) => <FlowNodeMark {...p} seen={seen} onOpen={(href) => router.push(href)} />}
-              link={(p: SankeyLinkProps) => <FlowLink {...p} seen={seen} />} />
+              margin={{ top: 8, bottom: 8, left: FLOW_LEFT, right: 132 }}
+              node={(p: SankeyNodeProps) => <FlowNodeMark {...p} last={last} seen={seen} onOpen={(href) => router.push(href)} />}
+              link={(p: SankeyLinkProps) => <FlowLink {...p} last={last} seen={seen} />} />
           </ResponsiveContainer>
         </div>
       )}
-      <table className="sr-only">
+      {/* In a div: a table ignores sr-only's 1px height and would stretch the page. */}
+      <div className="sr-only"><table>
         <caption>Emails moving between pipeline stages</caption>
         <thead><tr><th>From</th><th>To</th><th>Emails</th></tr></thead>
         <tbody>{data.links.map((l) => <tr key={`${l.source}-${l.target}`}><td>{data.nodes[l.source].name}</td><td>{data.nodes[l.target].name}</td><td>{l.value}</td></tr>)}</tbody>
-      </table>
+      </table></div>
     </section>
   );
 }
 
+/* recharts spaces columns evenly. The inbox splits early and the outcomes sit closer to the classifier split,
+   so each column is moved to its own share of the width (inbox → still open). Only for the full four-column flow. */
+const FLOW_LEFT = 80; // room for the inbox label, which sits left of its bar (right of it, it ran into the next column)
+const COL_AT = [0, 0.19, 0.58, 1];
+const FLOW_LABEL_W = 116;
+const FLOW_MIN_RUN = 64;
+const placeX = (x: number, col: number, last: number) =>
+  last === 3 && col > 0 ? FLOW_LEFT + ((x - FLOW_LEFT) * COL_AT[col] * last) / col : x;
+
 /** Nodes fade in on the count-up beat, one column after another. */
-function FlowNodeMark({ x, y, width, height, payload, seen, onOpen }: SankeyNodeProps & { seen: boolean; onOpen: (href: string) => void }) {
+function FlowNodeMark({ x: rawX, y, width, height, payload, last, seen, onOpen }: SankeyNodeProps & { last: number; seen: boolean; onOpen: (href: string) => void }) {
   const n = payload as unknown as FlowNode & { value: number };
+  const x = placeX(rawX, n.col, last);
   const delay = COUNT_DELAY + n.col * 280;
   const go = () => n.href && onOpen(n.href);
   return (
     <g role="link" tabIndex={0} aria-label={`${n.name}: ${n.value}`} className="flow-node cursor-pointer outline-none"
       onClick={go} onKeyDown={(e) => e.key === "Enter" && go()}
       style={{ opacity: seen ? 1 : 0, transition: `opacity 300ms ease ${delay}ms` }}>
-      <rect x={x} y={y} width={width} height={Math.max(height, 2)} rx={3} fill={n.color} />
-      <text x={x + width + 8} y={y + height / 2} dominantBaseline="middle" fontSize={13} fill="var(--ink)"
-        stroke="var(--surface)" strokeWidth={4} paintOrder="stroke" strokeLinejoin="round">
+      <rect className="flow-bar" x={x} y={y} width={width} height={Math.max(height, 2)} rx={3} fill={n.color} />
+      {/* Plain text, no chip. The inbox label sits left of its bar; a tall middle node ("No check needed") is labelled
+          low, clear of the bands crossing its middle. */}
+      <text x={n.col === 0 ? x - 8 : x + width + 8} y={n.col > 0 && height > 80 ? y + height - 16 : y + height / 2}
+        textAnchor={n.col === 0 ? "end" : "start"} dominantBaseline="middle" fontSize={13} fill="var(--ink)">
         {n.name} <tspan className="num" fontWeight={600}>{n.value}</tspan>
       </text>
     </g>
@@ -256,9 +271,16 @@ function FlowNodeMark({ x, y, width, height, payload, seen, onOpen }: SankeyNode
 }
 
 /** Each band draws itself left to right, after the column it leaves has landed. */
-function FlowLink({ sourceX, sourceY, sourceControlX, targetX, targetY, targetControlX, linkWidth, payload, seen }: SankeyLinkProps & { seen: boolean }) {
+function FlowLink({ sourceX: sx, sourceY, targetX: tx, targetY, linkWidth, payload, last, seen }: SankeyLinkProps & { last: number; seen: boolean }) {
   const from = payload.source as unknown as FlowNode;
   const to = payload.target as unknown as FlowNode;
+  // A link leaves from its source node's right edge (x + nodeWidth 10) and lands on the target node's x.
+  // Out of the outcome column the band starts past the label ("Needs review 27" is the longest), so text stays on clear ground.
+  const targetX = placeX(tx, to.col, last);
+  // On a narrow card the label offset can eat the whole gap, squashing a thick band into a blob: always keep a run to curve over.
+  const sourceX = Math.min(placeX(sx - 10, from.col, last) + 10 + (from.col === 2 ? FLOW_LABEL_W : 0), targetX - FLOW_MIN_RUN);
+  const sourceControlX = (sourceX + targetX) / 2; // linkCurvature 0.5: both control points at the midpoint
+  const targetControlX = sourceControlX;
   const delay = COUNT_DELAY + from.col * 280 + 140;
   const color = from.col === 0 ? to.color : from.color; // out of the inbox, a band wears its destination: BL reads burgundy, the rest recedes
   return (
@@ -296,12 +318,18 @@ export function DefectBreakdown() {
   const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) : 0);
 
   return (
-    <section ref={ref} className="card enter">
-      <CardHead title="Where defects come from" right={<span className="text-[12px] text-ink-3">{total} BL drafts checked</span>} />
+    // Its own container: the stat row and the two bar lists split by the card's width, not the page's.
+    // On Insights it spans both rows of the page grid and shares them: header + stats = row 1, bar lists = row 2.
+    <section ref={ref} className="card enter @container grid content-start gap-y-5 @4xl:col-start-2 @4xl:row-span-2 @4xl:row-start-1 @4xl:grid-rows-subgrid">
       {bad === 0 ? (
-        <Empty title="No defects yet" hint="When a BL differs from its SI, the field and the carrier behind it show up here." />
+        <div>
+          <CardHead title="Where defects come from" right={<span className="text-[12px] text-ink-3">{total} BL drafts checked</span>} />
+          <Empty title="No defects yet" hint="When a BL differs from its SI, the field and the carrier behind it show up here." />
+        </div>
       ) : (
         <>
+          <div>
+          <CardHead title="Where defects come from" right={<span className="text-[12px] text-ink-3">{total} BL drafts checked</span>} />
           <div className="grid gap-px border-b border-line bg-line @2xl:grid-cols-3">
             <Stat label="Defective drafts" value={<CountUp to={bad} />} sub={<>of {total} checked · <CountUp to={pct(bad, total)} suffix="%" /></>} />
             <Stat label={`Wrong ${fieldLabel(top.k).toLowerCase()}`} value={<CountUp to={top.n} />}
@@ -309,7 +337,8 @@ export function DefectBreakdown() {
             {worst && <Stat label={`Highest defect rate · ${worst.label}`} value={<CountUp to={pct(worst.bad, worst.n)} suffix="%" />}
               sub={<>{worst.bad} of {worst.n} of its drafts had a defect</>} />}
           </div>
-          <div className="grid gap-6 p-5 @3xl:grid-cols-2">
+          </div>
+          <div className="grid content-start gap-6 px-5 pb-5 @3xl:grid-cols-2">
             <RankList title="By field" note="drafts with this field wrong" seen={seen}
               rows={fields.map((f) => ({ key: f.k, label: fieldLabel(f.k), value: f.n, share: f.n / top.n, text: `${f.n}`, go: () => router.push(`/?field=${f.k}`) }))} />
             <RankList title="By carrier" note={`defect rate, carriers with ${MIN_DRAFTS}+ drafts`} seen={seen}
@@ -326,7 +355,7 @@ function Stat({ label, value, sub, tone }: { label: string; value: React.ReactNo
   return (
     <div className="bg-surface px-5 py-4">
       <span className="label">{label}</span>
-      <div className={cn("mt-1 text-[36px] font-semibold leading-[40px] tracking-[-0.03em]", tone === "defect" && "text-defect")}>{value}</div>
+      <div className={cn("mt-1 text-[30px] font-semibold leading-[34px] tracking-[-0.03em]", tone === "defect" && "text-defect")}>{value}</div>
       <p className="mt-1 text-[12px] text-ink-3">{sub}</p>
     </div>
   );
@@ -394,7 +423,7 @@ export function ClassifierCertainty() {
                     style={{ left: `${pos(r.lo)}%`, width: `${Math.max(pos(r.hi) - pos(r.lo), 1.5)}%`, background: CATEGORY_SHADE[r.cat], opacity: 0.6,
                       clipPath: seen ? "inset(0 0 0 0)" : "inset(0 100% 0 0)", transitionDelay: `${delay}ms` }} />
                   <i className="absolute -top-1 h-4 w-0.5 -translate-x-1/2 rounded-full bg-ink" style={{ left: `${pos(GATE[r.cat])}%` }} />
-                  {i === 0 && <span className="absolute -top-4 -translate-x-1/2 text-[10px] font-semibold uppercase tracking-[0.08em] text-ink-2" style={{ left: `${pos(GATE[r.cat])}%` }}>gate</span>}
+                  {i === 0 && <span className="absolute -top-6 -translate-x-1/2 text-[10px] font-semibold uppercase tracking-[0.08em] text-ink-2" style={{ left: `${pos(GATE[r.cat])}%` }}>gate</span>}
                   <i className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-[var(--surface)] transition-opacity duration-300"
                     style={{ left: `${pos(r.mid)}%`, background: r.under ? "var(--review)" : CATEGORY_SHADE[r.cat], opacity: seen ? 1 : 0, transitionDelay: `${delay + 500}ms` }} />
                 </div>
@@ -435,8 +464,8 @@ export function TrendChart() {
   const { cases } = useCases();
   const [range, setRange] = useState<keyof typeof RANGES>("Weekly");
   const [hover, setHover] = useState<number | null>(null);
-  // The blocks stay empty until half the plot is on screen, then fill in bottom-up, left to right. Replays on a range change.
-  const [plot, seen] = useInView<HTMLDivElement>(0.5);
+  // The blocks stay empty until a third of the card is on screen, then fill in bottom-up, left to right. Replays on a range change.
+  const [card, seen] = useInView<HTMLElement>(1 / 3);
   const [filled, setFilled] = useState(false);
   const lag = useRef(COUNT_DELAY); // the 1s beat is for the first reveal only; range switches refill straight away
   useEffect(() => {
@@ -511,20 +540,23 @@ export function TrendChart() {
     return `calc(${w} * ${i + 0.5} + ${g * GAP + 3 * (i + g)}px)`;
   };
   return (
-    <section className="card enter">
+    <section ref={card} className="card enter">
       <CardHead
         title="Classification trend"
         right={
           <>
-            <DemoChip />
-            <div role="group" aria-label="Range" className="flex rounded-[var(--radius-control)] border border-line-strong p-0.5">
-              {(Object.keys(RANGES) as (keyof typeof RANGES)[]).map((k) => (
-                <button key={k} aria-pressed={k === range} onClick={() => { lag.current = 0; setRange(k); setHover(null); setGrp(null); }}
-                  className={cn("h-8 rounded-[8px] px-3 text-[13px] font-medium", k === range ? "bg-ink text-paper" : "text-ink-2 hover:bg-surface-2")}>
-                  {k}
-                </button>
-              ))}
-            </div>
+            <JellyRadio
+              ariaLabel="Range"
+              size="sm"
+              items={Object.keys(RANGES)}
+              value={range}
+              onChange={(k) => { lag.current = 0; setRange(k as keyof typeof RANGES); setHover(null); setGrp(null); }}
+              chipColor="var(--surface-2)"
+              activeColor="var(--ink)"
+              textColor="var(--ink-2)"
+              activeTextColor="var(--paper)"
+              className="-my-[var(--jr-pad-y)]"
+            />
           </>
         }
       />
@@ -547,8 +579,8 @@ export function TrendChart() {
         <div className="relative h-[340px] w-10 shrink-0 text-right text-[11px] text-ink-3" aria-hidden>
           {ticks.map((v) => <span key={v} className="num absolute right-0 translate-y-1/2 leading-3" style={{ bottom: `${(v / top) * 100}%` }}>{v.toLocaleString()}</span>)}
         </div>
-        <div ref={plot} className="relative min-w-0 flex-1" onMouseLeave={() => setHover(null)}>
-          <div className="grid h-[340px] gap-[3px]" style={grid} role="img" aria-label="Emails over time, stacked by category. Demo data.">
+        <div className="relative min-w-0 flex-1" onMouseLeave={() => setHover(null)}>
+          <div className="grid h-[340px] gap-[3px]" style={grid} role="img" aria-label="Emails over time, stacked by category.">
             {data.map((n, x) => {
               let cum = 0;
               const bounds = n.map((v) => (cum += v, Math.round(cum / unit)));
@@ -619,11 +651,12 @@ export function TrendChart() {
           )}
         </div>
       </div>
-      <table className="sr-only">
-        <caption>Emails over time by category (demo data)</caption>
+      {/* In a div: a table ignores sr-only's 1px height and would stretch the page. */}
+      <div className="sr-only"><table>
+        <caption>Emails over time by category</caption>
         <thead><tr><th>Period</th>{CATEGORIES.map((c) => <th key={c}>{categoryLabel(c)}</th>)}</tr></thead>
         <tbody>{data.map((n, i) => <tr key={i}><td>{labels[i].full}</td>{n.map((v, k) => <td key={k}>{v}</td>)}</tr>)}</tbody>
-      </table>
+      </table></div>
     </section>
   );
 }
