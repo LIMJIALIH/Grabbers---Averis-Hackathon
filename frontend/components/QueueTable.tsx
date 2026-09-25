@@ -116,11 +116,20 @@ export const defaultOrder = (rows: Case[]) => sortRows(rows, null, 1);
 
 const pin = (c: Case) => { const i = DEMO_FIRST.indexOf(c.id); return i < 0 ? DEMO_FIRST.length : i; };
 
-function sortRows(rows: Case[], key: SortKey | null, dir: 1 | -1) {
+/** Category and Status cycle instead of ordering A-Z: each click brings the next value to the top, the rest follow in list order. */
+const CATEGORY_CYCLE = ["BL_COMPARISON", "SI_REQUEST", "INVOICE_QUERY", "SPAM", "GENERAL"] as const; // header order: BL, SI, Invoice, Spam, General
+const STATUS_CYCLE = ["NEEDS_REVIEW", "MISMATCH", "OK"] as const;
+const STATUS_WORD = { NEEDS_REVIEW: "Needs review", MISMATCH: "Defect", OK: "Verified" } as const;
+const CYCLE = { category: CATEGORY_CYCLE.length, status: STATUS_CYCLE.length } as const;
+function sortRows(rows: Case[], key: SortKey | null, dir: 1 | -1, cat = 0) {
+  const n = CATEGORY_CYCLE.length;
+  const statusRank = (c: Case) => (STATUS_CYCLE.indexOf(c.status) - cat + STATUS_CYCLE.length) % STATUS_CYCLE.length;
+  const catRank = (c: Case) => (CATEGORY_CYCLE.indexOf(c.category as (typeof CATEGORY_CYCLE)[number]) - cat + n) % n;
   return [...rows].sort((a, b) => {
     if (!key) return pin(a) - pin(b) || STATUS_RANK[a.status] - STATUS_RANK[b.status] || a.id.localeCompare(b.id, undefined, { numeric: true });
-    const v = key === "status" ? STATUS_RANK[a.status] - STATUS_RANK[b.status]
-      : key === "confidence" ? (a.confidence ?? 101) - (b.confidence ?? 101)
+    if (key === "status") return statusRank(a) - statusRank(b) || pin(a) - pin(b) || a.id.localeCompare(b.id, undefined, { numeric: true });
+    if (key === "category") return catRank(a) - catRank(b) || pin(a) - pin(b) || a.id.localeCompare(b.id, undefined, { numeric: true });
+    const v = key === "confidence" ? (a.confidence ?? 101) - (b.confidence ?? 101)
       : key === "date" ? (a.receivedAt ?? 0) - (b.receivedAt ?? 0)
       : String(a[key]).localeCompare(String(b[key]), undefined, { numeric: true });
     return v * dir;
@@ -167,20 +176,21 @@ export function QueueStatusRow() {
 export function QueueTable() {
   const qs = useQueue();
   const router = useRouter();
-  const [sort, setSort] = useState<{ key: SortKey | null; dir: 1 | -1 }>({ key: null, dir: 1 });
+  const [sort, setSort] = useState<{ key: SortKey | null; dir: 1 | -1; cat: number }>({ key: null, dir: 1, cat: 0 });
   const [page, setPage] = useState(1);
-  const sorted = useMemo(() => sortRows(qs.rows, sort.key, sort.dir), [qs.rows, sort]);
+  const sorted = useMemo(() => sortRows(qs.rows, sort.key, sort.dir, sort.cat), [qs.rows, sort]);
   const pages = Math.max(1, Math.ceil(sorted.length / PAGE));
   const p = Math.min(page, pages);
   const shown = sorted.slice((p - 1) * PAGE, p * PAGE);
   const th = (key: SortKey, text: string, cls = "") => (
     <th scope="col" aria-sort={sort.key === key ? (sort.dir === 1 ? "ascending" : "descending") : "none"} className={cls}>
       <button className="group flex h-10 items-center gap-1 label" onClick={() => setSort((s) => {
+        if (key === "category" || key === "status") return { key, dir: 1, cat: s.key === key ? (s.cat + 1) % CYCLE[key] : 0 };
         const first = key === "date" ? -1 : 1; // date opens latest → earliest
-        return { key, dir: s.key === key ? (s.dir === 1 ? -1 : 1) : first };
+        return { key, dir: s.key === key ? (s.dir === 1 ? -1 : 1) : first, cat: 0 };
       })}>
-        {text}
-        {sort.key === key ? (sort.dir === 1 ? <ArrowUp size={12} /> : <ArrowDown size={12} />) : <ArrowUpDown size={12} className="opacity-40 group-hover:opacity-100" />}
+        {text}{(key === "category" || key === "status") && sort.key === key && <span className="normal-case tracking-normal text-ink-2">· {key === "category" ? categoryLabel(CATEGORY_CYCLE[sort.cat]) : STATUS_WORD[STATUS_CYCLE[sort.cat]]}</span>}
+        {sort.key === key ? (key === "category" || key === "status" ? <ArrowDown size={12} /> : sort.dir === 1 ? <ArrowUp size={12} /> : <ArrowDown size={12} />) : <ArrowUpDown size={12} className="opacity-40 group-hover:opacity-100" />}
       </button>
     </th>
   );
