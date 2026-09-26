@@ -1,0 +1,867 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<title>DocuVerify</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Lato:wght@900&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   DocuVerify — submission deck, 12 slides.
+
+   THE RULE: one slide, one claim, one figure. The slide shows the
+   claim; the presenter says the prose. ~45% of every slide stays
+   empty on purpose.
+
+   TAGLINE SYSTEM: content slides alternate a catchline (≈5 words)
+   with a straightforward tagline. The four sections the rules make
+   mandatory — Technical Architecture, Implementation Details,
+   Challenges Faced, Future Roadmap — always land on a
+   straightforward beat: slides 5, 7, 9, 11.
+
+   READING PATH: every slide declares one direction, and the .fx
+   stagger (--i) runs along it. Never two directions on one slide.
+
+   PALETTE: ink + one accent. Averis orange #E78823 means exactly
+   one thing — a human is needed here. Nothing else uses it.
+
+   MOTION: lifted wholesale from pitch.html, not rewritten.
+   Everything on a slide is settled within 1000ms of it appearing.
+   ═══════════════════════════════════════════════════════════════ */
+:root{
+  --paper:#0B0A0A; --surface:#141212; --surface-2:#1C1919;
+  --line:#2A2624; --line-strong:#3A3431;
+  --ink:#F7F4F2; --ink-2:#B8AFAA; --ink-3:#7E756F; --ink-4:#544D49;
+  --orange:#E78823; --orange-2:#F2A24E; --orange-tint:#2B1D0C;
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --cap:1000ms;
+  --radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--paper);overflow:hidden}
+body{font-family:Inter,system-ui,-apple-system,sans-serif;color:var(--ink);
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+#fit{position:fixed;inset:0;display:grid;place-items:center}
+#stage{width:1280px;height:720px;position:relative;background:var(--paper);overflow:hidden;
+  transform-origin:center center}
+/* the one full-width orange rule — the sponsor signature */
+#stage:before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:var(--orange);z-index:5}
+
+/* ── type ──────────────────────────────────────────────────── */
+.eyebrow,.mark{font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-4)}
+.eyebrow b{color:var(--orange);font-weight:600}
+.eyebrow .req{color:var(--orange);letter-spacing:.14em}
+.head{font-size:54px;line-height:1.04;font-weight:600;letter-spacing:-.028em}
+.head em{font-style:normal;color:var(--ink-4)}
+.kicker{font-size:16px;line-height:1.5;color:var(--ink-3)}
+.kicker b{color:var(--ink-2);font-weight:600}
+.num{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;
+  font-weight:600;letter-spacing:-.05em;line-height:.85}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+
+/* ── slide frame ───────────────────────────────────────────── */
+.slide{position:absolute;inset:0;padding:54px 72px 76px;display:flex;flex-direction:column;
+  opacity:0;visibility:hidden;transition:opacity .26s var(--ease),visibility .26s}
+.slide.on{opacity:1;visibility:visible}
+/* eyebrow and headline are pinned: they land on the same pixel on every
+   slide, so the eye never hunts for where the slide starts. */
+.slide:has(.head){justify-content:center;padding-top:196px}
+.slide:has(.head) > .eyebrow{position:absolute;top:54px;left:72px}
+.slide:has(.head) > .mark{position:absolute;top:54px;right:72px}
+.slide:has(.head) > .head{position:absolute;top:92px;left:72px;right:72px}
+
+/* entrance, staggered along the reading path — this IS the visual guide */
+.fx{opacity:0;transform:translateY(12px);transition:opacity .3s var(--ease),transform .3s var(--ease)}
+.fx.x{transform:translateX(-24px)}
+.fx.g{transform:scaleX(0);transform-origin:left center;transition:transform .5s var(--ease),opacity .25s}
+.slide.on .fx{opacity:1;transform:none;transition-delay:calc(var(--i,0)*55ms + 50ms)}
+
+/* ── chrome ────────────────────────────────────────────────── */
+#foot{position:absolute;left:72px;right:72px;bottom:26px;display:flex;justify-content:space-between;
+  align-items:baseline;font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-4)}
+#foot .r{font-family:'JetBrains Mono',monospace;letter-spacing:.06em}
+#foot .r b{color:var(--ink-2)}
+#bar{position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--line)}
+#bar i{display:block;height:100%;width:100%;background:var(--orange);
+  transform:scaleX(0);transform-origin:left center;transition:transform .3s var(--ease)}
+
+/* ══ 1 · cover ══════════════════════════════════════════════ */
+.s-cover{justify-content:center}
+.wordmark{font-size:124px;font-weight:600;letter-spacing:-.05em;line-height:1;margin-top:26px}
+.wordmark span{color:var(--orange)}
+.s-cover .tagline{font-size:32px;font-weight:500;letter-spacing:-.024em;margin-top:16px;color:var(--ink-2)}
+.s-cover .rule{height:1px;background:var(--line-strong);margin:34px 0 22px;width:620px}
+.s-cover .sub{font-size:16px;line-height:1.6;color:var(--ink-3);max-width:660px}
+.s-cover .sponsor{position:absolute;right:72px;bottom:110px;text-align:right}
+.s-cover .sponsor small{font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-4)}
+.s-cover .sponsor b{display:block;margin-top:10px;font-family:Lato,sans-serif;font-weight:900;
+  font-size:28px;letter-spacing:.06em;color:var(--orange)}
+
+/* ══ 2 · the problem — L → R, square field then list ════════
+   One square is one email. The 129 that need checking sit as a thin
+   bright band on top of 391 that do not, so the ratio is read before
+   the number is. The field fills left-to-right, top-to-bottom. */
+.lr{display:grid;grid-template-columns:400px 1fr;gap:72px;align-items:center}
+.figure .n{font-size:168px;color:var(--orange)}
+.figure .l{margin-top:18px;font-size:16px;line-height:1.5;color:var(--ink-3);max-width:320px}
+.figure .l b{color:var(--ink-2);font-weight:600}
+.field{position:relative}
+#grid{display:grid;grid-template-columns:repeat(26,1fr);gap:3px}
+#grid i{display:block;aspect-ratio:1;border-radius:2px;
+  opacity:0;transform:scale(.55);
+  transition:opacity .24s var(--ease),transform .24s var(--ease)}
+.slide.on #grid i{opacity:1;transform:none}
+/* The figure sits proud of the field: a pale lip on the top edge is light
+   catching the raised face, a dark lip below is the shadow it throws back. */
+.stamp{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;
+  opacity:0;transition:opacity .9s var(--ease);transition-delay:520ms}
+.slide.on .stamp{opacity:1}
+.stamp span{font-family:Inter,sans-serif;font-variant-numeric:tabular-nums;
+  font-weight:600;font-size:116px;letter-spacing:-.05em;line-height:1;color:var(--ink);
+  text-shadow:0 -2px 1px rgba(255,255,255,.55), 0 3px 0 rgba(11,10,10,.6),
+              0 4px 3px rgba(11,10,10,.45), 0 10px 22px rgba(0,0,0,.65)}
+.key{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 22px;margin-top:22px;
+  font-size:13px;color:var(--ink-3)}
+.key div{display:flex;align-items:center;gap:8px}
+.key i{width:11px;height:11px;border-radius:2px;flex:none}
+.key b{font-family:Inter,sans-serif;font-variant-numeric:tabular-nums;
+  font-weight:600;color:var(--ink);font-size:15px}
+.key .note{color:var(--ink-4);font-size:12.5px}
+.still #grid i{opacity:1!important;transform:none!important;transition:none!important}
+.still .stamp{opacity:1!important;transition:none!important}
+.rows > div{padding:18px 0;border-top:1px solid var(--line)}
+.rows > div:last-child{border-bottom:1px solid var(--line)}
+.rows h4{font-size:20px;font-weight:600;letter-spacing:-.015em}
+.rows p{margin-top:5px;font-size:14px;line-height:1.5;color:var(--ink-3)}
+
+/* ══ 3 · capabilities — L → R, four columns ═════════════════ */
+.cols{display:grid;grid-template-columns:repeat(4,1fr);gap:26px}
+.cap{position:relative;padding-top:38px;border-top:1px solid var(--line-strong)}
+.cap:after{content:"";position:absolute;left:0;top:-3px;width:5px;height:5px;border-radius:50%;background:var(--ink-4)}
+.cap.last:after{background:var(--orange)}
+.cap .k{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;color:var(--ink-4)}
+.cap h4{font-size:26px;font-weight:600;letter-spacing:-.02em;margin-top:10px}
+.cap p{margin-top:14px;font-size:14px;line-height:1.55;color:var(--ink-3)}
+.cap .b{margin-top:16px;font-size:13px;line-height:1.5;color:var(--ink-4)}
+.cap.last h4{color:var(--orange)}
+
+/* ══ 4 · the product — L → R, screen then benefits ══════════ */
+.pl{display:grid;grid-template-columns:660px 1fr;gap:56px;align-items:center}
+.shot{border:1px solid var(--line-strong);border-radius:10px;overflow:hidden;background:var(--surface);
+  box-shadow:0 24px 60px rgba(0,0,0,.55)}
+.shot .tb{display:flex;align-items:center;gap:6px;padding:9px 12px;background:var(--surface-2);
+  border-bottom:1px solid var(--line)}
+.shot .tb i{width:8px;height:8px;border-radius:50%;background:var(--line-strong);display:block}
+.shot .tb span{margin-left:10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-4)}
+.shot img{display:block;width:100%;height:322px;object-fit:cover;object-position:top left}
+.bens > div{padding:16px 0;border-top:1px solid var(--line)}
+.bens > div:last-child{border-bottom:1px solid var(--line)}
+.bens h4{font-size:18px;font-weight:600;letter-spacing:-.015em}
+.bens p{margin-top:4px;font-size:13.5px;line-height:1.5;color:var(--ink-3)}
+
+/* ══ 5 · architecture — L → R rail ══════════════════════════ */
+.flow{width:100%}
+.flow svg > *{transition:opacity .45s var(--ease)}
+.flow path[marker-end]{stroke-dasharray:7 6;animation:flow .9s linear infinite}
+.flow path[marker-end][stroke-dasharray="5 4"]{stroke-dasharray:5 4;animation:flow2 1.6s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-13}}
+@keyframes flow2{to{stroke-dashoffset:-9}}
+@media (prefers-reduced-motion:reduce){.flow path[marker-end]{animation:none}}
+.flow:has(.how){position:relative}
+.how{position:absolute;left:0;top:50%;width:64%}
+.how > div{display:grid;grid-template-columns:240px 1fr;align-items:baseline;gap:20px;padding:13px 0;border-top:1px solid var(--line)}
+.how > div:last-child{border-bottom:1px solid var(--line)}
+.how h4{font-size:17px;font-weight:600;letter-spacing:-.015em}
+.how p{font-size:13.5px;line-height:1.5;color:var(--ink-3)}
+.tw{position:relative;display:inline-block;white-space:nowrap;color:#00B14F;font-weight:800;
+  clip-path:inset(0 100% 0 0)}
+.tw:after{content:"";position:absolute;left:0;top:-1px;bottom:-1px;width:2px;background:#00B14F;opacity:0}
+.slide.on .tw{animation:type .8s steps(8,end) 1s forwards}
+.slide.on .tw:after{animation:caret .8s steps(8,end) 1s forwards,blink .5s step-end 1.8s 4 forwards}
+@keyframes type{to{clip-path:inset(0 0 0 0)}}
+@keyframes caret{0%{left:0;opacity:1}99%{left:100%;opacity:1}100%{left:100%;opacity:1}}
+@keyframes blink{50%{opacity:0}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.tw{clip-path:none}.slide.on .tw,.slide.on .tw:after{animation:none}}
+.vfy{position:relative;color:var(--ink)}
+.vfy.red{display:inline-block;--red:#E5484D}
+.vfy.red:after{background:var(--red)}
+.slide.on .vfy.red{animation:vfyr .7s var(--ease) .6s forwards,pulse 1.6s ease-in-out 1.5s infinite}
+@keyframes vfyr{to{color:var(--red)}}
+@keyframes pulse{50%{transform:scale(1.05)}}
+@media (prefers-reduced-motion:reduce){.slide.on .vfy.red{animation:none;color:var(--red)}}
+.wordmark .vfy{color:var(--ink);--d:.9s}
+.wordmark .vfy:after{display:none}
+.vfy:after{content:"";position:absolute;left:0;bottom:-4px;height:4px;width:100%;background:var(--orange);
+  transform:scaleX(0);transform-origin:left}
+.slide.on .vfy{animation:vfyc .7s var(--ease) var(--d,.6s) forwards}
+.slide.on .vfy:after{animation:vfyu .7s var(--ease) var(--d,.6s) forwards}
+@keyframes vfyc{to{color:var(--orange)}}
+@keyframes vfyu{to{transform:scaleX(1)}}
+@media (prefers-reduced-motion:reduce){.slide.on .vfy{animation:none;color:var(--orange)}.slide.on .vfy:after{animation:none;transform:none}}
+.legend{display:flex;flex-wrap:wrap;align-items:center;gap:10px 26px;margin-top:26px;
+  font-size:12.5px;color:var(--ink-3)}
+.legend span{display:flex;align-items:center;gap:8px}
+.legend i{width:20px;height:11px;border-radius:3px;flex:none;display:block}
+.legend i.s{background:var(--surface);border:1px solid var(--line-strong)}
+.legend i.p{border:1px dashed #6F8FB5}
+.legend i.r{border:1px solid var(--orange)}
+.legend b{color:var(--ink-2);font-weight:600;margin-left:auto}
+
+/* ══ 7 · implementation — top → down, two lanes ═════════════ */
+.lanes{display:grid;grid-template-columns:1fr 1fr;gap:56px}
+.lane .hd{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--ink-4);
+  padding-bottom:12px;border-bottom:1px solid var(--line-strong)}
+.lane .it{display:grid;grid-template-columns:186px 1fr;gap:18px;padding:13px 0;border-bottom:1px solid var(--line);
+  align-items:baseline}
+.lane .it b{font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:500;color:var(--ink)}
+.lane .it span{font-size:13px;line-height:1.45;color:var(--ink-3)}
+
+.thesis{margin-top:40px;padding-top:24px;border-top:1px solid var(--line-strong);
+  font-size:21px;line-height:1.4;letter-spacing:-.015em;color:var(--ink-3)}
+.thesis b{color:var(--ink);font-weight:600}
+
+/* ══ 8 · reliability — L → R reasons, then down ═════════════ */
+.four{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.rsn{border:1px solid var(--line-strong);border-radius:var(--radius);background:var(--surface);padding:22px 22px 24px}
+.rsn .c{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--orange);letter-spacing:.02em}
+.rsn h4{margin-top:14px;font-size:17px;font-weight:600;letter-spacing:-.015em;line-height:1.25;
+  min-height:43px}
+.rsn p{margin-top:9px;font-size:13px;line-height:1.5;color:var(--ink-3)}
+.out{margin-top:34px;padding-top:24px;border-top:1px solid var(--line-strong);
+  display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:baseline}
+.out .a{font-size:21px;font-weight:600;letter-spacing:-.018em;line-height:1.3}
+.out .a i{font-style:normal;color:var(--orange)}
+
+/* ══ 9 · challenges — top → down, problem · what happens · fix ══
+   Three fixed columns so the eye tracks straight across each row and
+   straight down each column. The problem leads with a figure, so the
+   left edge scans as numbers before it scans as prose. */
+.chal .hd{display:grid;grid-template-columns:330px 1fr 1fr;gap:40px;
+  padding-bottom:12px;border-bottom:1px solid var(--line-strong);
+  font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--ink-4)}
+.chal .hd span:last-child{color:var(--orange)}
+.chal .row{display:grid;grid-template-columns:330px 1fr 1fr;gap:40px;padding:19px 0;
+  border-bottom:1px solid var(--line);align-items:baseline}
+.chal .p{display:flex;align-items:baseline;gap:14px}
+.chal .p em{font-style:normal;font-family:Inter,sans-serif;font-variant-numeric:tabular-nums;
+  font-size:34px;font-weight:600;letter-spacing:-.04em;line-height:.9;color:var(--ink);
+  flex:none;min-width:54px}
+.chal .p span{font-size:16px;font-weight:600;letter-spacing:-.015em;line-height:1.25}
+.chal .w{font-size:13.5px;line-height:1.5;color:var(--ink-3)}
+.chal .w .mono{white-space:nowrap}
+.chal .f{font-size:13.5px;line-height:1.5;color:var(--ink-2)}
+.chal .f b{color:var(--orange);font-weight:600}
+
+/* ══ 10 · validation — descending staircase, top → down ═════
+   Each step indents further than the last, so the funnel narrows on
+   the page at the same rate it narrows in the numbers. Lifted from
+   pitch.html and re-toned: one accent, no burgundy. */
+.step{display:flex;align-items:center;gap:28px;padding:14px 0;border-top:1px solid var(--line)}
+.step:last-child{border-bottom:1px solid var(--line)}
+.step .n{font-family:Inter,sans-serif;font-variant-numeric:tabular-nums;
+  font-weight:600;letter-spacing:-.04em;line-height:.9;
+  font-size:58px;width:180px;text-align:right;flex:none}
+.step .t{font-size:20px;color:var(--ink-2);line-height:1.3}
+.step .t i{font-style:normal;display:block;margin-top:5px;font-size:13px;color:var(--ink-4);
+  font-family:'JetBrains Mono',monospace}
+.step .t mark{background:rgba(231,136,35,.14);color:var(--orange);font-weight:600;
+  padding:2px 7px;border-radius:5px;box-shadow:inset 0 0 0 1px rgba(231,136,35,.3)}
+.step.a .n{color:var(--ink-4)}
+.step.b{margin-left:74px}.step.b .n{color:var(--ink);font-size:74px}
+.step.c{margin-left:148px}.step.c .n{color:var(--orange)}
+.step.d{margin-left:222px}.step.d .n{color:var(--ink);font-size:74px}
+
+/* ══ 11 · roadmap — L → R timeline ══════════════════════════ */
+.tl{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:28px}
+.tl:before{content:"";position:absolute;left:5px;right:5px;top:15px;height:1px;background:var(--line-strong)}
+.ph{position:relative;padding-top:48px}
+.ph:after{content:"";position:absolute;left:0;top:9px;width:13px;height:13px;border-radius:50%;
+  background:var(--paper);border:2px solid var(--ink-4)}
+.ph.lead:after{background:var(--orange);border-color:var(--orange)}
+.ph .k{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--ink-4)}
+.ph h4{margin-top:9px;font-size:25px;font-weight:600;letter-spacing:-.02em;
+  min-height:58px}
+.ph.lead h4{color:var(--orange)}
+.ph ul{margin-top:20px;list-style:none}
+.ph li{padding:11px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.5;color:var(--ink-2)}
+.ph li small{display:block;margin-top:3px;font-size:12.5px;color:var(--ink-4)}
+
+/* ══ 12 · close ═════════════════════════════════════════════ */
+.s-close{justify-content:center;align-items:center;text-align:center;padding-top:54px}
+.s-close .big{font-size:62px;font-weight:600;letter-spacing:-.03em;line-height:1.08}
+.s-close .big span{color:var(--orange)}
+.s-close .big .ln{display:block;overflow:hidden;padding-bottom:.1em}
+.s-close .big .ln>span{display:block;color:var(--ink);transform:translateY(110%);opacity:0}
+.s-close .big .ln.o>span{color:var(--orange)}
+.slide.on .big .ln>span{animation:rise .9s var(--ease) .25s forwards}
+.slide.on .big .ln.o>span{animation-delay:.65s}
+@keyframes rise{to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.s-close .big .ln>span{transform:none;opacity:1;animation:none!important}}
+.s-close .imp{display:grid;grid-template-columns:repeat(3,1fr);gap:44px;margin-top:52px;width:1000px;text-align:left}
+.s-close .imp > div{padding-top:16px;border-top:1px solid var(--line-strong)}
+.s-close .imp b{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--ink-4)}
+.s-close .imp p{margin-top:11px;font-size:14.5px;line-height:1.5;color:var(--ink-2)}
+.s-close .links{display:flex;gap:44px;margin-top:54px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-4)}
+.s-close .links b{display:block;font-weight:500;color:var(--ink-3);margin-bottom:5px;letter-spacing:.14em;font-size:10px}
+.s-close .sig{position:absolute;right:72px;bottom:104px;font-family:Lato,sans-serif;font-weight:900;
+  font-size:22px;letter-spacing:.06em;color:var(--orange)}
+
+.still .fx{opacity:1!important;transform:none!important;transition:none!important}
+</style>
+</head>
+<body>
+<div id="fit"><div id="stage">
+
+<!-- ══ 1 · cover ════════════════════════════════════════════ -->
+<section class="slide s-cover" data-t="Cover">
+  <p class="eyebrow fx" style="--i:0">Averis &times; Monash Hackathon 2026 &nbsp;·&nbsp; Team <span class="tw">Grabbers</span></p>
+  <h1 class="wordmark fx" style="--i:1">Docu<span class="vfy">Verify</span></h1>
+  <p class="tagline fx" style="--i:2">From inbox to discrepancy report.</p>
+  <div class="rule fx g" style="--i:3"></div>
+  <p class="sub fx" style="--i:4">Reads the inbox. Pulls seven fields from the Shipping Instruction
+    and the draft Bill of Lading. Compares them. Escalates what it cannot decide.</p>
+  <div class="sponsor fx" style="--i:5"><small>Built for</small><b>AVERIS</b></div>
+</section>
+
+<!-- ══ 2 · the problem — catchline · L → R ══════════════════ -->
+<section class="slide" data-t="The problem">
+  <p class="eyebrow fx" style="--i:0"><b>02</b> &nbsp;·&nbsp; The problem</p>
+  <p class="mark fx" style="--i:0">DocuVerify</p>
+  <h2 class="head fx" style="--i:1"><span class="vfy red">Three</span> in <span class="vfy" style="--d:1s">four</span> emails <em>aren't the job.</em></h2>
+  <div class="lr">
+    <div class="fx x" style="--i:2">
+      <div class="field"><div id="grid"></div>
+        <div class="stamp"><span>75%</span></div></div>
+      <div class="key">
+        <div><i style="background:var(--orange)"></i><b>391</b> are not the job</div>
+        <div><i style="background:#3A2A1C"></i><b>129</b> need checking</div>
+        <div class="note">One square is one email. The operator reads all 520.</div>
+      </div>
+    </div>
+    <div class="rows">
+      <div class="fx" style="--i:3">
+        <h4>Requests get missed.</h4>
+        <p>An overlooked request never reaches the check.</p>
+      </div>
+      <div class="fx" style="--i:4">
+        <h4>The comparison is done by eye.</h4>
+        <p>Names, ports, counts, weight. Two documents. Every time.</p>
+      </div>
+      <div class="fx" style="--i:5">
+        <h4>The same field is spelled differently.</h4>
+        <p>&ldquo;Port of Loading&rdquo; here. &ldquo;Load Port&rdquo; there. Same field.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ 3 · what it does — straightforward · L → R ═══════════ -->
+<section class="slide" data-t="What it does">
+  <p class="eyebrow fx" style="--i:0"><b>03</b> &nbsp;·&nbsp; The solution</p>
+  <p class="mark fx" style="--i:0">DocuVerify</p>
+  <h2 class="head fx" style="--i:1">What Docu<span class="vfy">Verify</span> does</h2>
+  <div class="cols">
+    <div class="cap fx" style="--i:2"><div class="k">01</div><h4>Classify</h4>
+      <p>Five kinds of message, told apart.</p>
+      <div class="b">Only real checks go downstream.</div></div>
+    <div class="cap fx" style="--i:3"><div class="k">02</div><h4>Extract</h4>
+      <p>SI and draft BL, in any format.</p>
+      <div class="b">PDF, Word, Excel, text, scanned.</div></div>
+    <div class="cap fx" style="--i:4"><div class="k">03</div><h4>Compare</h4>
+      <p>Seven fields, side by side.</p>
+      <div class="b">The SI is the truth. The BL gets corrected.</div></div>
+    <div class="cap last fx" style="--i:5"><div class="k">04</div><h4>Escalate</h4>
+      <p>Stops and asks, with the reason attached.</p>
+      <div class="b">Never a guess. Never a silent failure.</div></div>
+  </div>
+  <p class="kicker fx" style="--i:6;margin-top:44px">Three steps are automatic.
+    <b>The fourth is what makes them trustworthy.</b></p>
+</section>
+
+<!-- ══ 4 · the product — catchline · L → R ══════════════════ -->
+<section class="slide" data-t="The product">
+  <p class="eyebrow fx" style="--i:0"><b>04</b> &nbsp;·&nbsp; The product</p>
+  <p class="mark fx" style="--i:0">DocuVerify</p>
+  <h2 class="head fx" style="--i:1">Not a script. <em>A queue.</em></h2>
+  <div class="pl">
+    <div class="shot fx x" style="--i:2">
+      <div class="tb"><i></i><i></i><i></i><span>docuverify &mdash; queue</span></div>
+      <img src="shots/queue-dark.png" alt="The DocuVerify case queue">
+    </div>
+    <div class="bens">
+      <div class="fx" style="--i:3"><h4>Work arrives sorted.</h4>
+        <p>Classified and compared before anyone opens them.</p></div>
+      <div class="fx" style="--i:4"><h4>Every value shows its source.</h4>
+        <p>Page, sheet row or block. Check it, don't trust it.</p></div>
+      <div class="fx" style="--i:5"><h4>Every decision is recorded.</h4>
+        <p>Who changed what, and when.</p></div>
+    </div>
+  </div>
+  <p class="kicker fx" style="--i:6;margin-top:34px">A script prints JSON.
+    <b>A queue can be handed to an ops team.</b></p>
+</section>
+
+<!-- ══ 5 · architecture — straightforward · REQUIRED · L → R ═ -->
+<section class="slide" data-t="Technical architecture" data-steps="5">
+  <p class="eyebrow fx" style="--i:0"><b>05</b> &nbsp;·&nbsp; Technical architecture</p>
+  <p class="mark fx" style="--i:0">DocuVerify</p>
+  <h2 class="head fx" style="--i:1">Technical architecture</h2>
+  <div class="flow fx" style="--i:2">
+<svg viewBox="0 0 1080 392" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" stroke-width="1.2" role="img" aria-label="DocuVerify pipeline: intake, normalise, classify, verify, report">
+<defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 1 L7 4 L0 7 z" fill="context-stroke"/></marker></defs>
+<text x="0" y="12" fill="#544D49" font-size="8.5" letter-spacing="2" font-family="JetBrains Mono, monospace">INTAKE</text>
+<line x1="0" y1="20" x2="168" y2="20" stroke="#3A3431"/>
+<text x="204" y="12" fill="#544D49" font-size="8.5" letter-spacing="2" font-family="JetBrains Mono, monospace">NORMALISE</text>
+<line x1="204" y1="20" x2="372" y2="20" stroke="#3A3431"/>
+<text x="408" y="12" fill="#544D49" font-size="8.5" letter-spacing="2" font-family="JetBrains Mono, monospace">CLASSIFY</text>
+<line x1="408" y1="20" x2="600" y2="20" stroke="#3A3431"/>
+<text x="648" y="12" fill="#544D49" font-size="8.5" letter-spacing="2" font-family="JetBrains Mono, monospace">VERIFY</text>
+<line x1="648" y1="20" x2="840" y2="20" stroke="#3A3431"/>
+<text x="888" y="12" fill="#544D49" font-size="8.5" letter-spacing="2" font-family="JetBrains Mono, monospace">REPORT</text>
+<line x1="888" y1="20" x2="1080" y2="20" stroke="#3A3431"/>
+<rect x="0" y="40" width="168" height="42" rx="8" fill="#141212" stroke="#3A3431"/>
+<text x="84.0" y="65.0" text-anchor="middle" fill="#F7F4F2" font-size="12.5" font-weight="600">Google OAuth</text>
+<rect x="0" y="112" width="168" height="42" rx="8" fill="none" stroke="#6F8FB5" stroke-dasharray="5 4"/>
+<text x="84.0" y="130.0" text-anchor="middle" fill="#9DB6D3" font-size="12.5" font-weight="600">Gmail API</text>
+<text x="84.0" y="145.0" text-anchor="middle" fill="#6F8FB5" font-size="9.5" font-family="JetBrains Mono, monospace">receives automatically</text>
+<text x="168" y="106" text-anchor="end" fill="#6F8FB5" font-size="7.5" letter-spacing="1.2" font-family="JetBrains Mono, monospace">PLANNED</text>
+<rect x="0" y="232" width="168" height="42" rx="8" fill="#141212" stroke="#3A3431"/>
+<text x="84.0" y="250.0" text-anchor="middle" fill="#F7F4F2" font-size="12.5" font-weight="600">Email intake</text>
+<text x="84.0" y="265.0" text-anchor="middle" fill="#544D49" font-size="9.5" font-family="JetBrains Mono, monospace">JSON inbox or upload</text>
+<path d="M 84.0 82 L 84.0 108" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<path d="M 84.0 162 L 84.0 228" fill="none" stroke="#6F8FB5" stroke-dasharray="5 4" marker-end="url(#ah)"/>
+<text x="90.0" y="198" text-anchor="start" fill="#8A817C" font-size="8.5" font-family="JetBrains Mono, monospace">future</text>
+<rect x="204" y="140" width="168" height="42" rx="8" fill="#141212" stroke="#3A3431"/>
+<text x="288.0" y="165.0" text-anchor="middle" fill="#F7F4F2" font-size="12.5" font-weight="600">json / txt</text>
+<rect x="204" y="215" width="168" height="42" rx="8" fill="#141212" stroke="#3A3431"/>
+<text x="288.0" y="240.0" text-anchor="middle" fill="#F7F4F2" font-size="12.5" font-weight="600">PDF / DOCX / XLSX</text>
+<rect x="204" y="295" width="168" height="42" rx="8" fill="#141212" stroke="#3A3431"/>
+<text x="288.0" y="320.0" text-anchor="middle" fill="#F7F4F2" font-size="12.5" font-weight="600">Gemma restructure</text>
+<path d="M 168 248 L 186 248 L 186 161 L 200 161" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<path d="M 168 258 L 186 258 L 186 236 L 200 236" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<path d="M 288.0 257 L 288.0 291" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<rect x="408" y="40" width="192" height="42" rx="8" fill="#141212" stroke="#3A3431"/>
+<text x="504.0" y="65.0" text-anchor="middle" fill="#F7F4F2" font-size="12.5" font-weight="600">Standardised email</text>
+<rect x="408" y="122" width="192" height="42" rx="8" fill="#141212" stroke="#3A3431"/>
+<text x="504.0" y="140.0" text-anchor="middle" fill="#F7F4F2" font-size="12.5" font-weight="600">Fine-tuned BERT v2</text>
+<text x="504.0" y="155.0" text-anchor="middle" fill="#544D49" font-size="9.5" font-family="JetBrains Mono, monospace">reads the body only</text>
+<polygon points="504.0,192 600.0,232 504.0,272 408.0,232" fill="none" stroke="#6F8FB5" stroke-dasharray="5 4"/>
+<text x="504.0" y="231" text-anchor="middle" fill="#9DB6D3" font-size="11.5" font-weight="600">confidence gate</text>
+<text x="504.0" y="244" text-anchor="middle" fill="#6F8FB5" font-size="9" font-family="JetBrains Mono, monospace">score &gt; 0.70</text>
+<rect x="408" y="306" width="192" height="42" rx="8" fill="#141212" stroke="#3A3431"/>
+<text x="504.0" y="324.0" text-anchor="middle" fill="#F7F4F2" font-size="12.5" font-weight="600">Gemma classify</text>
+<text x="504.0" y="339.0" text-anchor="middle" fill="#544D49" font-size="9.5" font-family="JetBrains Mono, monospace">second opinion</text>
+<path d="M 372 161 L 384 161 L 384 61 L 404 61" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<path d="M 372 316 L 384 316 L 384 66 L 404 66" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<path d="M 504.0 82 L 504.0 118" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<path d="M 504.0 164 L 504.0 188" fill="none" stroke="#6F8FB5" stroke-dasharray="5 4" marker-end="url(#ah)"/>
+<path d="M 504.0 272 L 504.0 302" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<text x="510.0" y="291" text-anchor="start" fill="#8A817C" font-size="8.5" font-family="JetBrains Mono, monospace">no</text>
+<rect x="648" y="40" width="192" height="42" rx="8" fill="#141212" stroke="#3A3431"/>
+<text x="744.0" y="58.0" text-anchor="middle" fill="#F7F4F2" font-size="12.5" font-weight="600">Ingest attachments</text>
+<text x="744.0" y="73.0" text-anchor="middle" fill="#544D49" font-size="9.5" font-family="JetBrains Mono, monospace">one path, four formats</text>
+<rect x="648" y="122" width="192" height="42" rx="8" fill="#141212" stroke="#3A3431"/>
+<text x="744.0" y="140.0" text-anchor="middle" fill="#F7F4F2" font-size="12.5" font-weight="600">Gemma extraction</text>
+<text x="744.0" y="155.0" text-anchor="middle" fill="#544D49" font-size="9.5" font-family="JetBrains Mono, monospace">schema-pinned, 7 fields</text>
+<rect x="648" y="204" width="192" height="42" rx="8" fill="#141212" stroke="#3A3431"/>
+<text x="744.0" y="222.0" text-anchor="middle" fill="#F7F4F2" font-size="12.5" font-weight="600">Normalise &amp; validate</text>
+<text x="744.0" y="237.0" text-anchor="middle" fill="#544D49" font-size="9.5" font-family="JetBrains Mono, monospace">units, counts, aliases</text>
+<rect x="648" y="306" width="192" height="42" rx="8" fill="none" stroke="#E78823"/>
+<text x="744.0" y="324.0" text-anchor="middle" fill="#E78823" font-size="12.5" font-weight="600">Human review</text>
+<text x="744.0" y="339.0" text-anchor="middle" fill="#544D49" font-size="9.5" font-family="JetBrains Mono, monospace">reason + source attached</text>
+<path d="M 600 232 L 624 232 L 624 61 L 644 61" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<text x="624" y="226" text-anchor="middle" fill="#8A817C" font-size="8.5" font-family="JetBrains Mono, monospace">yes</text>
+<path d="M 600 316 L 624 316 L 624 66 L 644 66" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<text x="624" y="310" text-anchor="middle" fill="#8A817C" font-size="8.5" font-family="JetBrains Mono, monospace">confident</text>
+<path d="M 600 338 L 644 338" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<text x="624" y="356" text-anchor="middle" fill="#8A817C" font-size="8.5" font-family="JetBrains Mono, monospace">unsure</text>
+<path d="M 744.0 82 L 744.0 118" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<path d="M 744.0 164 L 744.0 200" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<path d="M 744.0 246 L 744.0 302" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<text x="750.0" y="280" text-anchor="start" fill="#8A817C" font-size="8.5" font-family="JetBrains Mono, monospace">ambiguous</text>
+<rect x="888" y="72" width="192" height="42" rx="8" fill="#141212" stroke="#3A3431"/>
+<text x="984.0" y="90.0" text-anchor="middle" fill="#F7F4F2" font-size="12.5" font-weight="600">Compare 7 fields</text>
+<text x="984.0" y="105.0" text-anchor="middle" fill="#544D49" font-size="9.5" font-family="JetBrains Mono, monospace">SI is the source of truth</text>
+<rect x="888" y="176" width="192" height="42" rx="8" fill="#141212" stroke="#3A3431"/>
+<text x="984.0" y="194.0" text-anchor="middle" fill="#F7F4F2" font-size="12.5" font-weight="600">OK · MISMATCH · REVIEW</text>
+<text x="984.0" y="209.0" text-anchor="middle" fill="#544D49" font-size="9.5" font-family="JetBrains Mono, monospace">with the fields that differ</text>
+<rect x="888" y="280" width="192" height="42" rx="8" fill="#141212" stroke="#3A3431"/>
+<text x="984.0" y="298.0" text-anchor="middle" fill="#F7F4F2" font-size="12.5" font-weight="600">Audit trail</text>
+<text x="984.0" y="313.0" text-anchor="middle" fill="#544D49" font-size="9.5" font-family="JetBrains Mono, monospace">who decided what, when</text>
+<path d="M 840 225 L 864 225 L 864 93 L 884 93" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<text x="864" y="219" text-anchor="middle" fill="#8A817C" font-size="8.5" font-family="JetBrains Mono, monospace">validated</text>
+<path d="M 840 327 L 864 327 L 864 197 L 884 197" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<text x="864" y="345" text-anchor="middle" fill="#8A817C" font-size="8.5" font-family="JetBrains Mono, monospace">resolved</text>
+<path d="M 984.0 118 L 984.0 172" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<path d="M 984.0 222 L 984.0 276" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+</svg>
+  </div>
+  <p class="legend fx" style="--i:3"><span><i class="s"></i>built and running</span>
+    <span><i class="p"></i>planned &mdash; not built yet</span>
+    <span><i class="r"></i>escalates to a person</span>
+    <b>Five stages, five frozen contracts &mdash; every failure lands on exactly one.</b></p>
+</section>
+
+<!-- ══ 6 · classification cascade — L → R, fall-through ↓ ═══ -->
+<section class="slide" data-t="How the AI decides">
+  <p class="eyebrow fx" style="--i:0"><b>06</b> &nbsp;·&nbsp; How the AI decides</p>
+  <p class="mark fx" style="--i:0">DocuVerify</p>
+  <h2 class="head fx" style="--i:1">Fast first. Smart only when <em>unsure.</em></h2>
+  <div class="flow fx" style="--i:2">
+<svg viewBox="0 0 1136 330" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Inter, sans-serif" stroke-width="1.2" role="img" aria-label="Email classification: upload, standardise, BERT, confidence gate above 0.70, otherwise Gemma, otherwise human review">
+<rect x="0" y="49" width="130" height="42" rx="8" fill="#141212" stroke="#3A3431"/>
+<text x="65" y="75" text-anchor="middle" fill="#F7F4F2" font-size="12.5" font-weight="600">Email upload</text>
+<rect x="180" y="20" width="170" height="42" rx="8" fill="#141212" stroke="#3A3431"/>
+<text x="265" y="46" text-anchor="middle" fill="#F7F4F2" font-size="12.5" font-weight="600">json / txt</text>
+<rect x="180" y="88" width="170" height="42" rx="8" fill="#141212" stroke="#3A3431"/>
+<text x="265" y="106" text-anchor="middle" fill="#F7F4F2" font-size="12.5" font-weight="600">PDF / DOCX</text>
+<text x="265" y="121" text-anchor="middle" fill="#544D49" font-size="9.5" font-family="JetBrains Mono, monospace">Gemma restructures</text>
+<rect x="400" y="49" width="150" height="42" rx="8" fill="#141212" stroke="#3A3431"/>
+<text x="475" y="75" text-anchor="middle" fill="#F7F4F2" font-size="12.5" font-weight="600">Standardised email</text>
+<rect x="600" y="49" width="150" height="42" rx="8" fill="#141212" stroke="#3A3431"/>
+<text x="675" y="67" text-anchor="middle" fill="#F7F4F2" font-size="12.5" font-weight="600">Fine-tuned BERT v2</text>
+<text x="675" y="82" text-anchor="middle" fill="#544D49" font-size="9.5" font-family="JetBrains Mono, monospace">reads the body</text>
+<polygon points="875,20 960,70 875,120 790,70" fill="none" stroke="#E7E2DF" stroke-opacity=".5"/>
+<text x="875" y="68" text-anchor="middle" fill="#F7F4F2" font-size="11.5" font-weight="600">confident?</text>
+<text x="875" y="82" text-anchor="middle" fill="#7E756F" font-size="9.5" font-family="JetBrains Mono, monospace">score &gt; 0.70</text>
+<rect x="1000" y="49" width="136" height="42" rx="8" fill="#141212" stroke="#3A3431"/>
+<text x="1068" y="67" text-anchor="middle" fill="#F7F4F2" font-size="12.5" font-weight="600">Accept</text>
+<text x="1068" y="82" text-anchor="middle" fill="#544D49" font-size="9.5" font-family="JetBrains Mono, monospace">BERT result</text>
+<rect x="806" y="210" width="138" height="42" rx="8" fill="#141212" stroke="#3A3431"/>
+<text x="875" y="228" text-anchor="middle" fill="#F7F4F2" font-size="12.5" font-weight="600">Gemma classify</text>
+<text x="875" y="243" text-anchor="middle" fill="#544D49" font-size="9.5" font-family="JetBrains Mono, monospace">second opinion</text>
+<rect x="1000" y="175" width="136" height="42" rx="8" fill="#141212" stroke="#3A3431"/>
+<text x="1068" y="201" text-anchor="middle" fill="#F7F4F2" font-size="12.5" font-weight="600">Accept</text>
+<rect x="1000" y="265" width="136" height="42" rx="8" fill="none" stroke="#E78823"/>
+<text x="1068" y="283" text-anchor="middle" fill="#E78823" font-size="12.5" font-weight="600">Human review</text>
+<text x="1068" y="298" text-anchor="middle" fill="#544D49" font-size="9.5" font-family="JetBrains Mono, monospace">a person decides</text>
+<path d="M 130 70 L 155 70 L 155 41 L 176 41" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<path d="M 130 70 L 155 70 L 155 109 L 176 109" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<path d="M 350 41 L 375 41 L 375 70 L 396 70" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<path d="M 350 109 L 375 109 L 375 70 L 396 70" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<path d="M 550 70 L 596 70" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<path d="M 750 70 L 786 70" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<path d="M 960 70 L 996 70" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<text x="978" y="60" text-anchor="middle" fill="#8A817C" font-size="8.5" font-family="JetBrains Mono, monospace">yes</text>
+<path d="M 875 120 L 875 206" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<text x="883" y="168" text-anchor="start" fill="#8A817C" font-size="8.5" font-family="JetBrains Mono, monospace">no</text>
+<path d="M 944 231 L 972 231 L 972 196 L 996 196" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<text x="964" y="192" text-anchor="end" fill="#8A817C" font-size="8.5" font-family="JetBrains Mono, monospace">confident</text>
+<path d="M 944 231 L 972 231 L 972 286 L 996 286" fill="none" stroke="#544D49" marker-end="url(#ah)"/>
+<text x="964" y="290" text-anchor="end" fill="#8A817C" font-size="8.5" font-family="JetBrains Mono, monospace">not confident</text>
+</svg>
+  <div class="how">
+    <div class="fx" style="--i:3"><h4>1 &nbsp;Tidy up</h4>
+      <p>Every email is put in one standard shape.</p></div>
+    <div class="fx" style="--i:4"><h4>2 &nbsp;Try the fast model</h4>
+      <p>Our trained BERT labels it. Score above 0.70? Done.</p></div>
+    <div class="fx" style="--i:5"><h4>3 &nbsp;Ask for a second opinion</h4>
+      <p>Below 0.70, Gemma reads it. Still unsure? A person.</p></div>
+  </div>
+  </div>
+  <p class="legend fx" style="--i:6"><span><i class="s"></i>built and running</span>
+    <span><i class="r"></i>escalates to a person</span>
+    <b>Gemma only sees what BERT isn't sure about.</b></p>
+</section>
+
+<!-- ══ 7 · implementation — straightforward · REQUIRED · ↓ ═══ -->
+<section class="slide" data-t="Implementation details">
+  <p class="eyebrow fx" style="--i:0"><b>07</b> &nbsp;·&nbsp; Implementation details</p>
+  <p class="mark fx" style="--i:0">DocuVerify</p>
+  <h2 class="head fx" style="--i:1">Implementation details</h2>
+  <div class="lanes">
+    <div class="lane">
+      <div class="hd fx" style="--i:2">INTERFACE</div>
+      <div class="it fx" style="--i:3"><b>Next.js 16 · React 19</b><span>Queue, case view, audit trail.</span></div>
+      <div class="it fx" style="--i:4"><b>Tailwind 4 · Base UI</b><span>Dense tables, keyboard-driven, light and dark.</span></div>
+      <div class="it fx" style="--i:5"><b>cmdk</b><span>Ctrl-K across emails, senders, fields.</span></div>
+      <div class="it fx" style="--i:6"><b>Recharts</b><span>One chart, where it changes a decision.</span></div>
+    </div>
+    <div class="lane ai">
+      <div class="hd fx" style="--i:2">PIPELINE</div>
+      <div class="it fx" style="--i:3"><b>FastAPI · Uvicorn · pydantic</b><span>Thin routes, Pydantic contracts, logic in services.</span></div>
+      <div class="it fx" style="--i:4"><b>pypdfium2 · python-docx<br>openpyxl · LangChain</b><span>Four formats, one interface, sources kept.</span></div>
+      <div class="it fx" style="--i:5"><b>transformers · torch · AutoTokenizer</b><span>Classifier loaded once, reused every request.</span></div>
+      <div class="it fx" style="--i:6"><b>google-genai ·<br>Self Hosted Lightweight LLM</b><span>Gemma, pinned to a JSON schema for every extraction.</span></div>
+    </div>
+  </div>
+  <p class="thesis fx" style="--i:7">Probabilistic work is isolated from deterministic work on purpose.<br>
+    <b>Models propose values. Python decides whether to accept them.</b></p>
+</section>
+
+<!-- ══ 8 · reliability — catchline · L → R then ↓ ════════════ -->
+<section class="slide" data-t="Reliability">
+  <p class="eyebrow fx" style="--i:0"><b>08</b> &nbsp;·&nbsp; Reliability</p>
+  <p class="mark fx" style="--i:0">DocuVerify</p>
+  <h2 class="head fx" style="--i:1">It refuses to <em>guess.</em></h2>
+  <div class="four">
+    <div class="rsn fx x" style="--i:2"><div class="c">wrong_doc_type</div>
+      <h4>That isn't a Bill of Lading</h4><p>Not the document the email claims.</p></div>
+    <div class="rsn fx x" style="--i:3"><div class="c">missing_attachment</div>
+      <h4>There is nothing to compare</h4><p>One side never arrived.</p></div>
+    <div class="rsn fx x" style="--i:4"><div class="c">unreadable</div>
+      <h4>The page would not read</h4><p>A scan the parser could not resolve.</p></div>
+    <div class="rsn fx x" style="--i:5"><div class="c">missing_value</div>
+      <h4>The customer left it blank</h4><p>A placeholder, not a value.</p></div>
+  </div>
+  <div class="out">
+    <p class="a fx" style="--i:6">Every escalation carries its reason <i>and its source</i> &mdash;
+      page, sheet row or block.</p>
+    <p class="kicker fx" style="--i:7">A blank <span class="mono">____ MT</span> means empty, not different.
+      <b>That one rule turns five false alarms into five correct review requests.</b></p>
+  </div>
+</section>
+
+<!-- ══ 9 · challenges — straightforward · REQUIRED · ↓ ═══════ -->
+<section class="slide" data-t="Challenges faced">
+  <p class="eyebrow fx" style="--i:0"><b>09</b> &nbsp;·&nbsp; Challenges faced</p>
+  <p class="mark fx" style="--i:0">DocuVerify</p>
+  <h2 class="head fx" style="--i:1">Challenges faced</h2>
+  <div class="chal">
+    <div class="hd fx" style="--i:2"><span>THE PROBLEM</span><span>WHAT HAPPENS</span><span>THE FIX</span></div>
+    <div class="row fx" style="--i:3">
+      <div class="p"><em>64</em><span>spellings for 7 fields</span></div>
+      <div class="w">Labels differ per document, some bilingual &mdash;
+        <span class="mono">&#35013;&#36135;&#28207;</span>, <span class="mono">&#27611;&#37325;(KGS)</span>.</div>
+      <div class="f"><b>Normalise, then match ordered patterns.</b> NOTIFY before CONSIGNEE.</div>
+    </div>
+    <div class="row fx" style="--i:4">
+      <div class="p"><em>2</em><span>bookings, one subject line</span></div>
+      <div class="w">The subject reads like a comparison thread. The body asks about something else.</div>
+      <div class="f"><b>Classify on the body alone.</b> The subject is decoration.</div>
+    </div>
+    <div class="row fx" style="--i:5">
+      <div class="p"><em>1</em><span>symptom, two causes</span></div>
+      <div class="w">A failed read and a real discrepancy both end as &ldquo;these don't match&rdquo;.</div>
+      <div class="f"><b>Unread values escalate.</b> Only a value read on both sides can mismatch.</div>
+    </div>
+    <div class="row fx" style="--i:6">
+      <div class="p"><em>0</em><span>ways to check one model</span></div>
+      <div class="w">Self-reported confidence says nothing about whether the value is right.</div>
+      <div class="f"><b>Gate at 0.70.</b> Below it, a second model, then a person.</div>
+    </div>
+  </div>
+  <p class="kicker fx" style="--i:7;margin-top:34px">All four surfaced by running the pipeline over the real documents.
+    <b>None was visible from the brief.</b></p>
+</section>
+
+<!-- ══ 10 · validation — catchline · L → R ══════════════════ -->
+<section class="slide" data-t="Validation">
+  <p class="eyebrow fx" style="--i:0"><b>10</b> &nbsp;·&nbsp; Validation</p>
+  <p class="mark fx" style="--i:0">DocuVerify</p>
+  <h2 class="head fx" style="--i:1">Eighty-five percent. <em>Zero false alarms.</em></h2>
+  <div>
+    <div class="step a fx x" style="--i:2"><div class="n num" data-count="129">0</div>
+      <div class="t">document checks arrive<i>an SI and a draft BL, side by side</i></div></div>
+    <div class="step b fx x" style="--i:3"><div class="n num" data-count="109">0</div>
+      <div class="t">are decided without a human<i>85% of them &mdash; 64 came back clean, 45 carried a real defect</i></div></div>
+    <div class="step c fx x" style="--i:4"><div class="n num" data-count="20">0</div>
+      <div class="t">are handed to a person<i>each with a reason and its source attached</i></div></div>
+    <div class="step d fx x" style="--i:5"><div class="n num" data-count="0">0</div>
+      <div class="t">false alarms<i>all 45 defects checked by hand, <mark>it never cried wolf</mark></i></div></div>
+  </div>
+  <p class="kicker fx" style="--i:6;margin-top:34px">We report <b>precision</b>, not accuracy &mdash;
+    the supplied corpus is synthetic, so an accuracy figure flatters.
+    &ldquo;It never cried wolf&rdquo; is what an ops team cares about.</p>
+</section>
+
+<!-- ══ 11 · roadmap — straightforward · REQUIRED · L → R ═════ -->
+<section class="slide" data-t="Future roadmap">
+  <p class="eyebrow fx" style="--i:0"><b>11</b> &nbsp;·&nbsp; Future roadmap</p>
+  <p class="mark fx" style="--i:0">DocuVerify</p>
+  <h2 class="head fx" style="--i:1">Future roadmap</h2>
+  <div class="tl">
+    <div class="ph lead fx" style="--i:2"><div class="k">DEEPEN</div><h4>More documents</h4>
+      <ul>
+        <li>Invoice, packing list, certificate</li>
+        <li>Beyond the seven fields</li>
+        <li>Click a value, see its source</li>
+      </ul></div>
+    <div class="ph fx" style="--i:3"><div class="k">CONNECT</div><h4>Live operation</h4>
+      <ul>
+        <li>Gmail API intake</li>
+        <li>A human only at the flag</li>
+        <li>Fixes written back to the carrier</li>
+      </ul></div>
+    <div class="ph fx" style="--i:4"><div class="k">LEARN</div><h4>Learning loop</h4>
+      <ul>
+        <li>Reviewed fixes become training data</li>
+        <li>Promote only on a macro-F1 win</li>
+        <li>One-click rollback</li>
+      </ul></div>
+    <div class="ph fx" style="--i:5"><div class="k">SCALE &middot; STAGE 3</div><h4>Rebuilt as a DAG</h4>
+      <ul>
+        <li>Every step is a node</li>
+        <li>A review pauses one branch</li>
+        <li>New document types plug in</li>
+      </ul></div>
+  </div>
+  <p class="kicker fx" style="--i:6;margin-top:40px">Everything in the brief is built. <b>Next: a graph that runs itself.</b></p>
+</section>
+
+<!-- ══ 12 · close — catchline ═══════════════════════════════ -->
+<section class="slide s-close" data-t="Close">
+  <p class="eyebrow fx" style="--i:0;position:absolute;top:54px;left:72px">Team Grabbers &nbsp;·&nbsp; DocuVerify</p>
+  <h2 class="big"><span class="ln"><span>Every port. Every day.</span></span><span class="ln o"><span>Every draft checked before it ships.</span></span></h2>
+  <div class="imp">
+    <div class="fx" style="--i:2"><b>For the operator</b>
+      <p>Only flagged cases reach a person.</p></div>
+    <div class="fx" style="--i:3"><b>For the carrier</b>
+      <p>Wrong drafts caught before they ship.</p></div>
+    <div class="fx" style="--i:4"><b>For the business</b>
+      <p>Every value sourced. Every decision named.</p></div>
+  </div>
+  <div class="links fx" style="--i:5">
+    <div><b>REPOSITORY</b>github.com/LIMJIALIH/Grabbers---Averis-Hackathon</div>
+    <!-- Paste the deployed URL and the demo video URL here once they exist, e.g.
+         <div><b>LIVE DEMO</b>docuverify.vercel.app</div>
+         <div><b>VIDEO</b>youtu.be/xxxxxxxxxxx</div> -->
+  </div>
+  <div class="sig fx" style="--i:6">AVERIS</div>
+</section>
+
+</div></div>
+
+<div id="foot"><span id="ft"></span><span class="r"><b id="fn">1</b> / <span id="fc"></span></span></div>
+<div id="bar"><i id="bi"></i></div>
+
+<script>
+/* 520 squares, 26 x 20. The 129 that need checking are laid first so they
+   read as one band; the rest ramp down into the paper. Each square carries
+   its colour from the start and animates only its own opacity on its own
+   delay, so the field genuinely fills one square at a time. */
+const GRID_STRIDE = 1.6;                       /* ms between squares */
+(() => {
+  const g = document.getElementById('grid');
+  const lerp = (a, b, t) => Math.round(a + (b - a) * t);
+  for (let n = 0; n < 520; n++) {
+    const d = document.createElement('i');
+    if (n >= 129) {
+      d.style.background = 'var(--orange)';
+    } else {
+      const t = n / 128;                       /* 0 at the ceiling, 1 beside the orange */
+      d.style.background = `rgb(${lerp(26, 58, t)},${lerp(24, 42, t)},${lerp(23, 28, t)})`;
+    }
+    d.style.transitionDelay = ((519 - n) * GRID_STRIDE + 30) + 'ms';   /* fills bottom to top */
+    g.appendChild(d);
+  }
+})();
+
+/* Motion engine lifted from pitch.html unchanged in behaviour: stage fit,
+   slide switching, the .fx stagger, countUp, keyboard/click nav, ?still
+   export mode, hash deep-links, and the hidden-tab replay. */
+const stage  = document.getElementById('stage');
+const slides = [...document.querySelectorAll('.slide')];
+const still  = location.search.includes('still');
+const reduce = still || matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (still) document.documentElement.classList.add('still');
+
+const HOLD = reduce ? 0 : 140, COUNT_MS = 620, STAGGER = 35;
+let i = 0, timers = [], step = 0;
+
+const fit = () => {
+  stage.style.transform = `scale(${Math.min(innerWidth / 1280, innerHeight / 720)})`;
+  stage.style.transformOrigin = 'center center';
+};
+
+/* The timer is the guarantee: rAF is throttled in a hidden window, so without
+   it a figure can freeze part-way on a slide whose whole job is the number. */
+function countUp(el, to, ms = COUNT_MS) {
+  const suffix = el.dataset.suffix || '';
+  const land = () => { el.textContent = to + suffix; };
+  if (reduce) return land();
+  let done = false;
+  const t0 = performance.now();
+  (function step(t) {
+    if (done) return;
+    const p = Math.min(Math.max((t - t0) / ms, 0), 1);
+    el.textContent = Math.round(to * (1 - (1 - p) ** 3)) + suffix;
+    if (p < 1) requestAnimationFrame(step);
+  })(performance.now());
+  timers.push(setTimeout(() => { done = true; land(); }, ms + 40));
+}
+
+/* slides with data-steps dim all but one stage of the diagram; stage = column of the element */
+const stageOf = x => x < 190 ? 0 : x < 390 ? 1 : x < 630 ? 2 : x < 870 ? 3 : 4;
+function setStep(k) {
+  step = k;
+  const svg = slides[i].querySelector('.flow svg'); if (!svg) return;
+  for (const el of svg.children) {
+    if (el.tagName === 'defs') continue;
+    const x = el.tagName === 'path' ? +el.getAttribute('d').match(/[\d.]+/g).slice(-2)[0]
+      : el.tagName === 'polygon' ? +el.getAttribute('points').split(/[ ,]/)[0]
+      : +el.getAttribute('x');
+    el.style.opacity = k < 0 || stageOf(x) === k ? 1 : .14;
+    if (el.tagName === 'path') {
+      el.dataset.c ??= el.getAttribute('stroke');
+      el.setAttribute('stroke', k >= 0 && stageOf(x) === k ? '#B8AFAA' : el.dataset.c);
+    }
+    if (el.tagName === 'text' && el.getAttribute('y') === '12') {
+      const on = k >= 0 && stageOf(x) === k;
+      el.setAttribute('font-size', on ? 15 : 8.5);
+      el.setAttribute('font-weight', on ? 700 : 400);
+      el.setAttribute('fill', on ? '#F7F4F2' : '#544D49');
+    }
+  }
+}
+function go(d, n = i + d) {
+  const max = +slides[i].dataset.steps || 0;
+  if (max && step + d >= -1 && step + d < max) return setStep(step + d);
+  show(n, d);
+}
+
+function show(n, d = 1) {
+  timers.forEach(clearTimeout); timers = [];
+  i = Math.max(0, Math.min(slides.length - 1, n));
+  slides.forEach((s, k) => s.classList.toggle('on', k === i));
+
+  const cur  = slides[i];
+  const figs = [...cur.querySelectorAll('[data-count]')];
+
+  const grid = document.getElementById('grid');
+  if (grid && !reduce) {
+    for (const d of grid.children) { d.style.transitionProperty = 'none'; d.style.opacity = '0'; }
+    void grid.offsetWidth;                                   /* force the reflow */
+    for (const d of grid.children) { d.style.transitionProperty = ''; d.style.opacity = ''; }
+  }
+
+  if (reduce) {
+    figs.forEach(el => el.textContent = el.dataset.count + (el.dataset.suffix || ''));
+  } else {
+    figs.forEach(el => el.textContent = '0' + (el.dataset.suffix || ''));
+    timers.push(setTimeout(() => figs.forEach((el, k) =>
+      timers.push(setTimeout(() => countUp(el, +el.dataset.count, +el.dataset.ms || COUNT_MS), k * STAGGER))
+    ), HOLD));
+  }
+
+  if (cur.dataset.steps) setStep(d < 0 ? +cur.dataset.steps - 1 : -1);
+  document.getElementById('ft').textContent = cur.dataset.t;
+  document.getElementById('fn').textContent = i + 1;
+  document.getElementById('bi').style.transform = `scaleX(${(i + 1) / slides.length})`;
+  history.replaceState(null, '', '#' + (i + 1));
+}
+
+document.getElementById('fc').textContent = slides.length;
+addEventListener('resize', fit);
+addEventListener('visibilitychange', () => { if (!document.hidden) show(i, 1); });
+addEventListener('hashchange', () => {
+  const n = (parseInt(location.hash.slice(1)) || 1) - 1;
+  if (n !== i) show(n);
+});
+addEventListener('keydown', e => {
+  if (['ArrowRight','ArrowDown',' ','PageDown','Enter'].includes(e.key)) { e.preventDefault(); go(1); }
+  else if (['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(e.key)) { e.preventDefault(); go(-1); }
+  else if (e.key === 'Home') show(0);
+  else if (e.key === 'End') show(slides.length - 1);
+});
+addEventListener('click', e => go(e.clientX < innerWidth * 0.25 ? -1 : 1));
+fit();
+show((parseInt(location.hash.slice(1)) || 1) - 1);
+</script>
+</body>
+</html>
